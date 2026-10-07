@@ -26,6 +26,13 @@ jobs:
           flutter build apk --release
           cp build/app/outputs/flutter-apk/app-release.apk ../SaffariNeuroCare-Patient.apk
 
+      - name: Upload patient APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: SaffariNeuroCare-Patient-APK
+          path: SaffariNeuroCare-Patient.apk
+          if-no-files-found: error
+
       - name: Build doctor APK
         working-directory: doctor_mobile
         run: |
@@ -34,11 +41,9 @@ jobs:
           flutter build apk --release
           cp build/app/outputs/flutter-apk/app-release.apk ../SaffariNeuroCare-Doctor.apk
 
-      - name: Upload APK artifacts
+      - name: Upload doctor APK
         uses: actions/upload-artifact@v4
         with:
-          name: SaffariNeuroCare-Android-APKs
-          path: |
-            SaffariNeuroCare-Patient.apk
-            SaffariNeuroCare-Doctor.apk
+          name: SaffariNeuroCare-Doctor-APK
+          path: SaffariNeuroCare-Doctor.apk
           if-no-files-found: error
