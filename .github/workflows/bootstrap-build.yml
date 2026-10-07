@@ -12,13 +12,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Extract project bundle
-        run: |
-          rm -rf source
-          mkdir source
-          unzip -q SaffariNeuroCare_APK_BuildReady.zip -d source
-          find source -maxdepth 2 -type f | head -50
-
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -26,20 +19,20 @@ jobs:
           channel: stable
 
       - name: Build patient APK
-        working-directory: source/mobile
+        working-directory: mobile
         run: |
           flutter create . --platforms=android
           flutter pub get
           flutter build apk --release
-          cp build/app/outputs/flutter-apk/app-release.apk ../../SaffariNeuroCare-Patient.apk
+          cp build/app/outputs/flutter-apk/app-release.apk ../SaffariNeuroCare-Patient.apk
 
       - name: Build doctor APK
-        working-directory: source/doctor_mobile
+        working-directory: doctor_mobile
         run: |
           flutter create . --platforms=android
           flutter pub get
           flutter build apk --release
-          cp build/app/outputs/flutter-apk/app-release.apk ../../SaffariNeuroCare-Doctor.apk
+          cp build/app/outputs/flutter-apk/app-release.apk ../SaffariNeuroCare-Doctor.apk
 
       - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
