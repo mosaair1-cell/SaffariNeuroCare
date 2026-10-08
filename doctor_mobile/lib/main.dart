@@ -42,15 +42,17 @@ extension DDiseaseX on DDisease {
 enum PatientFlag { needsReview, change, stable }
 
 class DPatient {
-  final String name;
+  String name;
+  final String nationalId;
   final DDisease disease;
   final PatientFlag flag;
   final String primaryValue;
   final String lastVisit;
   final String preVisit;
 
-  const DPatient(
+  DPatient(
     this.name,
+    this.nationalId,
     this.disease,
     this.flag,
     this.primaryValue,
@@ -75,14 +77,14 @@ class DPatient {
   }
 }
 
-const patients = [
-  DPatient('مریم احمدی', DDisease.migraine, PatientFlag.needsReview, '۷ روز سردرد / ماه', '۱۴۰۵/۰۷/۰۷', 'تکمیل شده'),
-  DPatient('علی رضایی', DDisease.ms, PatientFlag.change, 'MRI جدید', '۱۴۰۵/۰۷/۰۶', 'تغییر علامت گزارش شده'),
-  DPatient('رضا کریمی', DDisease.parkinson, PatientFlag.stable, 'بدون تغییر عمده', '۱۴۰۵/۰۷/۰۵', 'تکمیل شده'),
-  DPatient('سارا محمدی', DDisease.epilepsy, PatientFlag.stable, '۲ حمله / ماه', '۱۴۰۵/۰۷/۰۳', 'تکمیل شده'),
-  DPatient('حسین کاظمی', DDisease.cognition, PatientFlag.needsReview, 'حافظه + ADL', '۱۴۰۵/۰۷/۰۲', 'ناقص'),
-  DPatient('نرگس مرادی', DDisease.migraine, PatientFlag.change, 'افزایش مصرف داروی حمله', '۱۴۰۵/۰۷/۰۱', 'تکمیل شده'),
-  DPatient('مهدی صادقی', DDisease.ms, PatientFlag.stable, 'علائم پایدار', '۱۴۰۵/۰۶/۲۸', 'تکمیل شده'),
+final patients = <DPatient>[
+  DPatient('مریم احمدی', '0012345678', DDisease.migraine, PatientFlag.needsReview, '۷ روز سردرد / ماه', '۱۴۰۵/۰۷/۰۷', 'تکمیل شده'),
+  DPatient('علی رضایی', '0012345686', DDisease.ms, PatientFlag.change, 'MRI جدید', '۱۴۰۵/۰۷/۰۶', 'تغییر علامت گزارش شده'),
+  DPatient('رضا کریمی', '0012345694', DDisease.parkinson, PatientFlag.stable, 'بدون تغییر عمده', '۱۴۰۵/۰۷/۰۵', 'تکمیل شده'),
+  DPatient('سارا محمدی', '0012345708', DDisease.epilepsy, PatientFlag.stable, '۲ حمله / ماه', '۱۴۰۵/۰۷/۰۳', 'تکمیل شده'),
+  DPatient('حسین کاظمی', '0012345716', DDisease.cognition, PatientFlag.needsReview, 'حافظه + ADL', '۱۴۰۵/۰۷/۰۲', 'ناقص'),
+  DPatient('نرگس مرادی', '0012345724', DDisease.migraine, PatientFlag.change, 'افزایش مصرف داروی حمله', '۱۴۰۵/۰۷/۰۱', 'تکمیل شده'),
+  DPatient('مهدی صادقی', '0012345732', DDisease.ms, PatientFlag.stable, 'علائم پایدار', '۱۴۰۵/۰۶/۲۸', 'تکمیل شده'),
 ];
 
 class DoctorNeuroCareApp extends StatelessWidget {
@@ -532,7 +534,7 @@ class _DoctorPatientsState extends State<DoctorPatients> {
                 controller: search,
                 onChanged: (_) => setState(() {}),
                 decoration: const InputDecoration(
-                  hintText: 'نام بیمار یا بیماری…',
+                  hintText: 'نام بیمار، کد ملی یا بیماری…',
                   prefixIcon: Icon(Icons.search_rounded),
                 ),
               ),
@@ -770,7 +772,7 @@ class _PatientDetailState extends State<PatientDetail> {
                 content: const Text('در نسخه عملیاتی می‌توان از همین صفحه طرح درمان، درخواست پیگیری و پیام پذیرش ایجاد کرد.'),
                 actions: [
                   TextButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () => Navigator.pop(dialogContext),
                     child: const Text('بستن'),
                   ),
                 ],
@@ -784,6 +786,19 @@ class _PatientDetailState extends State<PatientDetail> {
         padding: const EdgeInsets.fromLTRB(18, 8, 18, 24),
         children: [
           PatientHero(patient: p),
+          const SizedBox(height: 10),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.fingerprint_rounded, color: DC.primary),
+              title: const Text('شناسه اصلی پرونده', style: TextStyle(fontWeight: FontWeight.w900)),
+              subtitle: Text(p.nationalId),
+              trailing: IconButton(
+                tooltip: 'اصلاح مشخصات',
+                icon: const Icon(Icons.edit_rounded),
+                onPressed: () => editPatientName(context, p, setState),
+              ),
+            ),
+          ),
           const SizedBox(height: 12),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -891,6 +906,11 @@ class PatientHero extends StatelessWidget {
               style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 4),
+            Text(
+              'کد ملی پرونده: ' + patient.nationalId,
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 3),
             Text(
               'آخرین ویزیت: ' + patient.lastVisit,
               style: const TextStyle(color: Colors.white70),
@@ -1129,7 +1149,7 @@ class PatientTile extends StatelessWidget {
           ],
         ),
         subtitle: Text(
-          patient.disease.title + ' • ' + patient.primaryValue + '\n' + patient.flagTitle,
+          patient.disease.title + ' • کد ملی: ' + patient.nationalId + '\n' + patient.primaryValue + ' • ' + patient.flagTitle,
         ),
         isThreeLine: true,
         trailing: const Icon(Icons.chevron_left_rounded),
@@ -1325,6 +1345,84 @@ class DoctorChartPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant DoctorChartPainter oldDelegate) => true;
+}
+
+
+Future<void> editPatientName(
+  BuildContext context,
+  DPatient patient,
+  StateSetter refresh,
+) async {
+  final parts = patient.name.trim().split(RegExp(r'\s+'));
+  final first = TextEditingController(text: parts.isNotEmpty ? parts.first : '');
+  final last = TextEditingController(
+    text: parts.length > 1 ? parts.skip(1).join(' ') : '',
+  );
+
+  final saved = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text(
+        'اصلاح نام بیمار',
+        style: TextStyle(fontWeight: FontWeight.w900),
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'کد ملی: ' + patient.nationalId,
+            style: const TextStyle(
+              color: DC.primary,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: first,
+            decoration: const InputDecoration(labelText: 'نام صحیح'),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: last,
+            decoration: const InputDecoration(labelText: 'نام خانوادگی صحیح'),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext, false),
+          child: const Text('انصراف'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(dialogContext, true),
+          child: const Text('ذخیره اصلاحات'),
+        ),
+      ],
+    ),
+  );
+
+  if (saved == true) {
+    final firstName = first.text.trim();
+    final lastName = last.text.trim();
+    if (firstName.isEmpty || lastName.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('نام و نام خانوادگی را کامل وارد کنید.')),
+      );
+      return;
+    }
+    patient.name = firstName + ' ' + lastName;
+    refresh(() {});
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'نام بیمار با کد ملی ' + patient.nationalId + ' اصلاح شد.',
+        ),
+      ),
+    );
+  }
+
+  first.dispose();
+  last.dispose();
 }
 
 String aiSummary(DPatient p) {
