@@ -767,7 +767,7 @@ class _PatientDetailState extends State<PatientDetail> {
           IconButton(
             onPressed: () => showDialog(
               context: context,
-              builder: (_) => AlertDialog(
+              builder: (dialogContext) => AlertDialog(
                 title: const Text('اقدام سریع'),
                 content: const Text('در نسخه عملیاتی می‌توان از همین صفحه طرح درمان، درخواست پیگیری و پیام پذیرش ایجاد کرد.'),
                 actions: [
