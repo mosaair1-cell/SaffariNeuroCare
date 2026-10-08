@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import 'site_content.dart';
 
 void main() => runApp(const SaffariNeuroCareApp());
 
@@ -585,6 +588,7 @@ class _AppShellState extends State<AppShell> {
       HomePage(
         disease: active,
         onDisease: selectDisease,
+        onAccount: () => setState(() => index = 4),
         onAppointment: () => showAppointment(context),
         onPreVisit: () => Navigator.push(
           context,
@@ -646,6 +650,7 @@ class _AppShellState extends State<AppShell> {
 class HomePage extends StatelessWidget {
   final Disease disease;
   final ValueChanged<Disease> onDisease;
+  final VoidCallback onAccount;
   final VoidCallback onAppointment;
   final VoidCallback onPreVisit;
 
@@ -653,6 +658,7 @@ class HomePage extends StatelessWidget {
     super.key,
     required this.disease,
     required this.onDisease,
+    required this.onAccount,
     required this.onAppointment,
     required this.onPreVisit,
   });
@@ -684,10 +690,20 @@ class HomePage extends StatelessWidget {
                 ],
               ),
             ),
-            const CircleAvatar(
-              radius: 25,
-              backgroundColor: AppColors.primary,
-              child: Icon(Icons.person_rounded, color: Colors.white),
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onAccount,
+                borderRadius: BorderRadius.circular(30),
+                child: const Padding(
+                  padding: EdgeInsets.all(3),
+                  child: CircleAvatar(
+                    radius: 25,
+                    backgroundColor: AppColors.primary,
+                    child: Icon(Icons.person_rounded, color: Colors.white),
+                  ),
+                ),
+              ),
             ),
           ],
         ),
