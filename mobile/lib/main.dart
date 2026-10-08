@@ -1694,13 +1694,18 @@ void showVisitSummary(BuildContext context, Disease disease) {
 void showRecordSummary(BuildContext context) {
   showDialog(
     context: context,
-    builder: (_) => const AlertDialog(
-      title: Text('خلاصه پرونده'),
-      content: Text(
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('خلاصه پرونده'),
+      content: const Text(
         'پنج ماژول قابل پیگیری فعال هستند: میگرن، ام‌اس، صرع، پارکینسون و اختلالات شناختی.\n\n'
         'مدارک بیمار و گزارش‌های قبل از ویزیت در نسخه عملیاتی باید به پرونده رسمی کلینیک متصل شوند.',
       ),
-      actions: [TextButton(onPressed: null, child: Text('بستن'))],
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext),
+          child: const Text('بستن'),
+        ),
+      ],
     ),
   );
 }
@@ -1786,14 +1791,19 @@ void showCaregiver(BuildContext context) {
 void showHelp(BuildContext context) {
   showDialog(
     context: context,
-    builder: (_) => const AlertDialog(
-      title: Text('راهنمای اپ'),
-      content: Text(
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('راهنمای اپ'),
+      content: const Text(
         'از نوار پایین بین خانه، وضعیت، درمان، پرونده و حساب جابه‌جا شوید.\n\n'
         'در خانه بیماری فعال را تغییر دهید.\n'
         'گزارش قبل از ویزیت برای مرور پزشک طراحی شده است.',
       ),
-      actions: [TextButton(onPressed: null, child: Text('بستن'))],
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext),
+          child: const Text('بستن'),
+        ),
+      ],
     ),
   );
 }
