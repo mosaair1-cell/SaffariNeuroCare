@@ -18,32 +18,58 @@ jobs:
           flutter-version: '3.47.5'
           channel: stable
 
-      - name: Build patient APK
+      - name: Build patient ARM64 APK
         working-directory: mobile
         run: |
           flutter create . --platforms=android
           flutter pub get
-          flutter build apk --release
-          cp build/app/outputs/flutter-apk/app-release.apk ../SaffariNeuroCare-Patient.apk
+          flutter build apk --release --target-platform android-arm64
+          cp build/app/outputs/flutter-apk/app-release.apk ../SaffariNeuroCare-Patient-ARM64.apk
+
+      - name: Analyze patient APK size
+        working-directory: mobile
+        run: |
+          flutter build apk --release --target-platform android-arm64 --analyze-size > ../patient-size-report.txt
+          tail -n 40 ../patient-size-report.txt || true
 
       - name: Upload patient APK
         uses: actions/upload-artifact@v4
         with:
-          name: SaffariNeuroCare-Patient-APK
-          path: SaffariNeuroCare-Patient.apk
+          name: SaffariNeuroCare-Patient-ARM64-APK
+          path: SaffariNeuroCare-Patient-ARM64.apk
           if-no-files-found: error
 
-      - name: Build doctor APK
+      - name: Upload patient size report
+        uses: actions/upload-artifact@v4
+        with:
+          name: SaffariNeuroCare-Patient-Size-Report
+          path: patient-size-report.txt
+          if-no-files-found: warn
+
+      - name: Build doctor ARM64 APK
         working-directory: doctor_mobile
         run: |
           flutter create . --platforms=android
           flutter pub get
-          flutter build apk --release
-          cp build/app/outputs/flutter-apk/app-release.apk ../SaffariNeuroCare-Doctor.apk
+          flutter build apk --release --target-platform android-arm64
+          cp build/app/outputs/flutter-apk/app-release.apk ../SaffariNeuroCare-Doctor-ARM64.apk
+
+      - name: Analyze doctor APK size
+        working-directory: doctor_mobile
+        run: |
+          flutter build apk --release --target-platform android-arm64 --analyze-size > ../doctor-size-report.txt
+          tail -n 40 ../doctor-size-report.txt || true
 
       - name: Upload doctor APK
         uses: actions/upload-artifact@v4
         with:
-          name: SaffariNeuroCare-Doctor-APK
-          path: SaffariNeuroCare-Doctor.apk
+          name: SaffariNeuroCare-Doctor-ARM64-APK
+          path: SaffariNeuroCare-Doctor-ARM64.apk
           if-no-files-found: error
+
+      - name: Upload doctor size report
+        uses: actions/upload-artifact@v4
+        with:
+          name: SaffariNeuroCare-Doctor-Size-Report
+          path: doctor-size-report.txt
+          if-no-files-found: warn
