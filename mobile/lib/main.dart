@@ -1919,37 +1919,330 @@ class _AppointmentSheetState extends State<AppointmentSheet> {
 }
 
 void showArticle(BuildContext context, Disease disease) {
-  showModalBottomSheet(
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => WebsiteArticlesPage(initialDisease: disease),
+    ),
+  );
+}
+
+Future<void> openExternalUrl(BuildContext context, String url) async {
+  final uri = Uri.tryParse(url);
+  if (uri == null) return;
+
+  final launched = await launchUrl(
+    uri,
+    mode: LaunchMode.externalApplication,
+  );
+
+  if (!launched && context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('باز کردن لینک ممکن نشد.')),
+    );
+  }
+}
+
+Future<void> logout(BuildContext context) async {
+  final confirmed = await showDialog<bool>(
     context: context,
-    isScrollControlled: true,
-    showDragHandle: true,
-    builder: (_) => SafeArea(
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('خروج از حساب'),
+      content: const Text(
+        'از حساب بیمار خارج شوید؟ برای ورود دوباره باید اطلاعات ورود را وارد کنید.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext, false),
+          child: const Text('انصراف'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(dialogContext, true),
+          child: const Text('خروج'),
+        ),
+      ],
+    ),
+  );
+
+  if (confirmed != true || !context.mounted) return;
+
+  Navigator.of(context).pushAndRemoveUntil(
+    MaterialPageRoute(builder: (_) => const LoginPage()),
+    (route) => false,
+  );
+}
+
+SiteDisease siteDiseaseFor(Disease disease) {
+  switch (disease) {
+    case Disease.migraine:
+      return SiteDisease.migraine;
+    case Disease.ms:
+      return SiteDisease.ms;
+    case Disease.epilepsy:
+      return SiteDisease.epilepsy;
+    case Disease.parkinson:
+      return SiteDisease.parkinson;
+    case Disease.cognition:
+      return SiteDisease.cognition;
+  }
+}
+
+class WebsiteArticlesPage extends StatefulWidget {
+  final Disease initialDisease;
+
+  const WebsiteArticlesPage({
+    super.key,
+    required this.initialDisease,
+  });
+
+  @override
+  State<WebsiteArticlesPage> createState() => _WebsiteArticlesPageState();
+}
+
+class _WebsiteArticlesPageState extends State<WebsiteArticlesPage> {
+  late Disease disease;
+  late Future<List<SiteArticle>> articlesFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    disease = widget.initialDisease;
+    articlesFuture =
+        SiteContentService.fetchArticles(siteDiseaseFor(disease));
+  }
+
+  void changeDisease(Disease next) {
+    setState(() {
+      disease = next;
+      articlesFuture =
+          SiteContentService.fetchArticles(siteDiseaseFor(next));
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final siteDisease = siteDiseaseFor(disease);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'مقالات و محتوای سایت',
+          style: TextStyle(fontWeight: FontWeight.w900),
+        ),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(18, 8, 18, 28),
+        children: [
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [AppColors.dark, AppColors.primary],
+              ),
+              borderRadius: BorderRadius.circular(22),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.public_rounded, color: Colors.white, size: 27),
+                    SizedBox(width: 9),
+                    Expanded(
+                      child: Text(
+                        'محتوای رسمی دکتر صفاری',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 9),
+                Text(
+                  'مطالب مرتبط با ' +
+                      disease.shortName +
+                      ' از وب‌سایت رسمی، برای ادامه مطالعه در مسیر پیگیری شما.',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    height: 1.6,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: Disease.values.map((d) {
+                return Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: ChoiceChip(
+                    label: Text(d.shortName),
+                    selected: d == disease,
+                    onSelected: (_) => changeDisease(d),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 14),
+          FutureBuilder<List<SiteArticle>>(
+            future: articlesFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Card(
+                  child: Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  ),
+                );
+              }
+
+              if (snapshot.hasError) {
+                return _SiteArticleFallback(
+                  disease: disease,
+                  onOpenSearch: () => openExternalUrl(
+                    context,
+                    SiteContentService.searchUri(siteDisease.searchTerm)
+                        .toString(),
+                  ),
+                );
+              }
+
+              final articles = snapshot.data ?? const <SiteArticle>[];
+
+              return Column(
+                children: [
+                  ...articles.map(
+                    (article) => Padding(
+                      padding: const EdgeInsets.only(bottom: 9),
+                      child: Card(
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.all(12),
+                          leading: CircleAvatar(
+                            backgroundColor: disease.tint,
+                            child: const Icon(
+                              Icons.article_outlined,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          title: Text(
+                            article.title,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          subtitle: Padding(
+                            padding: const EdgeInsets.only(top: 5),
+                            child: Text(
+                              article.live
+                                  ? 'مقاله منتشرشده در سایت • ' + article.date
+                                  : article.date,
+                              style: const TextStyle(
+                                color: AppColors.muted,
+                              ),
+                            ),
+                          ),
+                          trailing:
+                              const Icon(Icons.open_in_new_rounded),
+                          onTap: () =>
+                              openExternalUrl(context, article.url),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  OutlinedButton.icon(
+                    onPressed: () => openExternalUrl(
+                      context,
+                      SiteContentService.searchUri(
+                        siteDisease.searchTerm,
+                      ).toString(),
+                    ),
+                    icon: const Icon(Icons.search_rounded),
+                    label: const Text('مشاهده همه مطالب مرتبط در سایت'),
+                  ),
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 9),
+          FilledButton.icon(
+            onPressed: () =>
+                openExternalUrl(context, SiteContentService.baseUrl),
+            icon: const Icon(Icons.public_rounded),
+            label: const Text('ورود به وب‌سایت رسمی دکتر صفاری'),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: () => openExternalUrl(
+              context,
+              SiteContentService.appointmentUrl,
+            ),
+            icon: const Icon(Icons.calendar_month_rounded),
+            label: const Text('دریافت نوبت'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SiteArticleFallback extends StatelessWidget {
+  final Disease disease;
+  final VoidCallback onOpenSearch;
+
+  const _SiteArticleFallback({
+    required this.disease,
+    required this.onOpenSearch,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(18, 8, 18, 25),
-        child: Wrap(
-          runSpacing: 12,
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              articleTitle(disease),
-              style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w900),
+            const Icon(
+              Icons.public_off_rounded,
+              color: AppColors.warning,
+              size: 28,
             ),
+            const SizedBox(height: 9),
             Text(
-              'محتوای آموزشی متناسب با ماژول ' + disease.shortName + ' در مسیر NeuroCare.',
-              style: const TextStyle(color: AppColors.muted, height: 1.65),
+              'دسترسی مستقیم به فهرست مقالات ' + disease.shortName,
+              style: const TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 17,
+              ),
             ),
+            const SizedBox(height: 7),
             const Text(
-              'در نسخه عملیاتی، این بخش می‌تواند مقاله‌های تاییدشده وب‌سایت دکتر صفاری را بر اساس بیماری و مرحله پیگیری شخصی‌سازی کند.',
-              style: TextStyle(height: 1.7),
+              'در صورت در دسترس نبودن فهرست خودکار، جستجوی زنده سایت باز می‌شود تا آخرین مطالب منتشرشده را ببینید.',
+              style: TextStyle(
+                color: AppColors.muted,
+                height: 1.6,
+              ),
             ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('بستن'),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: onOpenSearch,
+              icon: const Icon(Icons.search_rounded),
+              label: const Text('جستجوی مطالب در سایت'),
             ),
           ],
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 void showMedication(BuildContext context, String title, String note) {
