@@ -662,29 +662,29 @@ class HomePage extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(18, 20, 18, 110),
       children: [
-        const Row(
+        Row(
           children: [
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'سلام محمدحسین 👋',
-                    style: TextStyle(
+                    'سلام ' + currentPatient.firstName + ' 👋',
+                    style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w900,
                       color: AppColors.text,
                     ),
                   ),
-                  SizedBox(height: 4),
-                  Text(
+                  const SizedBox(height: 4),
+                  const Text(
                     'مسیر اختصاصی کلینیک برای شما فعال است.',
                     style: TextStyle(color: AppColors.muted),
                   ),
                 ],
               ),
             ),
-            CircleAvatar(
+            const CircleAvatar(
               radius: 25,
               backgroundColor: AppColors.primary,
               child: Icon(Icons.person_rounded, color: Colors.white),
@@ -1153,8 +1153,13 @@ class AccountPage extends StatelessWidget {
               backgroundColor: AppColors.primary,
               child: Icon(Icons.person_rounded, color: Colors.white),
             ),
-            title: const Text('محمدحسین رضایی', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
-            subtitle: const Text('بیمار تحت پیگیری دکتر صفاری'),
+            title: Text(
+              currentPatient.fullName,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+            ),
+            subtitle: Text(
+              'کد ملی پرونده: ' + currentPatient.nationalId,
+            ),
           ),
         ),
         const SizedBox(height: 10),
