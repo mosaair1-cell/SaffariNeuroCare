@@ -829,25 +829,38 @@ class HomePage extends StatelessWidget {
           done: false,
         ),
         const SizedBox(height: 18),
-        const SectionTitle('محتوای شخصی‌سازی‌شده'),
+        const SectionTitle('محتوای مرتبط از سایت دکتر صفاری'),
         const SizedBox(height: 8),
         Card(
           child: ListTile(
             contentPadding: const EdgeInsets.all(14),
             leading: CircleAvatar(
-              backgroundColor: Colors.white,
+              backgroundColor: disease.tint,
               child: Icon(disease.icon, color: AppColors.primary),
             ),
             title: Text(
-              articleTitle(disease),
+              'مقالات مرتبط با ' + disease.shortName,
               style: const TextStyle(fontWeight: FontWeight.w900),
             ),
             subtitle: const Text(
-              'مقاله آموزشی متناسب با بیماری فعال شما.',
+              'مطالب سایت دکتر صفاری به‌صورت زنده در دسترس شماست.',
               style: TextStyle(height: 1.4),
             ),
-            trailing: const Icon(Icons.chevron_left_rounded),
+            trailing: const Icon(Icons.open_in_new_rounded),
             onTap: () => showArticle(context, disease),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.public_rounded, color: AppColors.primary),
+            title: const Text(
+              'وب‌سایت رسمی دکتر صفاری',
+              style: TextStyle(fontWeight: FontWeight.w900),
+            ),
+            subtitle: const Text('مقالات، معرفی، فعالیت‌های علمی و راه‌های ارتباطی'),
+            trailing: const Icon(Icons.chevron_left_rounded),
+            onTap: () => openExternalUrl(context, SiteContentService.baseUrl),
           ),
         ),
       ],
