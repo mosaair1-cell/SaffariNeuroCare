@@ -1216,15 +1216,45 @@ class AccountPage extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         SettingTile(
+          icon: Icons.article_outlined,
+          title: 'مقالات سایت دکتر صفاری',
+          subtitle: 'مطالب مرتبط با بیماری‌های تحت پیگیری',
+          onTap: () => showArticle(context, Disease.migraine),
+        ),
+        const SizedBox(height: 8),
+        SettingTile(
+          icon: Icons.public_rounded,
+          title: 'وب‌سایت رسمی دکتر صفاری',
+          subtitle: 'mhsaffari.ir',
+          onTap: () => openExternalUrl(context, SiteContentService.baseUrl),
+        ),
+        const SizedBox(height: 8),
+        SettingTile(
+          icon: Icons.calendar_month_rounded,
+          title: 'دریافت نوبت',
+          subtitle: 'سامانه نوبت‌دهی',
+          onTap: () => openExternalUrl(context, SiteContentService.appointmentUrl),
+        ),
+        const SizedBox(height: 8),
+        SettingTile(
           icon: Icons.help_outline_rounded,
           title: 'راهنمای اپ',
           subtitle: 'خانه، وضعیت، درمان، پرونده و گزارش‌ها',
           onTap: () => showHelp(context),
         ),
+        const SizedBox(height: 18),
+        SizedBox(
+          height: 52,
+          child: OutlinedButton.icon(
+            onPressed: () => logout(context),
+            icon: const Icon(Icons.logout_rounded),
+            label: const Text('خروج از حساب'),
+          ),
+        ),
         const SizedBox(height: 24),
         const Center(
           child: Text(
-            'Saffari NeuroCare • نسخه نمایشی بالینی',
+            'Saffari NeuroCare • مسیر اختصاصی بیمار',
             style: TextStyle(fontSize: 11, color: AppColors.muted),
           ),
         ),
