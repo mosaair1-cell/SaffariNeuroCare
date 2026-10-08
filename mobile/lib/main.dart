@@ -97,33 +97,71 @@ class SaffariNeuroCareApp extends StatelessWidget {
   }
 }
 
+class PatientIdentity {
+  String firstName;
+  String lastName;
+  String mobile;
+  final String nationalId;
+
+  PatientIdentity({
+    required this.firstName,
+    required this.lastName,
+    required this.mobile,
+    required this.nationalId,
+  });
+
+  String get fullName => (firstName.trim() + ' ' + lastName.trim()).trim();
+}
+
+PatientIdentity currentPatient = PatientIdentity(
+  firstName: 'محمدحسین',
+  lastName: 'رضایی',
+  mobile: '09123456789',
+  nationalId: '0012345678',
+);
+
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
-  @override State<LoginPage> createState() => _LoginPageState();
+  @override
+  State<LoginPage> createState() => _LoginPageState();
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final phone = TextEditingController(text: '09123456789');
-  final pass = TextEditingController(text: '1234');
+  final mobile = TextEditingController(text: '09123456789');
+  final nationalId = TextEditingController(text: '0012345678');
   bool busy = false;
 
   @override
   void dispose() {
-    phone.dispose();
-    pass.dispose();
+    mobile.dispose();
+    nationalId.dispose();
     super.dispose();
   }
 
   Future<void> login() async {
-    if (phone.text.trim().length < 10 || pass.text.length < 4) {
+    final m = mobile.text.trim();
+    final n = nationalId.text.trim();
+    if (m.length < 10 || n.length != 10) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('شماره موبایل و رمز عبور را کامل وارد کنید.')),
+        const SnackBar(
+          content: Text('شماره موبایل و کد ملی را کامل و صحیح وارد کنید.'),
+        ),
       );
       return;
     }
+
     setState(() => busy = true);
-    await Future.delayed(const Duration(milliseconds: 350));
+    await Future.delayed(const Duration(milliseconds: 300));
     if (!mounted) return;
+
+    currentPatient.mobile = m;
+    currentPatient = PatientIdentity(
+      firstName: currentPatient.firstName,
+      lastName: currentPatient.lastName,
+      mobile: m,
+      nationalId: n,
+    );
+
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => const ClinicLinkPage()),
@@ -177,7 +215,7 @@ class _LoginPageState extends State<LoginPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'مسیر اختصاصی بیمار',
+                    'ورود بدون OTP',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 21,
@@ -186,7 +224,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   SizedBox(height: 8),
                   Text(
-                    'نوبت، وضعیت، برنامه درمان، پرونده و گزارش قبل از ویزیت در یک مسیر.',
+                    'شماره موبایل نام کاربری شماست و کد ملی، رمز ورود اولیه است.',
                     style: TextStyle(color: Colors.white, height: 1.55),
                   ),
                 ],
@@ -194,7 +232,7 @@ class _LoginPageState extends State<LoginPage> {
             ),
             const SizedBox(height: 26),
             const Text(
-              'ورود',
+              'ورود بیمار',
               style: TextStyle(
                 color: AppColors.text,
                 fontSize: 23,
@@ -203,7 +241,7 @@ class _LoginPageState extends State<LoginPage> {
             ),
             const SizedBox(height: 14),
             TextField(
-              controller: phone,
+              controller: mobile,
               keyboardType: TextInputType.phone,
               decoration: const InputDecoration(
                 labelText: 'شماره موبایل',
@@ -212,11 +250,14 @@ class _LoginPageState extends State<LoginPage> {
             ),
             const SizedBox(height: 12),
             TextField(
-              controller: pass,
+              controller: nationalId,
+              keyboardType: TextInputType.number,
+              maxLength: 10,
               obscureText: true,
               decoration: const InputDecoration(
-                labelText: 'رمز عبور',
-                prefixIcon: Icon(Icons.lock_outline),
+                labelText: 'کد ملی (رمز عبور)',
+                prefixIcon: Icon(Icons.fingerprint_rounded),
+                counterText: '',
               ),
             ),
             const SizedBox(height: 16),
@@ -230,13 +271,22 @@ class _LoginPageState extends State<LoginPage> {
                         height: 18,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Icon(Icons.arrow_back_rounded),
-                label: Text(busy ? 'در حال ورود...' : 'ورود به اپلیکیشن'),
+                    : const Icon(Icons.login_rounded),
+                label: Text(busy ? 'در حال ورود...' : 'ورود'),
               ),
+            ),
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const RegisterPage()),
+              ),
+              icon: const Icon(Icons.person_add_alt_1_rounded),
+              label: const Text('ایجاد حساب جدید'),
             ),
             const SizedBox(height: 12),
             const Text(
-              'حساب آزمایشی: 09123456789 / 1234',
+              'برای نسخه واقعی، پس از ثبت اولیه توصیه می‌شود بیمار رمز عبور مستقل دریافت/تغییر دهد.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 11, color: AppColors.muted),
             ),
@@ -247,9 +297,157 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
+class RegisterPage extends StatefulWidget {
+  const RegisterPage({super.key});
+  @override
+  State<RegisterPage> createState() => _RegisterPageState();
+}
+
+class _RegisterPageState extends State<RegisterPage> {
+  final first = TextEditingController();
+  final last = TextEditingController();
+  final mobile = TextEditingController();
+  final nationalId = TextEditingController();
+  bool agree = false;
+
+  @override
+  void dispose() {
+    first.dispose();
+    last.dispose();
+    mobile.dispose();
+    nationalId.dispose();
+    super.dispose();
+  }
+
+  void register() {
+    final f = first.text.trim();
+    final l = last.text.trim();
+    final m = mobile.text.trim();
+    final n = nationalId.text.trim();
+
+    if (f.isEmpty || l.isEmpty || m.length < 10 || n.length != 10) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('نام، نام خانوادگی، موبایل و کد ملی را کامل کنید.')),
+      );
+      return;
+    }
+    if (!agree) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('لطفاً شرایط استفاده و ثبت اطلاعات را تایید کنید.')),
+      );
+      return;
+    }
+
+    currentPatient = PatientIdentity(
+      firstName: f,
+      lastName: l,
+      mobile: m,
+      nationalId: n,
+    );
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const ClinicLinkPage()),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'ایجاد حساب بیمار',
+          style: TextStyle(fontWeight: FontWeight.w900),
+        ),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(18, 8, 18, 28),
+        children: [
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  Text(
+                    'ثبت‌نام بدون OTP',
+                    style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900),
+                  ),
+                  SizedBox(height: 7),
+                  Text(
+                    'شماره موبایل شناسه ورود و کد ملی رمز اولیه حساب خواهد بود. کد ملی همچنین شناسه اصلی پرونده بیمار است.',
+                    style: TextStyle(color: AppColors.muted, height: 1.6),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          TextField(
+            controller: first,
+            decoration: const InputDecoration(
+              labelText: 'نام',
+              prefixIcon: Icon(Icons.person_outline_rounded),
+            ),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: last,
+            decoration: const InputDecoration(
+              labelText: 'نام خانوادگی',
+              prefixIcon: Icon(Icons.badge_outlined),
+            ),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: mobile,
+            keyboardType: TextInputType.phone,
+            decoration: const InputDecoration(
+              labelText: 'شماره موبایل',
+              prefixIcon: Icon(Icons.phone_outlined),
+            ),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: nationalId,
+            keyboardType: TextInputType.number,
+            maxLength: 10,
+            decoration: const InputDecoration(
+              labelText: 'کد ملی',
+              prefixIcon: Icon(Icons.fingerprint_rounded),
+              counterText: '',
+            ),
+          ),
+          const SizedBox(height: 8),
+          CheckboxListTile(
+            value: agree,
+            onChanged: (v) => setState(() => agree = v ?? false),
+            contentPadding: EdgeInsets.zero,
+            title: const Text(
+              'ثبت اطلاعات برای تشکیل پرونده و هماهنگی کلینیک را تایید می‌کنم.',
+              style: TextStyle(fontSize: 13),
+            ),
+            controlAffinity: ListTileControlAffinity.leading,
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 52,
+            child: FilledButton.icon(
+              onPressed: register,
+              icon: const Icon(Icons.check_circle_outline_rounded),
+              label: const Text('ایجاد حساب و ادامه'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class ClinicLinkPage extends StatefulWidget {
   const ClinicLinkPage({super.key});
-  @override State<ClinicLinkPage> createState() => _ClinicLinkPageState();
+  @override
+  State<ClinicLinkPage> createState() => _ClinicLinkPageState();
 }
 
 class _ClinicLinkPageState extends State<ClinicLinkPage> {
@@ -272,27 +470,56 @@ class _ClinicLinkPageState extends State<ClinicLinkPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('اتصال به کلینیک')),
+      appBar: AppBar(
+        title: const Text(
+          'اتصال به کلینیک',
+          style: TextStyle(fontWeight: FontWeight.w900),
+        ),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          const SizedBox(height: 20),
-          Center(
-            child: Container(
-              width: 96,
-              height: 96,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(.1),
-                borderRadius: BorderRadius.circular(30),
-              ),
-              child: const Icon(
-                Icons.qr_code_2_rounded,
-                size: 55,
-                color: AppColors.primary,
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Row(
+                children: [
+                  const CircleAvatar(
+                    radius: 25,
+                    backgroundColor: Color(0xFFE8F2F2),
+                    child: Icon(Icons.fingerprint_rounded, color: AppColors.primary),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'شناسه پرونده بیمار',
+                          style: TextStyle(color: AppColors.muted, fontSize: 12),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          currentPatient.nationalId,
+                          style: const TextStyle(
+                            fontSize: 19,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'این کد در پرونده کلینیک به‌عنوان شناسه اصلی بیمار استفاده می‌شود.',
+                          style: TextStyle(color: AppColors.muted, height: 1.4),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 18),
           const Text(
             'کلینیک دکتر صفاری را به پرونده خود متصل کنید',
             textAlign: TextAlign.center,
@@ -302,17 +529,17 @@ class _ClinicLinkPageState extends State<ClinicLinkPage> {
               color: AppColors.text,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           const Text(
-            'کد اتصال بیمار/کلینیک را از پذیرش دریافت کنید. با اتصال، مسیر اختصاصی شما فعال می‌شود.',
+            'کد اتصال بیمار/کلینیک را از پذیرش دریافت کنید. پس از اتصال، پزشک پرونده شما را براساس کد ملی پیدا خواهد کرد.',
             textAlign: TextAlign.center,
             style: TextStyle(color: AppColors.muted, height: 1.6),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
           TextField(
             controller: code,
             decoration: const InputDecoration(
-              labelText: 'کد اتصال',
+              labelText: 'کد اتصال کلینیک',
               prefixIcon: Icon(Icons.link_rounded),
             ),
           ),
@@ -324,7 +551,7 @@ class _ClinicLinkPageState extends State<ClinicLinkPage> {
               child: const Text('فعال‌سازی مسیر اختصاصی'),
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           OutlinedButton.icon(
             onPressed: connect,
             icon: const Icon(Icons.qr_code_scanner_rounded),
