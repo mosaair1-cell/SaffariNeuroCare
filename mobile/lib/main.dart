@@ -178,17 +178,25 @@ class _LoginPageState extends State<LoginPage> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(22, 30, 22, 24),
           children: [
-            Container(
-              width: 82,
-              height: 82,
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(26),
-              ),
-              child: const Icon(
-                Icons.psychology_alt_rounded,
-                size: 45,
-                color: Colors.white,
+            Center(
+              child: Image.network(
+                SiteContentService.logoUrl,
+                width: 210,
+                height: 112,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => Container(
+                  width: 82,
+                  height: 82,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(26),
+                  ),
+                  child: const Icon(
+                    Icons.psychology_alt_rounded,
+                    size: 45,
+                    color: Colors.white,
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 18),
