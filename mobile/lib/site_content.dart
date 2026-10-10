@@ -1,38 +1,70 @@
-import 'dart:convert';
-import 'dart:io';
-
 import 'package:flutter/foundation.dart';
 
 enum SiteDisease { migraine, ms, epilepsy, parkinson, cognition }
 
 extension SiteDiseaseX on SiteDisease {
-  String get searchTerm {
+  String get label {
     switch (this) {
-      case SiteDisease.migraine:
-        return 'میگرن سردرد';
-      case SiteDisease.ms:
-        return 'ام اس';
-      case SiteDisease.epilepsy:
-        return 'صرع تشنج';
-      case SiteDisease.parkinson:
-        return 'پارکینسون';
-      case SiteDisease.cognition:
-        return 'آلزایمر اختلالات شناختی';
+      case SiteDisease.migraine: return 'میگرن و سردرد';
+      case SiteDisease.ms: return 'ام‌اس';
+      case SiteDisease.epilepsy: return 'صرع و تشنج';
+      case SiteDisease.parkinson: return 'پارکینسون';
+      case SiteDisease.cognition: return 'حافظه و اختلالات شناختی';
     }
   }
 
-  String get label {
+  String get archiveUrl {
     switch (this) {
       case SiteDisease.migraine:
-        return 'میگرن';
+        return 'https://mhsaffari.ir/articles-migraine-headache.html';
       case SiteDisease.ms:
-        return 'ام‌اس';
+        return 'https://mhsaffari.ir/articles-ms.html';
       case SiteDisease.epilepsy:
-        return 'صرع';
       case SiteDisease.parkinson:
-        return 'پارکینسون';
       case SiteDisease.cognition:
-        return 'اختلالات شناختی';
+        return 'https://mhsaffari.ir/articles-neurology.html';
+    }
+  }
+
+  List<SiteArticle> get articles {
+    switch (this) {
+      case SiteDisease.migraine:
+        return const [
+          SiteArticle('میگرن: علائم، تشخیص و درمان', 'https://mhsaffari.ir/articles/migraine/migraine-symptoms-diagnosis-treatment.html'),
+          SiteArticle('تغذیه، رژیم و سبک زندگی در میگرن', 'https://mhsaffari.ir/articles/migraine/migraine-nutrition-diet-lifestyle.html'),
+          SiteArticle('درمان جامع میگرن', 'https://mhsaffari.ir/articles/migraine/migraine-treatment-comprehensive-saffari.html'),
+          SiteArticle('سردرد چیست؟ انواع و علت‌ها', 'https://mhsaffari.ir/articles/migraine/headache-what-is-types-causes.html'),
+          SiteArticle('بوتاکس در میگرن مزمن', 'https://mhsaffari.ir/articles/migraine/migraine-botox-chronic.html'),
+          SiteArticle('نورالژی عصب سه‌قلو', 'https://mhsaffari.ir/articles/migraine/trigeminal-neuralgia-symptoms-causes-diagnosis-treatment.html'),
+        ];
+      case SiteDisease.ms:
+        return const [
+          SiteArticle('بیماری ام‌اس چیست؟', 'https://mhsaffari.ir/articles/ms/multiple-sclerosis-ms.html'),
+          SiteArticle('درمان‌های جدید ام‌اس', 'https://mhsaffari.ir/articles/ms/ms-treatment-latest-guideline.html'),
+          SiteArticle('تغذیه، رژیم و استرس در ام‌اس', 'https://mhsaffari.ir/articles/ms/ms-nutrition-diet-stress.html'),
+          SiteArticle('خستگی در ام‌اس', 'https://mhsaffari.ir/articles/ms/ms-fatigue.html'),
+          SiteArticle('عود ام‌اس و شبه‌عود', 'https://mhsaffari.ir/articles/ms/ms-relapse-what-is-pseudo-relapse.html'),
+          SiteArticle('گزگز و بی‌حسی دست و پا', 'https://mhsaffari.ir/articles/ms/numbness-tingling-hands-feet.html'),
+        ];
+      case SiteDisease.epilepsy:
+        return const [
+          SiteArticle('تشنج و صرع: علائم، علت‌ها و موارد اورژانسی', 'https://mhsaffari.ir/articles/neurology/seizure-what-is-difference-epilepsy-symptoms-causes-diagnosis-emergency.html'),
+          SiteArticle('سرگیجه: علت‌ها و تشخیص', 'https://mhsaffari.ir/articles/neurology/vertigo-causes-symptoms-diagnosis-treatment.html'),
+          SiteArticle('سکته مغزی: علائم و پیشگیری', 'https://mhsaffari.ir/articles/neurology/stroke-cva-symptoms-types-causes-treatment-prevention.html'),
+        ];
+      case SiteDisease.parkinson:
+        return const [
+          SiteArticle('پارکینسون چیست؟ علائم، تشخیص و درمان', 'https://mhsaffari.ir/articles/neurology/parkinson.html'),
+          SiteArticle('لرزش دست: انواع و علت‌ها', 'https://mhsaffari.ir/articles/neurology/hand-tremor-tremor-causes-types-diagnosis-treatment.html'),
+          SiteArticle('فراموشی، آلزایمر و اختلالات شناختی', 'https://mhsaffari.ir/articles/neurology/forgetfulness-alzheimer-dementia-parkinson-transient-global-amnesia.html'),
+          SiteArticle('سندرم پای بی‌قرار', 'https://mhsaffari.ir/articles/neurology/restless-legs-syndrome.html'),
+        ];
+      case SiteDisease.cognition:
+        return const [
+          SiteArticle('فراموشی، آلزایمر و اختلالات شناختی', 'https://mhsaffari.ir/articles/neurology/forgetfulness-alzheimer-dementia-parkinson-transient-global-amnesia.html'),
+          SiteArticle('پارکینسون چیست؟', 'https://mhsaffari.ir/articles/neurology/parkinson.html'),
+          SiteArticle('لرزش دست: انواع و علت‌ها', 'https://mhsaffari.ir/articles/neurology/hand-tremor-tremor-causes-types-diagnosis-treatment.html'),
+        ];
     }
   }
 }
@@ -40,126 +72,27 @@ extension SiteDiseaseX on SiteDisease {
 class SiteArticle {
   final String title;
   final String url;
-  final String date;
-  final bool live;
-
-  const SiteArticle({
-    required this.title,
-    required this.url,
-    required this.date,
-    required this.live,
-  });
+  const SiteArticle(this.title, this.url);
 }
 
 class SiteContentService {
   SiteContentService._();
 
   static const String baseUrl = 'https://mhsaffari.ir/';
+  static const String logoUrl =
+      'https://mhsaffari.ir/images/logo-dr-mohammad-hosein-saffari-transparent.png';
   static const String appointmentUrl =
       'https://axon.me/hcps/130934-mohammad-hossein-safari-mohammadabadi/';
 
-  static final Map<SiteDisease, List<SiteArticle>> _cache = {};
-
-  static Uri searchUri(String query) {
-    return Uri.https('mhsaffari.ir', '/', <String, String>{'s': query});
-  }
-
-  static Uri _apiUri(String searchTerm) {
-    final params = <String, String>{
-      'per_page': '8',
-      'search': searchTerm,
-      '_fields': 'id,date,link,title',
-    };
-    return Uri.https('mhsaffari.ir', '/wp-json/wp/v2/posts', params);
-  }
-
   static Future<List<SiteArticle>> fetchArticles(SiteDisease disease) async {
-    final cached = _cache[disease];
-    if (cached != null) return cached;
-
-    try {
-      final client = HttpClient()
-        ..connectionTimeout = const Duration(seconds: 5);
-      final request = await client
-          .getUrl(_apiUri(disease.searchTerm))
-          .timeout(const Duration(seconds: 6));
-      request.headers.set(HttpHeaders.acceptHeader, 'application/json');
-      request.headers.set(
-        HttpHeaders.userAgentHeader,
-        'SaffariNeuroCare/1.0 (mobile app)',
-      );
-
-      final response =
-          await request.close().timeout(const Duration(seconds: 8));
-      final raw = await response.transform(utf8.decoder).join();
-      client.close(force: true);
-
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        final decoded = jsonDecode(raw);
-        if (decoded is List) {
-          final articles = decoded
-              .whereType<Map<String, dynamic>>()
-              .map((item) {
-                final title = item['title'];
-                final titleValue = title is Map ? title['rendered'] : null;
-                return SiteArticle(
-                  title: _cleanHtml(
-                    titleValue?.toString() ??
-                        'مقاله در وب‌سایت دکتر صفاری',
-                  ),
-                  url: item['link']?.toString() ??
-                      searchUri(disease.searchTerm).toString(),
-                  date: _formatDate(item['date']?.toString()),
-                  live: true,
-                );
-              })
-              .where((article) => article.url.isNotEmpty)
-              .toList();
-
-          if (articles.isNotEmpty) {
-            _cache[disease] = articles;
-            return articles;
-          }
-        }
-      }
-    } catch (e) {
-      debugPrint('Site article fetch failed: $e');
-    }
-
-    final fallback = <SiteArticle>[
-      SiteArticle(
-        title:
-            'مشاهده مطالب مرتبط با ${disease.label} در وب‌سایت دکتر صفاری',
-        url: searchUri(disease.searchTerm).toString(),
-        date: 'جستجوی زنده در سایت',
-        live: false,
-      ),
-    ];
-    _cache[disease] = fallback;
-    return fallback;
+    // The supplied archive is a static HTML site, not a WordPress posts API.
+    // These links are mapped from actual article paths in the supplied ZIP.
+    return disease.articles;
   }
 
-  static String _cleanHtml(String value) {
-    var text = value.replaceAll(RegExp(r'<[^>]*>'), ' ');
-    const entities = <String, String>{
-      '&amp;': '&',
-      '&quot;': '"',
-      '&#039;': "'",
-      '&#8217;': '’',
-      '&#8220;': '“',
-      '&#8221;': '”',
-      '&nbsp;': ' ',
-    };
-    entities.forEach((key, replacement) {
-      text = text.replaceAll(key, replacement);
-    });
-    return text.replaceAll(RegExp(r'\s+'), ' ').trim();
-  }
+  static Uri searchUri(SiteDisease disease) => Uri.parse(disease.archiveUrl);
 
-  static String _formatDate(String? value) {
-    if (value == null || value.length < 10) {
-      return 'در سایت دکتر صفاری';
-    }
-    return value.substring(0, 10).replaceAll('-', '/');
+  static void logLinkOpened(String url) {
+    debugPrint('Opening Saffari website article: $url');
   }
 }
