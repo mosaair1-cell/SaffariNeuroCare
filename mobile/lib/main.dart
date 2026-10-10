@@ -2141,9 +2141,7 @@ class _WebsiteArticlesPageState extends State<WebsiteArticlesPage> {
                           subtitle: Padding(
                             padding: const EdgeInsets.only(top: 5),
                             child: Text(
-                              article.live
-                                  ? 'مقاله منتشرشده در سایت • ' + article.date
-                                  : article.date,
+                              'مقاله از وب‌سایت رسمی دکتر صفاری',
                               style: const TextStyle(
                                 color: AppColors.muted,
                               ),
