@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'doctor_api.dart';
+
 void main() => runApp(const DoctorNeuroCareApp());
 
 class DC {
@@ -15,7 +17,7 @@ class DC {
   static const blue = Color(0xFF4C78B5);
 }
 
-enum DDisease { migraine, ms, epilepsy, parkinson, cognition }
+enum DDisease { migraine, ms, epilepsy, parkinson, cognition, unassigned }
 
 extension DDiseaseX on DDisease {
   String get title {
@@ -25,6 +27,7 @@ extension DDiseaseX on DDisease {
       case DDisease.epilepsy: return 'صرع';
       case DDisease.parkinson: return 'پارکینسون';
       case DDisease.cognition: return 'اختلالات شناختی';
+      case DDisease.unassigned: return 'تعیین‌نشده';
     }
   }
 
@@ -35,6 +38,7 @@ extension DDiseaseX on DDisease {
       case DDisease.epilepsy: return Icons.flash_on_rounded;
       case DDisease.parkinson: return Icons.accessibility_new_rounded;
       case DDisease.cognition: return Icons.psychology_alt_rounded;
+      case DDisease.unassigned: return Icons.person_outline_rounded;
     }
   }
 }
@@ -151,12 +155,25 @@ class _DoctorLoginPageState extends State<DoctorLoginPage> {
       return;
     }
     setState(() => busy = true);
-    await Future.delayed(const Duration(milliseconds: 350));
-    if (!mounted) return;
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const DoctorShell()),
-    );
+    try {
+      await DoctorApi.login(
+        clinicCode: code.text.trim(),
+        password: pass.text,
+      );
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const DoctorShell()),
+      );
+    } on DoctorApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message)),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
   }
 
   @override
@@ -291,6 +308,47 @@ class DoctorShell extends StatefulWidget {
 class _DoctorShellState extends State<DoctorShell> {
   int index = 0;
   final Set<String> reviewed = {};
+  bool syncing = true;
+
+  @override
+  void initState() {
+    super.initState();
+    syncPatients();
+  }
+
+  Future<void> syncPatients() async {
+    try {
+      final rows = await DoctorApi.fetchPatients();
+      final synced = rows.map((row) {
+        final code = row['diseaseCode']?.toString() ?? 'unassigned';
+        final disease = DDisease.values.where((d) => d.name == code).firstOrNull ?? DDisease.unassigned;
+        final pending = row['status']?.toString() != 'active';
+        final created = row['createdAt']?.toString() ?? '';
+        return DPatient(
+          '${row['firstName'] ?? ''} ${row['lastName'] ?? ''}'.trim(),
+          row['nationalId']?.toString() ?? '',
+          disease,
+          pending ? PatientFlag.needsReview : PatientFlag.stable,
+          pending ? 'ثبت‌نام جدید • نیازمند تأیید' : 'پرونده ثبت‌شده در سرور کلینیک',
+          created.length >= 10 ? created.substring(0, 10) : 'جدید',
+          pending ? 'در انتظار تأیید پزشک' : 'ثبت‌شده در سرور',
+        );
+      }).toList();
+      if (!mounted) return;
+      setState(() {
+        patients
+          ..clear()
+          ..addAll(synced);
+        syncing = false;
+      });
+    } on DoctorApiException catch (e) {
+      if (!mounted) return;
+      setState(() => syncing = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('همگام‌سازی بیماران انجام نشد: ${e.message}')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
