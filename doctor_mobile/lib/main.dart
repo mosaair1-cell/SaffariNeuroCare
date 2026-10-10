@@ -136,8 +136,8 @@ class DoctorLoginPage extends StatefulWidget {
 }
 
 class _DoctorLoginPageState extends State<DoctorLoginPage> {
-  final code = TextEditingController(text: 'SAFFARI');
-  final pass = TextEditingController(text: '1234');
+  final code = TextEditingController();
+  final pass = TextEditingController();
   bool busy = false;
 
   @override
@@ -289,7 +289,7 @@ class _DoctorLoginPageState extends State<DoctorLoginPage> {
             ),
             const SizedBox(height: 12),
             const Text(
-              'حساب آزمایشی: SAFFARI / 1234',
+              'ورود فقط با حساب فعال پزشک روی سرور کلینیک انجام می‌شود.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 11, color: DC.muted),
             ),
