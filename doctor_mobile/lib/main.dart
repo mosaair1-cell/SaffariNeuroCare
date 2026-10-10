@@ -166,17 +166,25 @@ class _DoctorLoginPageState extends State<DoctorLoginPage> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(22, 34, 22, 24),
           children: [
-            Container(
-              width: 82,
-              height: 82,
-              decoration: BoxDecoration(
-                color: DC.primary,
-                borderRadius: BorderRadius.circular(26),
-              ),
-              child: const Icon(
-                Icons.medical_services_rounded,
-                color: Colors.white,
-                size: 42,
+            Center(
+              child: Image.network(
+                'https://mhsaffari.ir/images/logo-dr-mohammad-hosein-saffari-transparent.png',
+                width: 210,
+                height: 112,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => Container(
+                  width: 82,
+                  height: 82,
+                  decoration: BoxDecoration(
+                    color: DC.primary,
+                    borderRadius: BorderRadius.circular(26),
+                  ),
+                  child: const Icon(
+                    Icons.medical_services_rounded,
+                    color: Colors.white,
+                    size: 42,
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 18),
