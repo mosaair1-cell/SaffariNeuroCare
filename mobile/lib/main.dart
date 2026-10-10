@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'site_content.dart';
+import 'saffari_api.dart';
 
 void main() => runApp(const SaffariNeuroCareApp());
 
@@ -154,21 +155,29 @@ class _LoginPageState extends State<LoginPage> {
     }
 
     setState(() => busy = true);
-    await Future.delayed(const Duration(milliseconds: 300));
-    if (!mounted) return;
-
-    currentPatient.mobile = m;
-    currentPatient = PatientIdentity(
-      firstName: currentPatient.firstName,
-      lastName: currentPatient.lastName,
-      mobile: m,
-      nationalId: n,
-    );
-
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const ClinicLinkPage()),
-    );
+    try {
+      final result = await SaffariApi.loginPatient(mobile: m, nationalId: n);
+      final patient = result['patient'] as Map<String, dynamic>;
+      currentPatient = PatientIdentity(
+        firstName: patient['firstName']?.toString() ?? '',
+        lastName: patient['lastName']?.toString() ?? '',
+        mobile: patient['mobile']?.toString() ?? m,
+        nationalId: patient['nationalId']?.toString() ?? n,
+      );
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const ClinicLinkPage()),
+      );
+    } on SaffariApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message)),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
   }
 
   @override
@@ -320,6 +329,8 @@ class _RegisterPageState extends State<RegisterPage> {
   final mobile = TextEditingController();
   final nationalId = TextEditingController();
   bool agree = false;
+  bool busy = false;
+  Disease selectedDisease = Disease.migraine;
 
   @override
   void dispose() {
@@ -330,7 +341,8 @@ class _RegisterPageState extends State<RegisterPage> {
     super.dispose();
   }
 
-  void register() {
+  Future<void> register() async {
+    if (busy) return;
     final f = first.text.trim();
     final l = last.text.trim();
     final m = mobile.text.trim();
@@ -349,17 +361,39 @@ class _RegisterPageState extends State<RegisterPage> {
       return;
     }
 
-    currentPatient = PatientIdentity(
-      firstName: f,
-      lastName: l,
-      mobile: m,
-      nationalId: n,
-    );
-
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const ClinicLinkPage()),
-    );
+    setState(() => busy = true);
+    try {
+      await SaffariApi.registerPatient(
+        firstName: f,
+        lastName: l,
+        mobile: m,
+        nationalId: n,
+        diseaseCode: selectedDisease.name,
+        clinicCode: 'SAFFARI',
+      );
+      currentPatient = PatientIdentity(
+        firstName: f,
+        lastName: l,
+        mobile: m,
+        nationalId: n,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('اطلاعات در سرور کلینیک ثبت شد و برای تأیید پزشک ارسال شد.')),
+      );
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const ClinicLinkPage()),
+      );
+    } on SaffariApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message)),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
   }
 
   @override
@@ -429,6 +463,21 @@ class _RegisterPageState extends State<RegisterPage> {
               counterText: '',
             ),
           ),
+          const SizedBox(height: 10),
+          DropdownButtonFormField<Disease>(
+            value: selectedDisease,
+            decoration: const InputDecoration(
+              labelText: 'بیماری اصلی برای پیگیری',
+              prefixIcon: Icon(Icons.medical_information_outlined),
+            ),
+            items: Disease.values.map((d) => DropdownMenuItem(
+              value: d,
+              child: Text(d.title),
+            )).toList(),
+            onChanged: busy ? null : (value) {
+              if (value != null) setState(() => selectedDisease = value);
+            },
+          ),
           const SizedBox(height: 8),
           CheckboxListTile(
             value: agree,
@@ -444,9 +493,11 @@ class _RegisterPageState extends State<RegisterPage> {
           SizedBox(
             height: 52,
             child: FilledButton.icon(
-              onPressed: register,
-              icon: const Icon(Icons.check_circle_outline_rounded),
-              label: const Text('ایجاد حساب و ادامه'),
+              onPressed: busy ? null : register,
+              icon: busy
+                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.check_circle_outline_rounded),
+              label: Text(busy ? 'در حال ثبت در سرور...' : 'ایجاد حساب و ادامه'),
             ),
           ),
         ],
