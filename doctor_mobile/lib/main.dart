@@ -321,7 +321,7 @@ class _DoctorShellState extends State<DoctorShell> {
       final rows = await DoctorApi.fetchPatients();
       final synced = rows.map((row) {
         final code = row['diseaseCode']?.toString() ?? 'unassigned';
-        final disease = DDisease.values.where((d) => d.name == code).firstOrNull ?? DDisease.unassigned;
+        final disease = DDisease.values.firstWhere((d) => d.name == code, orElse: () => DDisease.unassigned);
         final pending = row['status']?.toString() != 'active';
         final created = row['createdAt']?.toString() ?? '';
         return DPatient(
