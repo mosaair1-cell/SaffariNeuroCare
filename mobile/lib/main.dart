@@ -131,8 +131,8 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final mobile = TextEditingController(text: '09123456789');
-  final nationalId = TextEditingController(text: '0012345678');
+  final mobile = TextEditingController();
+  final nationalId = TextEditingController();
   bool busy = false;
 
   @override
