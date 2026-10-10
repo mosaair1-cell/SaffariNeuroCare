@@ -354,7 +354,7 @@ class _DoctorShellState extends State<DoctorShell> {
   Widget build(BuildContext context) {
     final pages = [
       DoctorDashboard(onOpenPatients: () => setState(() => index = 1)),
-      DoctorPatients(reviewed: reviewed),
+      DoctorPatients(reviewed: reviewed, onRefresh: syncPatients),
       DoctorReports(),
       DoctorAccount(
         onLogout: () => Navigator.pushReplacement(
@@ -544,7 +544,8 @@ class DoctorDashboard extends StatelessWidget {
 
 class DoctorPatients extends StatefulWidget {
   final Set<String> reviewed;
-  const DoctorPatients({super.key, required this.reviewed});
+  final Future<void> Function() onRefresh;
+  const DoctorPatients({super.key, required this.reviewed, required this.onRefresh});
   @override State<DoctorPatients> createState() => _DoctorPatientsState();
 }
 
@@ -564,6 +565,7 @@ class _DoctorPatientsState extends State<DoctorPatients> {
     return patients.where((p) {
       final matchSearch = q.isEmpty ||
           p.name.toLowerCase().contains(q) ||
+          p.nationalId.contains(q) ||
           p.disease.title.toLowerCase().contains(q);
       final matchDisease = filter == null || p.disease == filter;
       final matchFlag = flag == null || p.flag == flag;
@@ -580,12 +582,20 @@ class _DoctorPatientsState extends State<DoctorPatients> {
           padding: const EdgeInsets.fromLTRB(18, 20, 18, 10),
           child: Column(
             children: [
-              const Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  'بیماران',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: DC.text),
-                ),
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'بیماران',
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: DC.text),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'همگام‌سازی با سرور کلینیک',
+                    onPressed: () => onRefresh(),
+                    icon: const Icon(Icons.sync_rounded, color: DC.primary),
+                  ),
+                ],
               ),
               const SizedBox(height: 4),
               const Align(
