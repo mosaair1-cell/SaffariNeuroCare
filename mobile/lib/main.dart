@@ -2109,7 +2109,7 @@ class _WebsiteArticlesPageState extends State<WebsiteArticlesPage> {
                   disease: disease,
                   onOpenSearch: () => openExternalUrl(
                     context,
-                    SiteContentService.searchUri(siteDisease.searchTerm)
+                    SiteContentService.searchUri(siteDisease)
                         .toString(),
                   ),
                 );
@@ -2161,9 +2161,7 @@ class _WebsiteArticlesPageState extends State<WebsiteArticlesPage> {
                   OutlinedButton.icon(
                     onPressed: () => openExternalUrl(
                       context,
-                      SiteContentService.searchUri(
-                        siteDisease.searchTerm,
-                      ).toString(),
+                      SiteContentService.searchUri(siteDisease).toString(),
                     ),
                     icon: const Icon(Icons.search_rounded),
                     label: const Text('مشاهده همه مطالب مرتبط در سایت'),
