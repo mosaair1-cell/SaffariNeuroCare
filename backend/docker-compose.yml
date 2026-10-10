@@ -1,0 +1,35 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: neurocare
+      POSTGRES_USER: neurocare
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - neurocare-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U neurocare -d neurocare"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [private]
+  api:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://neurocare:${POSTGRES_PASSWORD}@db:5432/neurocare
+      PGSSL: "false"
+      PORT: "8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8080:8080"
+    networks: [private]
+networks:
+  private:
+    internal: true
+volumes:
+  neurocare-db:
