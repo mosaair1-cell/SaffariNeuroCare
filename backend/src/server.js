@@ -43,7 +43,7 @@ const loginLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: 'too_many_attempts' },
 });
-const normalize = (v) => String(v || '').replace(/\s/g, '');
+const normalize = (v) => String(v || '').replace(/[۰-۹]/g, c => String(c.charCodeAt(0) - 0x06f0)).replace(/[٠-٩]/g, c => String(c.charCodeAt(0) - 0x0660)).replace(/\s/g, '');
 const text = (v, max = 4000) => String(v == null ? '' : v).trim().slice(0, max);
 const isMobile = (v) => /^09\d{9}$/.test(v);
 const isNationalId = (v) => /^\d{10}$/.test(v);
