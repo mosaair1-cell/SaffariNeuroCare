@@ -81,15 +81,7 @@ class DPatient {
   }
 }
 
-final patients = <DPatient>[
-  DPatient('مریم احمدی', '0012345678', DDisease.migraine, PatientFlag.needsReview, '۷ روز سردرد / ماه', '۱۴۰۵/۰۷/۰۷', 'تکمیل شده'),
-  DPatient('علی رضایی', '0012345686', DDisease.ms, PatientFlag.change, 'MRI جدید', '۱۴۰۵/۰۷/۰۶', 'تغییر علامت گزارش شده'),
-  DPatient('رضا کریمی', '0012345694', DDisease.parkinson, PatientFlag.stable, 'بدون تغییر عمده', '۱۴۰۵/۰۷/۰۵', 'تکمیل شده'),
-  DPatient('سارا محمدی', '0012345708', DDisease.epilepsy, PatientFlag.stable, '۲ حمله / ماه', '۱۴۰۵/۰۷/۰۳', 'تکمیل شده'),
-  DPatient('حسین کاظمی', '0012345716', DDisease.cognition, PatientFlag.needsReview, 'حافظه + ADL', '۱۴۰۵/۰۷/۰۲', 'ناقص'),
-  DPatient('نرگس مرادی', '0012345724', DDisease.migraine, PatientFlag.change, 'افزایش مصرف داروی حمله', '۱۴۰۵/۰۷/۰۱', 'تکمیل شده'),
-  DPatient('مهدی صادقی', '0012345732', DDisease.ms, PatientFlag.stable, 'علائم پایدار', '۱۴۰۵/۰۶/۲۸', 'تکمیل شده'),
-];
+final patients = <DPatient>[];
 
 class DoctorNeuroCareApp extends StatelessWidget {
   const DoctorNeuroCareApp({super.key});
@@ -451,7 +443,7 @@ class DoctorDashboard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: const [
                     Text(
-                      'امروز: ۱۲ ویزیت',
+                      'وضعیت بیماران',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 19,
@@ -472,9 +464,9 @@ class DoctorDashboard extends StatelessWidget {
         const SizedBox(height: 14),
         Row(
           children: [
-            DoctorStat(value: '۱۲', label: 'ویزیت امروز', icon: Icons.calendar_today_rounded),
+            DoctorStat(value: '${patients.length}', label: 'بیمار ثبت‌شده', icon: Icons.people_alt_rounded),
             DoctorStat(value: '$urgent', label: 'نیازمند توجه', icon: Icons.flag_rounded),
-            const DoctorStat(value: '۵', label: 'مدرک جدید', icon: Icons.upload_file_rounded),
+            const DoctorStat(value: '—', label: 'مدرک جدید', icon: Icons.upload_file_rounded),
           ],
         ),
         const SizedBox(height: 18),
@@ -524,14 +516,14 @@ class DoctorDashboard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 child: OutlinedButton.icon(
-                  onPressed: () => Navigator.push(
+                  onPressed: patients.isEmpty ? null : () => Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) => PatientDetail(patient: patients[0]),
                     ),
                   ),
                   icon: const Icon(Icons.play_arrow_rounded),
-                  label: const Text('باز کردن نمونه خلاصه'),
+                  label: const Text('مرور خلاصه بالینی'),
                 ),
               ),
             ],
@@ -592,7 +584,7 @@ class _DoctorPatientsState extends State<DoctorPatients> {
                   ),
                   IconButton(
                     tooltip: 'همگام‌سازی با سرور کلینیک',
-                    onPressed: () => onRefresh(),
+                    onPressed: widget.onRefresh,
                     icon: const Icon(Icons.sync_rounded, color: DC.primary),
                   ),
                 ],
@@ -1513,6 +1505,8 @@ String aiSummary(DPatient p) {
       return 'پیش‌نویس: وضعیت حرکتی پایدار گزارش شده؛ خواب و تعادل برای پیگیری بعدی مهم هستند.';
     case DDisease.cognition:
       return 'پیش‌نویس: حافظه و ADL نیازمند ثبت منظم هستند؛ همراه بیمار می‌تواند در تکمیل گزارش کمک کند.';
+    case DDisease.unassigned:
+      return 'برای این بیمار هنوز حوزه بیماری ثبت نشده است؛ اطلاعات پرونده را بررسی کنید.';
   }
 }
 
@@ -1553,6 +1547,11 @@ List<(String, String, IconData)> detailMetrics(DDisease d) {
         ('خواب', 'متوسط', Icons.bedtime_rounded),
         ('ADL', 'با کمک', Icons.home_rounded),
       ];
+    case DDisease.unassigned:
+      return [
+        ('بیماری', 'تعیین‌نشده', Icons.info_outline_rounded),
+        ('پیگیری', 'نیازمند تکمیل', Icons.fact_check_rounded),
+      ];
   }
 }
 
@@ -1563,6 +1562,7 @@ List<double> trendValues(DDisease d) {
     case DDisease.epilepsy: return [4, 3, 4, 2, 3, 2, 2];
     case DDisease.parkinson: return [5, 5, 4, 5, 4, 4, 4];
     case DDisease.cognition: return [3, 4, 4, 5, 5, 5, 6];
+    case DDisease.unassigned: return [0, 0, 0, 0, 0, 0, 0];
   }
 }
 
@@ -1573,6 +1573,7 @@ String trendDescription(DDisease d) {
     case DDisease.epilepsy: return 'تعداد رخدادهای اخیر کم اما قابل توجه است؛ جزئیات هر حمله در پرونده ثبت می‌شود.';
     case DDisease.parkinson: return 'روند علائم حرکتی تقریباً ثابت است؛ ثبت خواب و تعادل می‌تواند حساسیت پیگیری را بیشتر کند.';
     case DDisease.cognition: return 'روند ثبت‌شده نیازمند داده‌های بیشتر برای مقایسه معنادار است.';
+    case DDisease.unassigned: return 'برای تحلیل روند، ابتدا حوزه بیماری و داده‌های پایه باید ثبت شوند.';
   }
 }
 
@@ -1583,6 +1584,7 @@ String treatmentGoal(DDisease d) {
     case DDisease.epilepsy: return 'کاهش خطر حملات و ثبت دقیق الگو و محرک‌های احتمالی.';
     case DDisease.parkinson: return 'حفظ تحرک، تعادل و کیفیت زندگی.';
     case DDisease.cognition: return 'پایش حافظه، خواب، خلق و فعالیت‌های روزمره.';
+    case DDisease.unassigned: return 'تکمیل ارزیابی اولیه و تعیین برنامه پیگیری.';
   }
 }
 
@@ -1613,5 +1615,7 @@ List<(String, String)> treatmentFor(DDisease d) {
         ('داروی شناختی', 'طبق نسخه و زمان‌بندی'),
         ('داروی همراه', 'طبق دستور پزشک'),
       ];
+    case DDisease.unassigned:
+      return [];
   }
 }
