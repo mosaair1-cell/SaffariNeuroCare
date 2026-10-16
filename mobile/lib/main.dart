@@ -118,10 +118,10 @@ class PatientIdentity {
 }
 
 PatientIdentity currentPatient = PatientIdentity(
-  firstName: 'محمدحسین',
-  lastName: 'رضایی',
-  mobile: '09123456789',
-  nationalId: '0012345678',
+  firstName: '',
+  lastName: '',
+  mobile: '',
+  nationalId: '',
 );
 
 class LoginPage extends StatefulWidget {
