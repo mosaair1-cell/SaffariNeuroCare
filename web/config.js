@@ -1,5 +1,6 @@
-/* قبل از انتشار، API_BASE_URL را با آدرس واقعی API دارای HTTPS جایگزین کنید. */
+/* نشانی واقعی Supabase پس از ایجاد پروژه در این مقدار قرار می‌گیرد. */
 window.NEUROCARE_CONFIG = {
-  API_BASE_URL: "https://api.mhsaffari.ir/v1",
+  API_BASE_URL: "https://YOUR-PROJECT-REF.supabase.co/functions/v1/neurocare-api/v1",
+  APP_ROLE: "patient",
   CLINIC_CODE: "SAFFARI"
 };

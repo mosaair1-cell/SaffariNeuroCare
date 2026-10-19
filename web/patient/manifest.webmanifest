@@ -1,0 +1,20 @@
+{
+  "name": "Saffari NeuroCare Patient",
+  "short_name": "NeuroCare بیمار",
+  "description": "وب‌اپ اختصاصی بیمار",
+  "lang": "fa",
+  "dir": "rtl",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f8f8",
+  "theme_color": "#0d6870",
+  "icons": [
+    {
+      "src": "https://mhsaffari.ir/images/logo-dr-mohammad-hosein-saffari-transparent.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
