@@ -1,0 +1,4 @@
+project_id = "YOUR-PROJECT-REF"
+
+[functions.neurocare-api]
+verify_jwt = false
