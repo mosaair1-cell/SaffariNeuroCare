@@ -4,8 +4,9 @@
   const cfg = window.NEUROCARE_CONFIG || {};
   const API_BASE = String(cfg.API_BASE_URL || '').replace(/\/+$/, '');
   const CLINIC_CODE = String(cfg.CLINIC_CODE || 'SAFFARI');
+  const APP_ROLE = cfg.APP_ROLE === 'doctor' ? 'doctor' : 'patient';
   let token = sessionStorage.getItem('snc_token') || '';
-  let role = sessionStorage.getItem('snc_role') || '';
+  let role = APP_ROLE;
   let currentPatient = null;
 
   const diseases = [
@@ -32,7 +33,12 @@
     registration_rejected:'ثبت‌نام شما تأیید نشده است؛ با مطب تماس بگیرید.',
     too_many_attempts:'تعداد تلاش‌ها زیاد است؛ کمی بعد دوباره امتحان کنید.',
     appointment_date_in_past:'تاریخ انتخابی در گذشته است.',
-    origin_not_allowed:'این نشانی اجازه اتصال به API را ندارد؛ تنظیم CORS باید بررسی شود.'
+    origin_not_allowed:'این نشانی اجازه اتصال به API را ندارد؛ تنظیم CORS باید بررسی شود.',
+    password_change_required:'برای ادامه استفاده باید رمز عبور مستقل و امن تعیین کنید.',
+    password_min_length_12:'رمز جدید باید حداقل ۱۲ نویسه داشته باشد.',
+    password_must_not_be_national_id:'رمز عبور نباید برابر کد ملی باشد.',
+    current_password_invalid:'رمز عبور فعلی صحیح نیست.',
+    rate_limit_unavailable:'سامانه کنترل تلاش‌های ورود موقتاً در دسترس نیست.'
   };
   const h = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const diseaseTitle = (code) => (diseases.find(d => d[0] === code) || ['','تعیین‌نشده'])[1];
@@ -80,11 +86,12 @@
     }
     target.innerHTML = message ? messageBox(message,type) : '';
   }
-  function logout() {
-    token = ''; role = ''; currentPatient = null;
+  async function logout() {
+    try { if (token) await api('/logout','POST',{}); } catch (_) {}
+    token = ''; role = APP_ROLE; currentPatient = null;
     sessionStorage.removeItem('snc_token');
     sessionStorage.removeItem('snc_role');
-    showLogin('patient','login');
+    showLogin(APP_ROLE,'login');
   }
   function headerActions() {
     return '<div class="head-actions"><button class="ghost-button" id="refreshBtn" type="button">به‌روزرسانی</button><button class="secondary" id="logoutBtn" type="button">خروج امن</button></div>';
@@ -95,24 +102,21 @@
     const refreshBtn = document.getElementById('refreshBtn');
     if (refreshBtn) refreshBtn.addEventListener('click', () => loadDashboard());
   }
-  function showLogin(initialRole = 'patient', initialMode = 'login') {
-    role = initialRole; token = ''; currentPatient = null;
+  function showLogin(initialRole = APP_ROLE, initialMode = 'login') {
+    role = APP_ROLE; token = ''; currentPatient = null;
     const mode = initialMode;
     root.innerHTML = `
       <div class="auth-wrap">
         <section class="auth-card">
-          <div class="mode-tabs" aria-label="نوع ورود">
-            <button type="button" data-role="patient" class="${role === 'patient' ? 'active' : ''}">ورود بیمار</button>
-            <button type="button" data-role="doctor" class="${role === 'doctor' ? 'active' : ''}">پنل پزشک</button>
-          </div>
+          <div class="mode-tabs" aria-label="سامانه جاری"><span style="display:block;width:100%;text-align:center;padding:10px 8px;font-weight:800;color:var(--teal-dark)">${APP_ROLE === 'doctor' ? 'دسترسی اختصاصی پزشک' : 'دسترسی اختصاصی بیمار'}</span></div>
           <div id="loginFormArea"></div>
           <div id="globalMessage"></div>
         </section>
         <aside class="auth-aside">
           <div>
-            <span class="aside-kicker">حساب اختصاصی بیمار و پزشک</span>
-            <h2>پیگیری منظم‌تر، ارتباط روشن‌تر.</h2>
-            <p>در این سامانه، بیمار می‌تواند درخواست نوبت و گزارش علائم خود را ثبت کند و پزشک اطلاعات ثبت‌شده را بررسی کند.</p>
+            <span class="aside-kicker">${APP_ROLE === 'doctor' ? 'دسترسی حرفه‌ای پزشک' : 'حساب اختصاصی بیمار'}</span>
+            <h2>${APP_ROLE === 'doctor' ? 'مدیریت متمرکز مراقبت بیماران.' : 'پیگیری منظم‌تر، همراه شما.'}</h2>
+            <p>${APP_ROLE === 'doctor' ? 'مشاهده و تأیید بیماران، بررسی گزارش‌ها، مدیریت نوبت‌ها و ثبت برنامه پیگیری از پنل پزشک.' : 'درخواست نوبت، ثبت گزارش علائم و مشاهده برنامه پیگیری که پزشک برای شما ثبت کرده است.'}</p>
           </div>
           <div class="aside-points">
             <div class="aside-point"><span>✓</span><div><b>پرونده مختص هر بیمار</b><small>اطلاعات از سرور دریافت می‌شود؛ نمونه بیمار ساختگی نمایش داده نمی‌شود.</small></div></div>
@@ -121,13 +125,12 @@
           </div>
         </aside>
       </div>`;
-    root.querySelectorAll('[data-role]').forEach(btn => btn.addEventListener('click', () => showLogin(btn.dataset.role,'login')));
     renderLoginForm(mode);
   }
   function renderLoginForm(mode) {
     const area = document.getElementById('loginFormArea');
     if (!area) return;
-    const isDoctor = role === 'doctor';
+    const isDoctor = APP_ROLE === 'doctor';
     const isRegister = !isDoctor && mode === 'register';
     area.innerHTML = `
       <h1>${isDoctor ? 'ورود به پنل پزشک' : (isRegister ? 'ساخت حساب بیمار' : 'خوش آمدید')}</h1>
@@ -144,8 +147,8 @@
               <div class="field full"><label for="diseaseCode">حوزه پیگیری</label><select id="diseaseCode" name="diseaseCode">${diseases.map(d => '<option value="' + h(d[0]) + '">' + h(d[1]) + '</option>').join('')}</select></div>
               <div class="field full"><label for="clinicCode">کد کلینیک</label><input id="clinicCode" name="clinicCode" value="${h(CLINIC_CODE)}" required></div>
             ` : ''}
-            <div class="field full"><label for="mobile">شماره موبایل</label><input id="mobile" name="mobile" inputmode="numeric" autocomplete="tel" placeholder="09123456789" pattern="09[0-9]{9}" required maxlength="11"></div>
-            <div class="field full"><label for="nationalId">کد ملی</label><input id="nationalId" name="nationalId" inputmode="numeric" autocomplete="off" placeholder="۱۰ رقم" pattern="[0-9]{10}" required maxlength="10"></div>
+            <div class="field full"><label for="mobile">شماره موبایل</label><input id="mobile" name="mobile" inputmode="numeric" autocomplete="tel" placeholder="09123456789" pattern="09[0-9]{10}" required maxlength="11"></div>
+            ${isRegister ? '<div class="field full"><label for="nationalId">کد ملی (رمز اولیه)</label><input id="nationalId" name="nationalId" inputmode="numeric" autocomplete="off" placeholder="۱۰ رقم" pattern="[0-9]{10}" required maxlength="10"></div>' : '<div class="field full"><label for="patientPassword">رمز عبور</label><input id="patientPassword" name="password" type="password" autocomplete="current-password" required minlength="10" placeholder="رمز عبور مستقل یا کد ملی اولیه"></div>'}
           `}
         </div>
         ${!isDoctor ? '<p class="hint">نسخه فعلی برای سازگاری با اپ آزمایشی از کد ملی به‌عنوان اعتبار اولیه ورود استفاده می‌کند. برای استفاده با اطلاعات واقعی بیمار، احراز هویت مستقل و امن باید قبل از انتشار نهایی فعال شود.</p>' : ''}
@@ -173,10 +176,10 @@
             diseaseCode:fd.get('diseaseCode'),clinicCode:fd.get('clinicCode')
           });
         } else {
-          data = await api('/patients/login','POST',{mobile:fd.get('mobile'),nationalId:fd.get('nationalId')});
+          data = await api('/patients/login','POST',{mobile:fd.get('mobile'),password:fd.get('password')});
         }
         token = String(data.token || '');
-        role = isDoctor ? 'doctor' : 'patient';
+        role = APP_ROLE;
         if (!token) throw new Error('سرور توکن ورود را برنگرداند.');
         sessionStorage.setItem('snc_token',token);
         sessionStorage.setItem('snc_role',role);
@@ -196,8 +199,8 @@
     if (registerBtn) registerBtn.addEventListener('click',() => renderLoginForm('register'));
   }
   async function loadDashboard() {
-    if (!token || !role) return showLogin('patient','login');
-    if (role === 'doctor') return loadDoctorDashboard();
+    if (!token) return showLogin(APP_ROLE,'login');
+    if (APP_ROLE === 'doctor') return loadDoctorDashboard();
     return loadPatientDashboard();
   }
   function metric(label,value,sub='') {
@@ -215,11 +218,62 @@
   function simpleCard(title, textValue, dateValue='') {
     return '<div class="care-card"><strong>' + h(title) + '</strong>' + (dateValue ? '<div class="subline">' + h(fmtDate(dateValue)) + '</div>' : '') + '<p style="white-space:pre-wrap;line-height:1.9;margin:9px 0 0">' + h(textValue) + '</p></div>';
   }
+  function renderPasswordChange() {
+    root.innerHTML = `
+      <div class="auth-wrap">
+        <section class="auth-card">
+          <h1>تعیین رمز عبور امن</h1>
+          <p class="lead">برای حفاظت از اطلاعات پزشکی، رمز اولیه (کد ملی) را با رمز اختصاصی حداقل ۱۲ نویسه‌ای جایگزین کنید. تا انجام این مرحله، بخش‌های دیگر حساب قفل می‌مانند.</p>
+          <form id="passwordChangeForm">
+            <div class="form-grid">
+              <div class="field full"><label for="currentPassword">رمز فعلی (کد ملی اولیه)</label><input id="currentPassword" name="currentPassword" type="password" autocomplete="current-password" required></div>
+              <div class="field full"><label for="newPassword">رمز جدید</label><input id="newPassword" name="newPassword" type="password" autocomplete="new-password" minlength="12" required></div>
+              <div class="field full"><label for="confirmPassword">تکرار رمز جدید</label><input id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password" minlength="12" required></div>
+            </div>
+            <p class="hint">از رمز عبور منحصربه‌فرد استفاده کنید و آن را برای کسی ارسال نکنید. این رمز در مرورگر ذخیره نمی‌شود.</p>
+            <button class="primary full-button" type="submit">ذخیره رمز امن</button><div class="form-message"></div>
+          </form>
+          <div class="auth-footer"><button id="logoutBtn" type="button" class="link-button">خروج از حساب</button><span>پس از تغییر رمز، سایر نشست‌ها لغو می‌شوند.</span></div>
+        </section>
+        <aside class="auth-aside">
+          <span class="aside-kicker">حفاظت از داده‌های پزشکی</span>
+          <h2>امنیت حساب شما مهم است.</h2>
+          <p>رمز عبور را مستقل از کد ملی انتخاب کنید؛ از رمزهای کوتاه یا قابل حدس استفاده نکنید.</p>
+        </aside>
+      </div>`;
+    document.getElementById('logoutBtn')?.addEventListener('click', logout);
+    const form = document.getElementById('passwordChangeForm');
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const f = new FormData(form);
+      const currentPassword = String(f.get('currentPassword') || '');
+      const newPassword = String(f.get('newPassword') || '');
+      const confirmPassword = String(f.get('confirmPassword') || '');
+      if (newPassword.length < 12) return setMessage(form,'رمز جدید باید حداقل ۱۲ نویسه داشته باشد.','error');
+      if (newPassword !== confirmPassword) return setMessage(form,'تکرار رمز با رمز جدید یکسان نیست.','error');
+      if (newPassword === currentPassword) return setMessage(form,'رمز جدید باید با رمز فعلی تفاوت داشته باشد.','error');
+      const submit = form.querySelector('button[type="submit"]');
+      submit.disabled = true;
+      try {
+        const result = await api('/patients/change-password','POST',{currentPassword,newPassword});
+        token = String(result.token || '');
+        if (!token) throw new Error('سرور نشست جدید برنگرداند.');
+        sessionStorage.setItem('snc_token',token);
+        sessionStorage.setItem('snc_role',APP_ROLE);
+        await loadPatientDashboard();
+      } catch (error) {
+        setMessage(form,errorMessage(error),'error');
+        submit.disabled = false;
+      }
+    });
+  }
+
   async function loadPatientDashboard() {
     root.innerHTML = '<section class="loading-card"><div class="spinner"></div><p>در حال دریافت اطلاعات حساب…</p></section>';
     try {
       const profile = (await api('/patients/me')).patient;
       currentPatient = profile;
+      if (profile.requiresPasswordChange) { renderPasswordChange(); return; }
       const active = profile.status === 'active';
       let appointments = [], reports = [], notes = [], plans = [], medications = [];
       if (active) {
