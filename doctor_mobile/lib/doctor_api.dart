@@ -9,7 +9,11 @@ class DoctorApiException implements Exception {
 class DoctorApi {
   static const String baseUrl = String.fromEnvironment(
     'SAFFARI_API_BASE_URL',
-    defaultValue: 'https://api.mhsaffari.ir/v1',
+    defaultValue: 'https://YOUR-PROJECT-REF.supabase.co/functions/v1/neurocare-api/v1',
+  );
+  static const String publishableKey = String.fromEnvironment(
+    'SUPABASE_PUBLISHABLE_KEY',
+    defaultValue: 'YOUR-PUBLISHABLE-KEY',
   );
   static String? token;
 
@@ -25,6 +29,9 @@ class DoctorApi {
       final request = await client.openUrl(method, uri).timeout(const Duration(seconds: 10));
       request.headers.set(HttpHeaders.acceptHeader, 'application/json');
       request.headers.set(HttpHeaders.contentTypeHeader, 'application/json');
+      if (publishableKey.isNotEmpty && publishableKey != 'YOUR-PUBLISHABLE-KEY') {
+        request.headers.set('apikey', publishableKey);
+      }
       if (authenticated && token != null) {
         request.headers.set(HttpHeaders.authorizationHeader, 'Bearer $token');
       }
@@ -67,6 +74,12 @@ class DoctorApi {
   }
 
   static Future<void> logout() async {
-    token = null;
+    try {
+      if (token != null && token!.isNotEmpty) {
+        await _request('/logout', method: 'POST', body: const {}, authenticated: true);
+      }
+    } finally {
+      token = null;
+    }
   }
 }
