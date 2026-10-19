@@ -2,12 +2,14 @@ import { createClient } from "npm:@supabase/supabase-js@2.58.0";
 import bcrypt from "npm:bcryptjs@2.4.3";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
-  throw new Error("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required in the Edge Function environment.");
+const SECRET_KEYS_TEXT = Deno.env.get("SUPABASE_SECRET_KEYS");
+const SECRET_KEYS = SECRET_KEYS_TEXT ? JSON.parse(SECRET_KEYS_TEXT) : {};
+const SUPABASE_SECRET_KEY = SECRET_KEYS.default || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) {
+  throw new Error("SUPABASE_URL and a server-side Supabase secret key are required.");
 }
 
-const db = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+const db = createClient(SUPABASE_URL, SUPABASE_SECRET_KEY, {
   auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
 });
 const ALLOWED_ORIGINS = new Set([
