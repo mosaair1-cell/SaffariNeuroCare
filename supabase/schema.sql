@@ -12,6 +12,7 @@ create table if not exists public.patients (
   mobile varchar(11) not null unique,
   national_id varchar(10) not null unique,
   password_hash text not null,
+  password_changed_at timestamptz,
   disease_code varchar(30) not null default 'unassigned'
     check (disease_code in ('migraine','ms','epilepsy','parkinson','cognition','unassigned')),
   status varchar(30) not null default 'pending_review'
