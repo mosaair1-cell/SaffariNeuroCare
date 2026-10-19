@@ -92,6 +92,13 @@ const randomToken = () => {
 };
 function routeFor(url: URL) {
   const pathname = url.pathname;
+  const functionMarker = "/functions/v1/neurocare-api";
+  const functionIndex = pathname.indexOf(functionMarker);
+  if (functionIndex >= 0) {
+    const remainder = pathname.slice(functionIndex + functionMarker.length);
+    if (remainder === "" || remainder === "/") return "/health";
+    return remainder;
+  }
   const versionIndex = pathname.lastIndexOf("/v1/");
   if (versionIndex >= 0) return pathname.slice(versionIndex);
   if (pathname.endsWith("/health")) return "/health";
@@ -190,7 +197,7 @@ async function bodyJson(req: Request) {
   }
 }
 async function handle(req: Request, route: string): Promise<{ body: unknown; status?: number }> {
-  if (route === "/health" && req.method === "GET") {
+  if ((route === "/health" || route === "/v1/health") && req.method === "GET") {
     const { error } = await db.from("patients").select("id").limit(1);
     if (error) {
       console.error("health check failed:", error.message);
