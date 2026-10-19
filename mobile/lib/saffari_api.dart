@@ -11,9 +11,11 @@ class SaffariApiException implements Exception {
 class SaffariApi {
   SaffariApi._();
 
+  static String? sessionToken;
+
   static const String baseUrl = String.fromEnvironment(
     'SAFFARI_API_BASE_URL',
-    defaultValue: 'https://api.mhsaffari.ir/v1',
+    defaultValue: 'https://YOUR-PROJECT-REF.supabase.co/functions/v1/neurocare-api/v1',
   );
 
   static Future<Map<String, dynamic>> _request(
@@ -28,7 +30,8 @@ class SaffariApi {
       final request = await client.openUrl(method, uri).timeout(const Duration(seconds: 10));
       request.headers.set(HttpHeaders.acceptHeader, 'application/json');
       request.headers.set(HttpHeaders.contentTypeHeader, 'application/json');
-      if (token != null) request.headers.set(HttpHeaders.authorizationHeader, 'Bearer $token');
+      final authToken = token ?? sessionToken;
+      if (authToken != null && authToken.isNotEmpty) request.headers.set(HttpHeaders.authorizationHeader, 'Bearer $authToken');
       if (body != null) request.write(jsonEncode(body));
       final response = await request.close().timeout(const Duration(seconds: 12));
       final raw = await response.transform(utf8.decoder).join();
@@ -77,9 +80,36 @@ class SaffariApi {
   static Future<Map<String, dynamic>> loginPatient({
     required String mobile,
     required String nationalId,
-  }) => _request(
-    '/patients/login',
-    method: 'POST',
-    body: {'mobile': mobile, 'nationalId': nationalId},
-  );
+  }) async {
+    final result = await _request(
+      '/patients/login',
+      method: 'POST',
+      body: {'mobile': mobile, 'nationalId': nationalId},
+    );
+    sessionToken = result['token']?.toString();
+    return result;
+  }
+
+  static Future<Map<String, dynamic>> changePatientPassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final result = await _request(
+      '/patients/change-password',
+      method: 'POST',
+      body: {'currentPassword': currentPassword, 'newPassword': newPassword},
+    );
+    sessionToken = result['token']?.toString();
+    return result;
+  }
+
+  static Future<void> logout() async {
+    try {
+      if (sessionToken != null) {
+        await _request('/logout', method: 'POST', body: const {}, token: sessionToken);
+      }
+    } finally {
+      sessionToken = null;
+    }
+  }
 }

@@ -145,10 +145,10 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> login() async {
     final m = mobile.text.trim();
     final n = nationalId.text.trim();
-    if (m.length < 10 || n.length != 10) {
+    if (m.length < 10 || n.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('شماره موبایل و کد ملی را کامل و صحیح وارد کنید.'),
+          content: Text('شماره موبایل و رمز عبور را کامل وارد کنید.'),
         ),
       );
       return;
@@ -162,8 +162,19 @@ class _LoginPageState extends State<LoginPage> {
         firstName: patient['firstName']?.toString() ?? '',
         lastName: patient['lastName']?.toString() ?? '',
         mobile: patient['mobile']?.toString() ?? m,
-        nationalId: patient['nationalId']?.toString() ?? n,
+        nationalId: patient['nationalId']?.toString() ?? '',
       );
+      if (patient['requiresPasswordChange'] == true) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('برای فعال شدن امکانات پرونده، رمز مستقل را در وب‌اپ بیمار تعیین کنید.')),
+        );
+        await launchUrl(
+          Uri.parse('https://app.mhsaffari.ir/'),
+          mode: LaunchMode.externalApplication,
+        );
+        return;
+      }
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
@@ -271,11 +282,11 @@ class _LoginPageState extends State<LoginPage> {
             const SizedBox(height: 12),
             TextField(
               controller: nationalId,
-              keyboardType: TextInputType.number,
-              maxLength: 10,
+              keyboardType: TextInputType.visiblePassword,
+              maxLength: 128,
               obscureText: true,
               decoration: const InputDecoration(
-                labelText: 'کد ملی (رمز عبور)',
+                labelText: 'رمز عبور (ورود اول: کد ملی)',
                 prefixIcon: Icon(Icons.fingerprint_rounded),
                 counterText: '',
               ),
