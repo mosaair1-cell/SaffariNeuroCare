@@ -54,7 +54,11 @@
   }
   async function api(path, method = 'GET', body = undefined) {
     if (!API_BASE) throw new Error('آدرس API در config.js تنظیم نشده است.');
-    const headers = { 'Accept':'application/json' };
+    const publicKey = String(cfg.SUPABASE_PUBLISHABLE_KEY || '');
+    if (!publicKey || publicKey.includes('YOUR-PUBLISHABLE-KEY')) {
+      throw new Error('کلید عمومی Supabase هنوز در config.js تنظیم نشده است.');
+    }
+    const headers = { 'Accept':'application/json', 'apikey': publicKey };
     if (body !== undefined) headers['Content-Type'] = 'application/json';
     if (token) headers.Authorization = 'Bearer ' + token;
     let response;
@@ -147,7 +151,7 @@
               <div class="field full"><label for="diseaseCode">حوزه پیگیری</label><select id="diseaseCode" name="diseaseCode">${diseases.map(d => '<option value="' + h(d[0]) + '">' + h(d[1]) + '</option>').join('')}</select></div>
               <div class="field full"><label for="clinicCode">کد کلینیک</label><input id="clinicCode" name="clinicCode" value="${h(CLINIC_CODE)}" required></div>
             ` : ''}
-            <div class="field full"><label for="mobile">شماره موبایل</label><input id="mobile" name="mobile" inputmode="numeric" autocomplete="tel" placeholder="09123456789" pattern="09[0-9]{10}" required maxlength="11"></div>
+            <div class="field full"><label for="mobile">شماره موبایل</label><input id="mobile" name="mobile" inputmode="numeric" autocomplete="tel" placeholder="09123456789" pattern="09[0-9]{9}" required maxlength="11"></div>
             ${isRegister ? '<div class="field full"><label for="nationalId">کد ملی (رمز اولیه)</label><input id="nationalId" name="nationalId" inputmode="numeric" autocomplete="off" placeholder="۱۰ رقم" pattern="[0-9]{10}" required maxlength="10"></div>' : '<div class="field full"><label for="patientPassword">رمز عبور</label><input id="patientPassword" name="password" type="password" autocomplete="current-password" required minlength="10" placeholder="رمز عبور مستقل یا کد ملی اولیه"></div>'}
           `}
         </div>
