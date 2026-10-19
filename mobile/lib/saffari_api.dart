@@ -17,6 +17,10 @@ class SaffariApi {
     'SAFFARI_API_BASE_URL',
     defaultValue: 'https://YOUR-PROJECT-REF.supabase.co/functions/v1/neurocare-api/v1',
   );
+  static const String publishableKey = String.fromEnvironment(
+    'SUPABASE_PUBLISHABLE_KEY',
+    defaultValue: 'YOUR-PUBLISHABLE-KEY',
+  );
 
   static Future<Map<String, dynamic>> _request(
     String path, {
@@ -30,6 +34,9 @@ class SaffariApi {
       final request = await client.openUrl(method, uri).timeout(const Duration(seconds: 10));
       request.headers.set(HttpHeaders.acceptHeader, 'application/json');
       request.headers.set(HttpHeaders.contentTypeHeader, 'application/json');
+      if (publishableKey.isNotEmpty && publishableKey != 'YOUR-PUBLISHABLE-KEY') {
+        request.headers.set('apikey', publishableKey);
+      }
       final authToken = token ?? sessionToken;
       if (authToken != null && authToken.isNotEmpty) request.headers.set(HttpHeaders.authorizationHeader, 'Bearer $authToken');
       if (body != null) request.write(jsonEncode(body));
