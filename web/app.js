@@ -54,7 +54,11 @@
   }
   async function api(path, method = 'GET', body = undefined) {
     if (!API_BASE) throw new Error('آدرس API در config.js تنظیم نشده است.');
-    const headers = { 'Accept':'application/json' };
+    const publicKey = String(cfg.SUPABASE_PUBLISHABLE_KEY || '');
+    if (!publicKey || publicKey.includes('YOUR-PUBLISHABLE-KEY')) {
+      throw new Error('کلید عمومی Supabase هنوز در config.js تنظیم نشده است.');
+    }
+    const headers = { 'Accept':'application/json', 'apikey': publicKey };
     if (body !== undefined) headers['Content-Type'] = 'application/json';
     if (token) headers.Authorization = 'Bearer ' + token;
     let response;
