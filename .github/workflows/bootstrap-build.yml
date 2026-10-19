@@ -12,6 +12,9 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      SAFFARI_API_BASE_URL: ${{ vars.SAFFARI_API_BASE_URL }}
+      SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -40,13 +43,13 @@ jobs:
               manifest.write_text(text)
           PY
           flutter pub get
-          flutter build apk --release --target-platform android-arm64
+          flutter build apk --release --target-platform android-arm64 --dart-define="SAFFARI_API_BASE_URL=${SAFFARI_API_BASE_URL:-https://YOUR-PROJECT-REF.supabase.co/functions/v1/neurocare-api/v1}" --dart-define="SUPABASE_PUBLISHABLE_KEY=${SUPABASE_PUBLISHABLE_KEY:-YOUR-PUBLISHABLE-KEY}"
           cp build/app/outputs/flutter-apk/app-release.apk ../SaffariNeuroCare-Patient-ARM64.apk
 
       - name: Analyze patient APK size
         working-directory: mobile
         run: |
-          flutter build apk --release --target-platform android-arm64 --analyze-size > ../patient-size-report.txt
+          flutter build apk --release --target-platform android-arm64 --dart-define="SAFFARI_API_BASE_URL=${SAFFARI_API_BASE_URL:-https://YOUR-PROJECT-REF.supabase.co/functions/v1/neurocare-api/v1}" --dart-define="SUPABASE_PUBLISHABLE_KEY=${SUPABASE_PUBLISHABLE_KEY:-YOUR-PUBLISHABLE-KEY}" --analyze-size > ../patient-size-report.txt
           tail -n 40 ../patient-size-report.txt || true
 
       - name: Upload patient APK
@@ -81,13 +84,13 @@ jobs:
               manifest.write_text(text)
           PY
           flutter pub get
-          flutter build apk --release --target-platform android-arm64
+          flutter build apk --release --target-platform android-arm64 --dart-define="SAFFARI_API_BASE_URL=${SAFFARI_API_BASE_URL:-https://YOUR-PROJECT-REF.supabase.co/functions/v1/neurocare-api/v1}" --dart-define="SUPABASE_PUBLISHABLE_KEY=${SUPABASE_PUBLISHABLE_KEY:-YOUR-PUBLISHABLE-KEY}"
           cp build/app/outputs/flutter-apk/app-release.apk ../SaffariNeuroCare-Doctor-ARM64.apk
 
       - name: Analyze doctor APK size
         working-directory: doctor_mobile
         run: |
-          flutter build apk --release --target-platform android-arm64 --analyze-size > ../doctor-size-report.txt
+          flutter build apk --release --target-platform android-arm64 --dart-define="SAFFARI_API_BASE_URL=${SAFFARI_API_BASE_URL:-https://YOUR-PROJECT-REF.supabase.co/functions/v1/neurocare-api/v1}" --dart-define="SUPABASE_PUBLISHABLE_KEY=${SUPABASE_PUBLISHABLE_KEY:-YOUR-PUBLISHABLE-KEY}" --analyze-size > ../doctor-size-report.txt
           tail -n 40 ../doctor-size-report.txt || true
 
       - name: Upload doctor APK
