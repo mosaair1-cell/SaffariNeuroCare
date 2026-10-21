@@ -57,10 +57,11 @@ def main() -> None:
         text = replace_once(r'targetSdk\s*=\s*(?:flutter\.targetSdkVersion|\d+)',
                             "targetSdk = 36", text, "target SDK")
 
-        signing_setup = """import java.io.FileInputStream
+        signing_imports = """import java.io.FileInputStream
 import java.util.Properties
 
-val keystoreProperties = Properties()
+"""
+        signing_vars = """val keystoreProperties = Properties()
 val keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
     FileInputStream(keystorePropertiesFile).use { keystoreProperties.load(it) }
@@ -68,7 +69,16 @@ if (keystorePropertiesFile.exists()) {
 
 """
         if "val keystorePropertiesFile" not in text:
-            text = text.replace("plugins {", signing_setup + "plugins {", 1)
+            text = text.replace("plugins {", signing_imports + "plugins {", 1)
+            text, count = re.subn(
+                r'(plugins\s*\{.*?\})\s*(\nandroid\s*\{)',
+                lambda match: match.group(1) + "\n\n" + signing_vars.rstrip() + "\n" + match.group(2),
+                text,
+                count=1,
+                flags=re.DOTALL,
+            )
+            if count != 1:
+                raise RuntimeError("Could not place Android keystore configuration after the Gradle plugins block.")
         if 'create("release")' not in text:
             block = '''    signingConfigs {
         create("release") {
