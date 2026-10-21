@@ -31,8 +31,8 @@ def main() -> None:
     xml = manifest.read_text(encoding="utf-8")
     if "android.permission.INTERNET" not in xml:
         xml, count = re.subn(
-            r"(<manifest\\b[^>]*>)",
-            r'\\1\\n    <uses-permission android:name="android.permission.INTERNET"/>',
+            r"(<manifest\b[^>]*>)",
+            r'\1\n    <uses-permission android:name="android.permission.INTERNET"/>',
             xml,
             count=1,
         )
@@ -48,13 +48,13 @@ def main() -> None:
     if kts.exists():
         gradle = kts
         text = gradle.read_text(encoding="utf-8")
-        text = replace_once(r'namespace\\s*=\\s*"[^"]+"',
+        text = replace_once(r'namespace\s*=\s*"[^"]+"',
                             f'namespace = "{args.application_id}"', text, "namespace")
-        text = replace_once(r'applicationId\\s*=\\s*"[^"]+"',
+        text = replace_once(r'applicationId\s*=\s*"[^"]+"',
                             f'applicationId = "{args.application_id}"', text, "application id")
-        text = replace_once(r'compileSdk\\s*=\\s*(?:flutter\\.compileSdkVersion|\\d+)',
+        text = replace_once(r'compileSdk\s*=\s*(?:flutter\.compileSdkVersion|\d+)',
                             "compileSdk = 36", text, "compile SDK")
-        text = replace_once(r'targetSdk\\s*=\\s*(?:flutter\\.targetSdkVersion|\\d+)',
+        text = replace_once(r'targetSdk\s*=\s*(?:flutter\.targetSdkVersion|\d+)',
                             "targetSdk = 36", text, "target SDK")
 
         signing_setup = """import java.io.FileInputStream
@@ -86,7 +86,7 @@ if (keystorePropertiesFile.exists()) {
                 raise RuntimeError("Could not locate Android buildTypes block for release signing.")
             text = text.replace("    buildTypes {", block + "    buildTypes {", 1)
         text, count = re.subn(
-            r'signingConfig\\s*=\\s*signingConfigs\\.getByName\\("debug"\\)',
+            r'signingConfig\s*=\s*signingConfigs\.getByName\("debug"\)',
             'signingConfig = if (keystorePropertiesFile.exists()) signingConfigs.getByName("release") else signingConfigs.getByName("debug")',
             text,
             count=1,
@@ -97,13 +97,13 @@ if (keystorePropertiesFile.exists()) {
     elif groovy.exists():
         gradle = groovy
         text = gradle.read_text(encoding="utf-8")
-        text = replace_once(r'namespace\\s+["\\'][^"\\']+["\\']',
+        text = replace_once(r'namespace\s+["\'][^"\']+["\']',
                             f'namespace "{args.application_id}"', text, "namespace")
-        text = replace_once(r'applicationId\\s+["\\'][^"\\']+["\\']',
+        text = replace_once(r'applicationId\s+["\'][^"\']+["\']',
                             f'applicationId "{args.application_id}"', text, "application id")
-        text = replace_once(r'compileSdk\\s+(?:flutter\\.compileSdkVersion|\\d+)',
+        text = replace_once(r'compileSdk\s+(?:flutter\.compileSdkVersion|\d+)',
                             "compileSdk 36", text, "compile SDK")
-        text = replace_once(r'targetSdk\\s+(?:flutter\\.targetSdkVersion|\\d+)',
+        text = replace_once(r'targetSdk\s+(?:flutter\.targetSdkVersion|\d+)',
                             "targetSdk 36", text, "target SDK")
         signing_setup = '''def keystoreProperties = new Properties()
 def keystorePropertiesFile = rootProject.file('key.properties')
@@ -131,7 +131,7 @@ if (keystorePropertiesFile.exists()) {
                 raise RuntimeError("Could not locate Android buildTypes block for release signing.")
             text = text.replace("    buildTypes {", block + "    buildTypes {", 1)
         text, count = re.subn(
-            r'signingConfig\\s+signingConfigs\\.debug',
+            r'signingConfig\s+signingConfigs\.debug',
             'signingConfig keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug',
             text,
             count=1,
