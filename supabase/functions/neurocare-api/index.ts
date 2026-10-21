@@ -13,7 +13,7 @@ const EITAA_URL = "https://eitaa.com/Dr_Saffari";
 const headers = (origin: string | null) => ({
   "Access-Control-Allow-Origin": origin && origins.has(origin) ? origin : "https://app.mhsaffari.ir",
   "Access-Control-Allow-Headers": "authorization, apikey, content-type",
-  "Access-Control-Allow-Methods": "GET, POST, PATCH, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
   "Vary": "Origin",
   "Content-Type": "application/json; charset=utf-8",
   "Cache-Control": "no-store"
@@ -100,9 +100,12 @@ async function availableSlots(type:string) {
  const {data:bookings,error:bookingError}=await db.from("appointments").select("preferred_date,preferred_time,appointment_type,status").eq("appointment_type",type).gte("preferred_date",now.date).lte("preferred_date",endDate).in("status",["requested","confirmed"]);
  if(bookingError) throw bookingError;
  const booked=new Set((bookings||[]).map((a:any)=>String(a.preferred_date).slice(0,10)+"|"+String(a.preferred_time).slice(0,5)));
+ const {data:leaves,error:leaveError}=await db.from("doctor_leave_ranges").select("start_date,end_date,appointment_type").eq("is_active",true).lte("start_date",endDate).gte("end_date",now.date);
+ if(leaveError) throw leaveError;
  const seen=new Set<string>(), slots:any[]=[];
  for(let dayOffset=0;dayOffset<42;dayOffset++){
   const date=new Date(base.getTime()+dayOffset*86400000).toISOString().slice(0,10);
+  if((leaves||[]).some((x:any)=>date>=String(x.start_date).slice(0,10)&&date<=String(x.end_date).slice(0,10)&&(!x.appointment_type||x.appointment_type===type))) continue;
   const dayOfWeek=new Date(date+"T12:00:00.000Z").getUTCDay();
   for(const row of availability.filter((x:any)=>Number(x.day_of_week)===dayOfWeek)){
    const start=timeMinutes(row.start_time), end=timeMinutes(row.end_time), step=Number(row.slot_minutes)||30;
@@ -190,11 +193,21 @@ Deno.serve(async (req:Request)=>{
   if(!user)return json({error:"unauthorized"},401,origin);
   if(patient && path!=="/v1/patients/me" && !(await patientActive(patient)))return json({error:"awaiting_doctor_approval"},403,origin);
   if(path==="/v1/doctor/patients"&&req.method==="GET"){
-   const {data,error}=await db.from("patients").select("*").order("created_at",{ascending:false}).limit(300);if(error)throw error;return json({patients:(data||[]).map((p:any)=>safePatient(p,true))},200,origin);
+   const search=clean(urlObj.searchParams.get("q"),80).replace(/[^\p{L}\p{N}\s-]/gu," ").trim();
+   let query=db.from("patients").select("*").order("created_at",{ascending:false});
+   if(search){
+    const terms=search.split(/\s+/).filter(Boolean).slice(0,5),filters:string[]=[];
+    for(const term of terms) filters.push("first_name.ilike.%"+term+"%","last_name.ilike.%"+term+"%","mobile.ilike.%"+term+"%","national_id.ilike.%"+term+"%");
+    query=query.or([...new Set(filters)].join(",")).limit(100);
+   }else query=query.limit(300);
+   const {data,error}=await query;if(error)throw error;
+   return json({patients:(data||[]).map((p:any)=>safePatient(p,true))},200,origin);
   }
   if(path==="/v1/doctor/appointments"&&req.method==="GET"){
    const {data,error}=await db.from("appointments").select("*,patients(first_name,last_name,mobile)").order("preferred_date").limit(300);if(error)throw error;
-   return json({appointments:(data||[]).map((a:any)=>safeAppointment({...a,patient_name:[a.patients?.first_name,a.patients?.last_name].filter(Boolean).join(" "),patient_mobile:a.patients?.mobile}))},200,origin);
+   const today=tehranNow().date;
+   const upcoming=(data||[]).filter((a:any)=>a.status==="requested"||(a.status==="confirmed"&&String(a.preferred_date).slice(0,10)>=today));
+   return json({appointments:upcoming.map((a:any)=>safeAppointment({...a,patient_name:[a.patients?.first_name,a.patients?.last_name].filter(Boolean).join(" "),patient_mobile:a.patients?.mobile}))},200,origin);
   }
   if(path==="/v1/patients/availability"&&req.method==="GET"){
    const type=urlObj.searchParams.get("type")||"in_person";
@@ -217,6 +230,24 @@ Deno.serve(async (req:Request)=>{
    const {data,error}=await db.from("doctor_availability").update({is_active:active,updated_at:new Date().toISOString()}).eq("id",availabilityToggle[1]).select("*").maybeSingle();
    if(error)throw error;if(!data)return json({error:"availability_not_found"},404,origin);
    return json({availability:data},200,origin);
+  }
+  if(path==="/v1/doctor/leaves"&&req.method==="GET"){
+   const {data,error}=await db.from("doctor_leave_ranges").select("*").order("start_date").limit(300);
+   if(error)throw error;return json({leaves:data||[]},200,origin);
+  }
+  if(path==="/v1/doctor/leaves"&&req.method==="POST"){
+   const start=clean(body.startDate,10),end=clean(body.endDate,10),typeRaw=clean(body.appointmentType,20),type=typeRaw||null,reason=clean(body.reason,300);
+   if(!dateOk(start)||!dateOk(end)||start>end||(type&&!APPOINTMENT_TYPES.has(type)))return json({error:"invalid_leave_range"},400,origin);
+   const {data:leave,error}=await db.from("doctor_leave_ranges").insert({start_date:start,end_date:end,appointment_type:type,reason,is_active:true}).select("*").single();
+   if(error)throw error;await audit(doctor!.sub,"doctor","doctor.leave.create","doctor_leave_range",leave.id,{startDate:start,endDate:end,appointmentType:type});
+   return json({leave},201,origin);
+  }
+  const leaveToggle=path.match(/^\/v1\/doctor\/leaves\/([0-9a-f-]{36})$/i);
+  if(leaveToggle&&req.method==="PATCH"){
+   const active=body.isActive===true;
+   const {data:leave,error}=await db.from("doctor_leave_ranges").update({is_active:active,updated_at:new Date().toISOString()}).eq("id",leaveToggle[1]).select("*").maybeSingle();
+   if(error)throw error;if(!leave)return json({error:"leave_not_found"},404,origin);
+   return json({leave},200,origin);
   }
   const myAppts="/v1/patients/appointments";
   if(path===myAppts&&req.method==="GET"){const {data,error}=await db.from("appointments").select("*").eq("patient_id",patient!.sub).order("preferred_date",{ascending:false}).limit(100);if(error)throw error;return json({appointments:(data||[]).map(safeAppointment)},200,origin);}
@@ -243,6 +274,14 @@ Deno.serve(async (req:Request)=>{
   const m=path.match(/^\/v1\/doctor\/patients\/([0-9a-f-]{36})(?:\/(reports|notes|treatment-plan|medications|status))?$/i);
   if(m&&doctor){
    const id=m[1],sub=m[2]||"", {data:exists}=await db.from("patients").select("id").eq("id",id).maybeSingle();if(!exists)return json({error:"patient_not_found"},404,origin);
+    if(!sub&&req.method==="DELETE"){
+     const {data:removed,error:removeError}=await db.from("patients").delete().eq("id",id).select("id").maybeSingle();
+     if(removeError)throw removeError;if(!removed)return json({error:"patient_not_found"},404,origin);
+     const {error:auditCleanupError}=await db.from("audit_events").delete().or("actor_id.eq."+id+",subject_id.eq."+id);
+     if(auditCleanupError)console.error("patient audit cleanup failed",auditCleanupError.message);
+     await audit(doctor!.sub,"doctor","patient.account.delete","patient","deleted",{recordsPurged:true});
+     return json({deleted:true},200,origin);
+    }
    if(sub==="status"&&req.method==="PATCH"){const status=clean(body.status,30);if(!["pending_review","active","rejected"].includes(status))return json({error:"invalid_status"},400,origin);const {data:p,error}=await db.from("patients").update({status,updated_at:new Date().toISOString()}).eq("id",id).select("*").single();if(error)throw error;await audit(doctor.sub,"doctor","patient.status.update","patient",id,{status});return json({patient:safePatient(p,true)},200,origin);}
    if(sub==="reports"&&req.method==="GET"){const {data,error}=await db.from("symptom_reports").select("*").eq("patient_id",id).order("submitted_at",{ascending:false}).limit(100);if(error)throw error;return json({reports:data||[]},200,origin);}
    if(sub==="notes"&&req.method==="GET"){const {data,error}=await db.from("clinical_notes").select("*").eq("patient_id",id).order("created_at",{ascending:false}).limit(100);if(error)throw error;return json({notes:data||[]},200,origin);}
