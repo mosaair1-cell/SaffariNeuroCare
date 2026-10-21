@@ -564,7 +564,9 @@
                           </div>
                         </section>
           </div>
-        </div>      bindCommon();
+        </div>` : ''}
+      `;
+      bindCommon();
       if (active) bindPatientForms();
     } catch (error) {
       root.innerHTML = '<section class="panel"><h2>دریافت اطلاعات ناموفق بود</h2>' + messageBox(errorMessage(error),'error') + '<div class="card-actions"><button class="secondary" id="retryBtn">تلاش دوباره</button><button class="ghost-button" id="logoutBtn">خروج امن</button></div></section>';
