@@ -43,6 +43,20 @@ create table if not exists public.captcha_challenges (
 );
 create index if not exists captcha_challenges_expiry_idx on public.captcha_challenges (expires_at);
 
+-- Older schema revisions used identifier_hash as the primary key.
+do $
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema='public' and table_name='auth_rate_limits' and column_name='identifier_hash'
+  ) and not exists (
+    select 1 from information_schema.columns
+    where table_schema='public' and table_name='auth_rate_limits' and column_name='bucket_hash'
+  ) then
+    alter table public.auth_rate_limits rename column identifier_hash to bucket_hash;
+  end if;
+end $;
+
 alter table public.auth_rate_limits add column if not exists bucket_hash text;
 create unique index if not exists auth_rate_limits_bucket_hash_unique on public.auth_rate_limits (bucket_hash);
 
