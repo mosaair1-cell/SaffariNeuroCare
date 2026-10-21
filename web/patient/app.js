@@ -48,7 +48,6 @@
     slot_unavailable:'این زمان همین حالا رزرو شده یا دیگر قابل انتخاب نیست؛ زمان دیگری را انتخاب کنید.',
     invalid_availability:'روز یا ساعت کاری واردشده معتبر نیست.',
     availability_not_found:'بازه زمانی موردنظر پیدا نشد.'
-  }
   };
   const h = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const diseaseTitle = (code) => (diseases.find(d => d[0] === code) || ['','تعیین‌نشده'])[1];
@@ -172,28 +171,28 @@
     if (!area) return;
     const isDoctor = APP_ROLE === 'doctor';
     const isRegister = !isDoctor && mode === 'register';
-    area.innerHTML = \`
-      <h1>\${isDoctor ? 'ورود به پنل پزشک' : (isRegister ? 'ساخت حساب بیمار' : 'ورود بیمار')}</h1>
-      <p class="lead">\${isDoctor ? 'برای ورود به پنل، مشخصات حساب پزشک را وارد کنید.' : (isRegister ? 'اطلاعات خود را ثبت کنید تا پزشک حساب را بررسی و فعال کند.' : 'برای ورود، کد ملی و رمز عبور خود را وارد کنید.')}</p>
+    area.innerHTML = `
+      <h1>${isDoctor ? 'ورود به پنل پزشک' : (isRegister ? 'ساخت حساب بیمار' : 'ورود بیمار')}</h1>
+      <p class="lead">${isDoctor ? 'برای ورود به پنل، مشخصات حساب پزشک را وارد کنید.' : (isRegister ? 'اطلاعات خود را ثبت کنید تا پزشک حساب را بررسی و فعال کند.' : 'برای ورود، کد ملی و رمز عبور خود را وارد کنید.')}</p>
       <form id="authForm" novalidate>
         <div class="form-grid">
-          \${isDoctor ? \`
-            <div class="field full"><label for="clinicCode">کد ورود پزشک</label><input id="clinicCode" name="clinicCode" autocomplete="username" value="\${h(CLINIC_CODE)}" required></div>
+          ${isDoctor ? `
+            <div class="field full"><label for="clinicCode">کد ورود پزشک</label><input id="clinicCode" name="clinicCode" autocomplete="username" value="${h(CLINIC_CODE)}" required></div>
             <div class="field full"><label for="password">رمز عبور پزشک</label><input id="password" type="password" name="password" autocomplete="current-password" required minlength="8"></div>
-          \` : \`
-            \${isRegister ? \`
+          ` : `
+            ${isRegister ? `
               <div class="field"><label for="firstName">نام</label><input id="firstName" name="firstName" autocomplete="given-name" required maxlength="100"></div>
               <div class="field"><label for="lastName">نام خانوادگی</label><input id="lastName" name="lastName" autocomplete="family-name" required maxlength="100"></div>
-              <div class="field full"><label for="diseaseCode">حوزه پیگیری</label><select id="diseaseCode" name="diseaseCode">\${diseases.map(d => '<option value="' + h(d[0]) + '">' + h(d[1]) + '</option>').join('')}</select></div>
+              <div class="field full"><label for="diseaseCode">حوزه پیگیری</label><select id="diseaseCode" name="diseaseCode">${diseases.map(d => '<option value="' + h(d[0]) + '">' + h(d[1]) + '</option>').join('')}</select></div>
               <div class="field full"><div class="fixed-clinic"><span>مرکز پیگیری</span><strong>کلینیک دکتر صفاری</strong><small>کد کلینیک ثابت است و قابل تغییر نیست.</small></div></div>
               <div class="field full"><label for="mobile">شماره موبایل (الزامی)</label><input id="mobile" name="mobile" inputmode="numeric" autocomplete="tel" placeholder="09123456789" pattern="09[0-9]{9}" required maxlength="11"></div>
-            \` : ''}
+            ` : ''}
             <div class="field full"><label for="nationalId">کد ملی / نام کاربری</label><input id="nationalId" name="nationalId" inputmode="numeric" autocomplete="username" placeholder="کد ملی ۱۰ رقمی" pattern="[0-9]{10}" required maxlength="10"></div>
-            <div class="field full"><label for="password">\${isRegister ? 'انتخاب رمز عبور امن' : 'رمز عبور'}</label><input id="password" name="password" type="password" autocomplete="\${isRegister ? 'new-password' : 'current-password'}" required minlength="8" maxlength="12" pattern="[!-~]{8,12}" placeholder="\${isRegister ? '۸ تا ۱۲ نویسه انگلیسی' : 'رمز عبور حساب'}"></div>
-            \${isRegister ? '<div class="field full"><label for="confirmPassword">تکرار رمز عبور</label><input id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password" required minlength="8" maxlength="12" pattern="[!-~]{8,12}"></div>' : ''}
-          \`}
+            <div class="field full"><label for="password">${isRegister ? 'انتخاب رمز عبور امن' : 'رمز عبور'}</label><input id="password" name="password" type="password" autocomplete="${isRegister ? 'new-password' : 'current-password'}" required minlength="8" maxlength="12" pattern="[!-~]{8,12}" placeholder="${isRegister ? '۸ تا ۱۲ نویسه انگلیسی' : 'رمز عبور حساب'}"></div>
+            ${isRegister ? '<div class="field full"><label for="confirmPassword">تکرار رمز عبور</label><input id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password" required minlength="8" maxlength="12" pattern="[!-~]{8,12}"></div>' : ''}
+          `}
         </div>
-        \${!isDoctor ? \`
+        ${!isDoctor ? `
           <div class="captcha-box">
             <label for="captchaAnswer">کپچای امنیتی: <strong id="captchaQuestion">در حال بارگذاری…</strong></label>
             <div class="captcha-row">
@@ -202,14 +201,14 @@
             </div>
             <input id="captchaId" name="captchaId" type="hidden" value="">
           </div>
-          <p class="hint">\${isRegister ? 'نام کاربری شما کد ملی است. رمز باید ۸ تا ۱۲ نویسه انگلیسی و شامل حرف، عدد و نماد باشد.' : 'با کد ملی و رمز عبوری که هنگام ثبت‌نام انتخاب کرده‌اید وارد شوید.'}</p>
-        \` : ''}
-        <button class="primary full-button" type="submit">\${isDoctor ? 'ورود به پنل پزشک' : (isRegister ? 'ثبت‌نام و ارسال برای بررسی' : 'ورود به حساب بیمار')}</button>
+          <p class="hint">${isRegister ? 'نام کاربری شما کد ملی است. رمز باید ۸ تا ۱۲ نویسه انگلیسی و شامل حرف، عدد و نماد باشد.' : 'با کد ملی و رمز عبوری که هنگام ثبت‌نام انتخاب کرده‌اید وارد شوید.'}</p>
+        ` : ''}
+        <button class="primary full-button" type="submit">${isDoctor ? 'ورود به پنل پزشک' : (isRegister ? 'ثبت‌نام و ارسال برای بررسی' : 'ورود به حساب بیمار')}</button>
         <div class="form-message"></div>
       </form>
       <div class="auth-footer">
-        \${isDoctor ? '<span>دسترسی فقط برای پزشک مجاز است.</span>' : (isRegister ? '<span>قبلاً حساب ساخته‌اید؟</span><button class="link-button" type="button" id="modeLogin">ورود به حساب</button>' : '<span>حساب ندارید؟</span><button class="link-button" type="button" id="modeRegister">ثبت‌نام بیمار</button>')}
-      </div>\`;
+        ${isDoctor ? '<span>دسترسی فقط برای پزشک مجاز است.</span>' : (isRegister ? '<span>قبلاً حساب ساخته‌اید؟</span><button class="link-button" type="button" id="modeLogin">ورود به حساب</button>' : '<span>حساب ندارید؟</span><button class="link-button" type="button" id="modeRegister">ثبت‌نام بیمار</button>')}
+      </div>`;
     const form = document.getElementById('authForm');
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
@@ -278,12 +277,12 @@
   }
   function appointmentCard(a) {
     const isText = a.appointmentType === 'text';
-    return \`<div class="appointment-card">
-      <div class="appointment-top"><div><div class="patient-name">\${h(fmtDate(a.preferredDate))} · \${h(String(a.preferredTime || '').slice(0,5))}</div><span class="appt-type-label \${isText ? 'text' : 'in-person'}">\${isText ? 'مشاوره متنی' : 'نوبت حضوری در مطب'}</span><div class="subline">\${h(a.reason || 'بدون توضیح')}</div></div><span class="badge \${h(a.status)}">\${h(statusTitle(a.status))}</span></div>
-      \${isText && a.status === 'requested' ? '<div class="consultation-notice">برای تأیید درخواست مشاوره متنی، با شماره مطب <strong>09961364434</strong> تماس بگیرید.</div>' : ''}
-      \${a.consultationUrl ? '<a class="eitaa-link" href="' + h(a.consultationUrl) + '" target="_blank" rel="noopener">شروع گفت‌وگو در ایتا (@Dr_Saffari)</a>' : ''}
-      \${a.doctorNote ? '<div class="subline" style="margin-top:9px">پیام مطب: ' + h(a.doctorNote) + '</div>' : ''}
-    </div>\`;
+    return `<div class="appointment-card">
+      <div class="appointment-top"><div><div class="patient-name">${h(fmtDate(a.preferredDate))} · ${h(String(a.preferredTime || '').slice(0,5))}</div><span class="appt-type-label ${isText ? 'text' : 'in-person'}">${isText ? 'مشاوره متنی' : 'نوبت حضوری در مطب'}</span><div class="subline">${h(a.reason || 'بدون توضیح')}</div></div><span class="badge ${h(a.status)}">${h(statusTitle(a.status))}</span></div>
+      ${isText && a.status === 'requested' ? '<div class="consultation-notice">برای تأیید درخواست مشاوره متنی، با شماره مطب <strong>09961364434</strong> تماس بگیرید.</div>' : ''}
+      ${a.consultationUrl ? '<a class="eitaa-link" href="' + h(a.consultationUrl) + '" target="_blank" rel="noopener">شروع گفت‌وگو در ایتا (@Dr_Saffari)</a>' : ''}
+      ${a.doctorNote ? '<div class="subline" style="margin-top:9px">پیام مطب: ' + h(a.doctorNote) + '</div>' : ''}
+    </div>`;
   }
   function noteCard(n) {
     return '<div class="row-item"><div><strong>' + h(n.doctorLabel || 'پزشک معالج') + '</strong><p>' + h(n.noteText || '') + '</p></div><small class="subline">' + h(fmtDate(n.createdAt)) + '</small></div>';
@@ -407,7 +406,6 @@
                   <div class="field"><label for="occurredOn">تاریخ گزارش</label><input id="occurredOn" type="date" name="occurredOn" value="${new Date().toISOString().slice(0,10)}"></div>
                   <div class="field full"><label for="reportNotes">توضیحات (حداکثر ۲۰۰ نویسه)</label><textarea id="reportNotes" name="notes" maxlength="200" placeholder="زمان شروع، مدت و تغییر علائم را کوتاه بنویسید"></textarea><small class="field-help">برای اطلاعات ضروری؛ حداکثر ۲۰۰ نویسه.</small></div>
                 </div>
-                <button class="primary full-button" type="submit">ثبت گزارش برای پزشک</button>                </div>
                 <button class="primary full-button" type="submit">ثبت گزارش برای پزشک</button><div class="form-message"></div>
               </form>
             </section>
@@ -473,7 +471,7 @@
     }
   }
   function bindPatientForms() {
-    const appointmentForm = document.getElementById('appointmentForm');    const appointmentForm = document.getElementById('appointmentForm');
+    const appointmentForm = document.getElementById('appointmentForm');
     const appointmentType = document.getElementById('appointmentType');
     if (appointmentType) {
       appointmentType.addEventListener('change',() => refreshAvailableSlots(appointmentType.value));
@@ -536,14 +534,14 @@
   }
   function renderDoctorAppointment(a) {
     const isText = a.appointmentType === 'text';
-    return \`<div class="appointment-card">
-      <div class="appointment-top"><div><div class="patient-name">\${h(a.patientName || 'بیمار')} · \${h(fmtDate(a.preferredDate))} · \${h(String(a.preferredTime || '').slice(0,5))}</div><span class="appt-type-label \${isText ? 'text' : 'in-person'}">\${isText ? 'مشاوره متنی' : 'نوبت حضوری'}</span><div class="subline">\${h(a.patientMobile || '')}</div><p style="line-height:1.9;white-space:pre-wrap;margin:9px 0 0">\${h(a.reason || '')}</p></div><span class="badge \${h(a.status)}">\${h(statusTitle(a.status))}</span></div>
-      \${isText && a.status === 'requested' ? '<div class="consultation-notice">با تأیید درخواست، لینک ایتای پزشک در حساب بیمار نمایش داده می‌شود.</div>' : ''}
+    return `<div class="appointment-card">
+      <div class="appointment-top"><div><div class="patient-name">${h(a.patientName || 'بیمار')} · ${h(fmtDate(a.preferredDate))} · ${h(String(a.preferredTime || '').slice(0,5))}</div><span class="appt-type-label ${isText ? 'text' : 'in-person'}">${isText ? 'مشاوره متنی' : 'نوبت حضوری'}</span><div class="subline">${h(a.patientMobile || '')}</div><p style="line-height:1.9;white-space:pre-wrap;margin:9px 0 0">${h(a.reason || '')}</p></div><span class="badge ${h(a.status)}">${h(statusTitle(a.status))}</span></div>
+      ${isText && a.status === 'requested' ? '<div class="consultation-notice">با تأیید درخواست، لینک ایتای پزشک در حساب بیمار نمایش داده می‌شود.</div>' : ''}
       <div class="card-actions">
-        \${a.status === 'requested' ? '<button class="primary" data-appt-status="confirmed" data-id="' + h(a.id) + '">تأیید نوبت / مشاوره</button><button class="danger-button" data-appt-status="rejected" data-id="' + h(a.id) + '">رد درخواست</button>' : ''}
-        \${a.status === 'confirmed' ? '<button class="secondary" data-appt-status="completed" data-id="' + h(a.id) + '">ثبت انجام ویزیت</button><button class="ghost-button" data-appt-status="cancelled" data-id="' + h(a.id) + '">لغو نوبت</button>' : ''}
+        ${a.status === 'requested' ? '<button class="primary" data-appt-status="confirmed" data-id="' + h(a.id) + '">تأیید نوبت / مشاوره</button><button class="danger-button" data-appt-status="rejected" data-id="' + h(a.id) + '">رد درخواست</button>' : ''}
+        ${a.status === 'confirmed' ? '<button class="secondary" data-appt-status="completed" data-id="' + h(a.id) + '">ثبت انجام ویزیت</button><button class="ghost-button" data-appt-status="cancelled" data-id="' + h(a.id) + '">لغو نوبت</button>' : ''}
       </div>
-    </div>\`;
+    </div>`;
   }
   const weekdayNames = ['یکشنبه','دوشنبه','سه‌شنبه','چهارشنبه','پنجشنبه','جمعه','شنبه'];
   function renderAvailability(row) {
@@ -588,15 +586,15 @@
           <form id="availabilityForm">
             <div class="form-grid">
               <div class="field"><label for="availabilityType">نوع نوبت</label><select id="availabilityType" name="appointmentType"><option value="in_person">حضوری در مطب</option><option value="text">مشاوره متنی</option></select></div>
-              <div class="field"><label for="availabilityDay">روز هفته</label><select id="availabilityDay" name="dayOfWeek">\${weekdayNames.map((d,i)=>'<option value="'+i+'">'+h(d)+'</option>').join('')}</select></div>
+              <div class="field"><label for="availabilityDay">روز هفته</label><select id="availabilityDay" name="dayOfWeek">${weekdayNames.map((d,i)=>'<option value="'+i+'">'+h(d)+'</option>').join('')}</select></div>
               <div class="field"><label for="availabilityStart">از ساعت</label><input id="availabilityStart" name="startTime" type="time" value="09:00" required></div>
               <div class="field"><label for="availabilityEnd">تا ساعت</label><input id="availabilityEnd" name="endTime" type="time" value="12:00" required></div>
               <div class="field"><label for="availabilityDuration">مدت هر نوبت</label><select id="availabilityDuration" name="slotMinutes"><option value="15">۱۵ دقیقه</option><option value="20">۲۰ دقیقه</option><option value="30" selected>۳۰ دقیقه</option><option value="45">۴۵ دقیقه</option><option value="60">۶۰ دقیقه</option></select></div>
             </div>
             <button class="primary full-button" type="submit">ذخیره زمان‌بندی</button><div class="form-message"></div>
           </form>
-          <div class="availability-list" id="availabilityList">\${availability.length ? availability.map(renderAvailability).join('') : '<div class="empty-card">هنوز زمان‌بندی‌ای تعریف نشده است.</div>'}</div>
-        </section>
+          <div class="availability-list" id="availabilityList">${availability.length ? availability.map(renderAvailability).join('') : '<div class="empty-card">هنوز زمان‌بندی‌ای تعریف نشده است.</div>'}</div>
+        </section>`;
       bindCommon();
       const availabilityForm = document.getElementById('availabilityForm');
       availabilityForm?.addEventListener('submit',async e => {
