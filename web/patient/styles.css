@@ -262,3 +262,51 @@ button.calendar-day.available.selected>small{color:#d7f0eb}
   button.calendar-day.available>span{font-size:13px}
   button.calendar-day.available>small{font-size:8px}
 }
+
+
+/* V3 premium, role-specific contrast and richer appointment controls */
+html.role-patient{
+  --teal:#0f766e;--teal-dark:#12345b;--teal-soft:#e0f2fe;--ink:#14243d;--muted:#52647b;
+  --line:#d8e3ef;--paper:#ffffff;--bg:#f1f6fc;--shadow:0 14px 38px rgba(23,54,94,.09);
+}
+html.role-patient body{background:radial-gradient(circle at 85% -5%,#dbeafe 0,transparent 32rem),radial-gradient(circle at 4% 40%,#d7f5ef 0,transparent 26rem),var(--bg)}
+html.role-patient .auth-aside{background:linear-gradient(145deg,#102a56 0%,#0f766e 60%,#2563eb 100%)}
+html.role-patient .primary{background:linear-gradient(135deg,#0f766e,#1d4ed8);box-shadow:0 8px 20px rgba(29,78,216,.18)}
+html.role-patient .panel-heading h2{color:#18345b}
+html.role-patient .metric{border-top:3px solid #0f766e}
+html.role-patient .metric:nth-child(2){border-top-color:#2563eb}
+html.role-patient .metric:nth-child(3){border-top-color:#0d9488}
+html.role-patient .metric:nth-child(4){border-top-color:#d97706}
+html.role-patient .appointment-card{border-color:#d8e7f3;background:linear-gradient(135deg,#fff,#f8fbff)}
+html.role-patient .study-card{box-shadow:0 8px 20px rgba(24,52,91,.06)}
+html.role-doctor{
+  --teal:#6d28d9;--teal-dark:#312e81;--teal-soft:#f0eaff;--ink:#211c3c;--muted:#6b6683;
+  --line:#e2dcf0;--paper:#ffffff;--bg:#f7f5fc;--shadow:0 14px 38px rgba(52,35,94,.09);
+}
+html.role-doctor body{background:radial-gradient(circle at 92% -8%,#e9ddff 0,transparent 31rem),radial-gradient(circle at 0% 52%,#d9f6ef 0,transparent 25rem),var(--bg)}
+html.role-doctor .auth-aside{background:linear-gradient(145deg,#2e1065 0%,#5b21b6 58%,#0f766e 100%)}
+html.role-doctor .primary{background:linear-gradient(135deg,#6d28d9,#4338ca);box-shadow:0 8px 20px rgba(109,40,217,.22)}
+html.role-doctor .secondary{background:#f1eaff;color:#3b1b75;border-color:#e0d4fb}
+html.role-doctor .panel-heading h2{color:#3a286b}
+html.role-doctor .metric{border-top:3px solid #6d28d9}
+html.role-doctor .metric:nth-child(2){border-top-color:#0f766e}
+html.role-doctor .metric:nth-child(3){border-top-color:#d97706}
+html.role-doctor .metric:nth-child(4){border-top-color:#2563eb}
+html.role-doctor .patient-card{border-color:#e4dcf4;background:linear-gradient(135deg,#fff,#fcfaff)}
+html.role-doctor .appointment-card{border-color:#ddd6f0}
+html.role-doctor .availability-panel,html.role-doctor .leave-panel{border-color:#ddd4f3}
+.patient-search-field{margin-bottom:14px}
+.patient-search-field input{background:#fbfcff;border-radius:14px;border:1px solid var(--line);min-height:48px;padding:12px 14px;color:var(--ink);outline:none}
+.patient-search-field input:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(80,100,160,.16)}
+.patient-search-field .hint{margin:0}
+.leave-panel{margin-top:18px}
+.leave-panel form{padding:14px 0 18px;border-bottom:1px solid var(--line)}
+.leave-hint{margin:0 0 14px}
+.leave-row{border-color:var(--line)}
+html.role-doctor .leave-row strong{color:#4c1d95}
+html.role-doctor .leave-panel .primary{background:linear-gradient(135deg,#6d28d9,#0f766e)}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #60a5fa;outline-offset:2px}
+@media(max-width:550px){
+  .patient-search-field{width:100%}
+  .leave-panel .form-grid{grid-template-columns:1fr}
+}
