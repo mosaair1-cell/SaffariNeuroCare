@@ -935,34 +935,50 @@
       document.getElementById('logoutBtn')?.addEventListener('click',logout);
     }
   }
+
   async function loadDoctorPatient(id) {
-    root.innerHTML = '<section class="loading-card"><div class="spinner"></div><p>در حال دریافت پرونده…</p></section>';
+    root.innerHTML = '<section class="loading-card"><div class="spinner"></div><p>در حال دریافت پرونده و سوابق بیمار…</p></section>';
     try {
       const values = await Promise.all([
         api('/doctor/patients/' + encodeURIComponent(id)),
         api('/doctor/patients/' + encodeURIComponent(id) + '/reports'),
-        api('/doctor/patients/' + encodeURIComponent(id) + '/notes')
+        api('/doctor/patients/' + encodeURIComponent(id) + '/notes'),
+        api('/doctor/patients/' + encodeURIComponent(id) + '/appointments'),
+        api('/doctor/patients/' + encodeURIComponent(id) + '/treatment-plan'),
+        api('/doctor/patients/' + encodeURIComponent(id) + '/medications')
       ]);
       const p = values[0].patient;
       const reports = values[1].reports || [];
       const notes = values[2].notes || [];
+      const appointments = values[3].appointments || [];
+      const plans = values[4].plans || [];
+      const medications = values[5].medications || [];
       currentPatient = p;
       root.innerHTML = `
         <div class="dash-head"><div><h1>پرونده بیمار</h1><p>${h((p.firstName || '') + ' ' + (p.lastName || ''))} · ${h(diseaseTitle(p.diseaseCode))}</p></div><div class="head-actions"><button class="ghost-button" id="backBtn">بازگشت</button><button class="secondary" id="logoutBtn">خروج امن</button></div></div>
-        <div class="metrics">${metric('وضعیت حساب',statusTitle(p.status))}${metric('شماره تماس',p.mobile || '—')}${metric('کد ملی',p.nationalId || 'پنهان')}${metric('تاریخ ثبت',fmtDate(p.createdAt))}</div>
+        <div class="metrics">${metric('وضعیت حساب',statusTitle(p.status))}${metric('شماره تماس',p.mobile || '—')}${metric('کد ملی',p.nationalId || '—')}${metric('تاریخ ثبت',fmtDate(p.createdAt))}</div>
         <div class="content-grid">
           <div class="stack">
             <section class="panel"><div class="panel-heading"><h2>گزارش‌های بیمار</h2><small>${reports.length} مورد</small></div>
-              <div class="row-list">${reports.length ? reports.map(r => '<div class="row-item"><div><strong>' + h(statusTitle(r.report_type)) + ' · شدت ' + h(r.severity || '—') + '</strong><p>' + h([...(Array.isArray(r.symptoms)?r.symptoms:[]),r.notes].filter(Boolean).join('، ')) + '</p></div><small class="subline">' + h(fmtDate(r.submitted_at)) + '</small></div>').join('') : '<div class="empty-card">گزارشی ثبت نشده است.</div>'}</div>
+              <div class="row-list">${reports.length ? reports.map(r => '<div class="row-item"><div><strong>' + h(statusTitle(r.report_type)) + ' · شدت ' + h(r.severity ?? '—') + '</strong><p>' + h([...(Array.isArray(r.symptoms)?r.symptoms:[]),r.notes].filter(Boolean).join('، ')) + '</p></div><div class="card-actions"><small class="subline">' + h(fmtDate(r.submitted_at)) + '</small><button type="button" class="danger-button" data-delete-record="reports" data-record-id="' + h(r.id) + '">حذف سابقه</button></div></div>').join('') : '<div class="empty-card">گزارشی ثبت نشده است.</div>'}</div>
+            </section>
+            <section class="panel"><div class="panel-heading"><h2>سوابق نوبت‌ها و ویزیت‌ها</h2><small>${appointments.length} مورد</small></div>
+              <div class="row-list">${appointments.length ? appointments.map(a => '<div class="row-item"><div><strong>' + h(fmtDate(a.preferred_date)) + ' · ' + h(String(a.preferred_time || '').slice(0,5)) + '</strong><p>' + h(a.appointment_type === 'text' ? 'مشاوره متنی' : 'نوبت حضوری') + ' · ' + h(statusTitle(a.status)) + '</p><p>' + h(a.reason || '') + (a.doctor_note ? '<br>یادداشت: ' + h(a.doctor_note) : '') + '</p></div><div class="card-actions"><button type="button" class="danger-button" data-delete-record="appointments" data-record-id="' + h(a.id) + '">حذف سابقه</button></div></div>').join('') : '<div class="empty-card">سابقه نوبتی ثبت نشده است.</div>'}</div>
             </section>
             <section class="panel"><div class="panel-heading"><h2>یادداشت‌های بالینی</h2><small>${notes.length} مورد</small></div>
-              <div class="row-list">${notes.length ? notes.map(n => '<div class="row-item"><div><strong>' + h(n.visible_to_patient ? 'قابل مشاهده برای بیمار' : 'یادداشت داخلی') + '</strong><p>' + h(n.note_text) + '</p></div><small class="subline">' + h(fmtDate(n.created_at)) + '</small></div>').join('') : '<div class="empty-card">یادداشتی ثبت نشده است.</div>'}</div>
+              <div class="row-list">${notes.length ? notes.map(n => '<div class="row-item"><div><strong>' + h(n.visible_to_patient ? 'قابل مشاهده برای بیمار' : 'یادداشت داخلی') + '</strong><p>' + h(n.note_text) + '</p></div><div class="card-actions"><small class="subline">' + h(fmtDate(n.created_at)) + '</small><button type="button" class="danger-button" data-delete-record="notes" data-record-id="' + h(n.id) + '">حذف سابقه</button></div></div>').join('') : '<div class="empty-card">یادداشتی ثبت نشده است.</div>'}</div>
               <form id="noteForm" class="form-section"><h3>ثبت یادداشت جدید</h3><div class="field"><label for="noteText">متن یادداشت</label><textarea id="noteText" name="noteText" required minlength="3" maxlength="5000"></textarea></div><label class="chip" style="margin-top:10px"><input type="checkbox" name="visibleToPatient"> این یادداشت در پنل بیمار نمایش داده شود</label><button class="primary full-button" type="submit">ذخیره یادداشت</button><div class="form-message"></div></form>
             </section>
           </div>
           <div class="stack">
+            <section class="panel"><div class="panel-heading"><h2>سوابق برنامه‌های پیگیری</h2><small>${plans.length} مورد</small></div>
+              <div class="row-list">${plans.length ? plans.map(pn => '<div class="row-item"><div><strong>' + h(pn.title) + ' · ' + h(pn.active ? 'فعال' : 'غیرفعال') + '</strong><p>' + h(pn.instructions) + '</p><small class="subline">تاریخ پیگیری: ' + h(pn.follow_up_date || '—') + ' · ' + h(fmtDate(pn.created_at)) + '</small></div><div class="card-actions"><button type="button" class="danger-button" data-delete-record="treatment-plan" data-record-id="' + h(pn.id) + '">حذف سابقه</button></div></div>').join('') : '<div class="empty-card">برنامه‌ای ثبت نشده است.</div>'}</div>
+            </section>
             <section class="panel"><div class="panel-heading"><h2>ثبت برنامه پیگیری</h2></div>
               <form id="planForm"><div class="field"><label for="planTitle">عنوان</label><input id="planTitle" name="title" required maxlength="200"></div><div class="field" style="margin-top:12px"><label for="planInstructions">توصیه و برنامه ثبت‌شده توسط پزشک</label><textarea id="planInstructions" name="instructions" required maxlength="4000"></textarea></div><div class="field" style="margin-top:12px"><label for="followUpDate">تاریخ پیگیری (اختیاری)</label><input id="followUpDate" name="followUpDate" type="date"></div><button class="primary full-button" type="submit">ذخیره برنامه پیگیری</button><div class="form-message"></div></form>
+            </section>
+            <section class="panel"><div class="panel-heading"><h2>سوابق داروها</h2><small>${medications.length} مورد</small></div>
+              <div class="row-list">${medications.length ? medications.map(m => '<div class="row-item"><div><strong>' + h(m.name) + ' · ' + h(m.dose || 'دوز ثبت نشده') + '</strong><p>' + h(m.instructions || '') + '</p><small class="subline">' + h(m.active ? 'فعال' : 'غیرفعال') + ' · ' + h(fmtDate(m.created_at)) + '</small></div><div class="card-actions"><button type="button" class="danger-button" data-delete-record="medications" data-record-id="' + h(m.id) + '">حذف سابقه</button></div></div>').join('') : '<div class="empty-card">دارویی ثبت نشده است.</div>'}</div>
             </section>
             <section class="panel"><div class="panel-heading"><h2>ثبت دارو</h2><small>طبق تصمیم پزشک</small></div>
               <form id="medForm"><div class="field"><label for="medName">نام دارو</label><input id="medName" name="name" required maxlength="200"></div><div class="field" style="margin-top:12px"><label for="medDose">دوز / مقدار</label><input id="medDose" name="dose" required maxlength="200"></div><div class="field" style="margin-top:12px"><label for="medInstructions">نحوه مصرف و توضیحات</label><textarea id="medInstructions" name="instructions" maxlength="1000"></textarea></div><button class="primary full-button" type="submit">ثبت دارو</button><div class="form-message"></div></form>
@@ -972,6 +988,15 @@
       document.getElementById('backBtn')?.addEventListener('click',loadDoctorDashboard);
       document.getElementById('logoutBtn')?.addEventListener('click',logout);
       bindDoctorPatientForms(id);
+      root.querySelectorAll('[data-delete-record]').forEach(btn => btn.addEventListener('click', async () => {
+        const type = btn.dataset.deleteRecord;
+        const recordId = btn.dataset.recordId;
+        if (!confirm('این سابقه از پرونده بیمار به‌صورت دائمی حذف شود؟ این کار قابل بازگشت نیست.')) return;
+        try {
+          await api('/doctor/patients/' + encodeURIComponent(id) + '/' + encodeURIComponent(type) + '/' + encodeURIComponent(recordId),'DELETE');
+          await loadDoctorPatient(id);
+        } catch (error) { alert(errorMessage(error)); }
+      }));
     } catch (error) {
       root.innerHTML = '<section class="panel"><h2>باز کردن پرونده ناموفق بود</h2>' + messageBox(errorMessage(error),'error') + '<button class="secondary" id="backBtn">بازگشت به بیماران</button></section>';
       document.getElementById('backBtn')?.addEventListener('click',loadDoctorDashboard);
