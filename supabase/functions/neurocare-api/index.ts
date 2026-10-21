@@ -151,7 +151,7 @@ Deno.serve(async (req:Request)=>{
   if(path==="/v1/patients/register"&&req.method==="POST"){
    const firstName=clean(body.firstName,100),lastName=clean(body.lastName,100),mobile=normalize(body.mobile),nationalId=normalize(body.nationalId),diseaseCode=clean(body.diseaseCode||"unassigned",30),clinic=clean(body.clinicCode,40).toUpperCase();
    const webClient=origin===patientOrigin, submittedPassword=String(body.password||"");
-   if(!firstName||!lastName||!mobileOk(mobile)||!nidOk(nationalId)||clinic!==clinicCode||!["migraine","ms","epilepsy","parkinson","cognition","low_back_pain","stroke","other","unassigned"].includes(diseaseCode))return json({error:"invalid_registration_data"},400,origin);
+   if(!firstName||!lastName||!mobileOk(mobile)||!nidOk(nationalId)||clinic!==clinicCode||!["migraine","ms","epilepsy","parkinson","cognition","low_back_pain","stroke","vertigo","other","unassigned"].includes(diseaseCode))return json({error:"invalid_registration_data"},400,origin);
    if(!(await rateAllowed(req,"patient-register",6,3600)))return json({error:"too_many_attempts"},429,origin);
    if(webClient && !(await verifyCaptcha(req,body)))return json({error:"invalid_captcha"},400,origin);
    if(webClient && !patientPasswordOk(submittedPassword))return json({error:"invalid_patient_password"},400,origin);
