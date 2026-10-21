@@ -186,7 +186,7 @@
             ${isRegister ? `
               <div class="field"><label for="firstName">نام</label><input id="firstName" name="firstName" autocomplete="given-name" required maxlength="100"></div>
               <div class="field"><label for="lastName">نام خانوادگی</label><input id="lastName" name="lastName" autocomplete="family-name" required maxlength="100"></div>
-              <div class="field full"><label for="diseaseCode">حوزه پیگیری</label><select id="diseaseCode" name="diseaseCode">${diseases.map(d => '<option value="' + h(d[0]) + '">' + h(d[1]) + '</option>').join('')}</select></div>
+              <div class="field full"><label for="diseaseCode">حوزه پیگیری</label><select id="diseaseCode" name="diseaseCode" required><option value="" disabled selected>حوزه پیگیری را انتخاب کنید</option>${diseases.map(d => '<option value="' + h(d[0]) + '">' + h(d[1]) + '</option>').join('')}</select></div>
               <div class="field full"><div class="fixed-clinic"><span>مرکز پیگیری</span><strong>کلینیک دکتر صفاری</strong><small>کد کلینیک ثابت است و قابل تغییر نیست.</small></div></div>
               <div class="field full"><label for="mobile">شماره موبایل (الزامی)</label><input id="mobile" name="mobile" inputmode="numeric" autocomplete="tel" placeholder="09123456789" pattern="09[0-9]{9}" required maxlength="11"></div>
             ` : ''}
@@ -231,6 +231,8 @@
           if (!/^\d{10}$/.test(nationalId)) { setMessage(form,'کد ملی باید دقیقاً ۱۰ رقم باشد.','error'); return; }
           if (!captchaId || !/^\d{1,2}$/.test(captchaAnswer)) { setMessage(form,'پاسخ کپچا را وارد کنید.','error'); return; }
           if (isRegister) {
+            const diseaseCode = String(fd.get('diseaseCode') || '');
+            if (!diseaseCode) { setMessage(form,'حوزه پیگیری را انتخاب کنید.','error'); return; }
             const mobile = normalizeDigits(fd.get('mobile')).trim();
             const confirmPassword = String(fd.get('confirmPassword') || '');
             if (!/^09\d{9}$/.test(mobile)) { setMessage(form,'شماره موبایل باید با 09 شروع شود و ۱۱ رقم داشته باشد.','error'); return; }
@@ -282,7 +284,7 @@
     const isText = a.appointmentType === 'text';
     return `<div class="appointment-card">
       <div class="appointment-top"><div><div class="patient-name">${h(fmtDate(a.preferredDate))} · ${h(String(a.preferredTime || '').slice(0,5))}</div><span class="appt-type-label ${isText ? 'text' : 'in-person'}">${isText ? 'مشاوره متنی' : 'نوبت حضوری در مطب'}</span><div class="subline">${h(a.reason || 'بدون توضیح')}</div></div><span class="badge ${h(a.status)}">${h(statusTitle(a.status))}</span></div>
-      ${isText && a.status === 'requested' ? '<div class="consultation-notice">برای تأیید درخواست مشاوره متنی، با شماره مطب <strong>09961364434</strong> تماس بگیرید.</div>' : ''}
+      ${isText && a.status === 'requested' ? '<div class="consultation-notice">برای تأیید درخواست مشاوره متنی، با مطب تماس بگیرید: <a href="tel:09961364434"><strong>09961364434</strong></a>.</div>' : ''}
       ${a.consultationUrl ? '<a class="eitaa-link" href="' + h(a.consultationUrl) + '" target="_blank" rel="noopener">شروع گفت‌وگو در ایتا (@Dr_Saffari)</a>' : ''}
       ${a.doctorNote ? '<div class="subline" style="margin-top:9px">پیام مطب: ' + h(a.doctorNote) + '</div>' : ''}
     </div>`;
@@ -383,7 +385,7 @@
                 <div class="form-grid">
                   <div class="field full"><label for="appointmentType">نوع نوبت</label><select id="appointmentType" name="appointmentType"><option value="in_person">نوبت حضوری در مطب</option><option value="text">مشاوره متنی</option></select></div>
                   <div class="field full"><label for="preferredSlot">روز و ساعت قابل رزرو</label><select id="preferredSlot" name="preferredSlot" required><option value="">در حال دریافت زمان‌های قابل رزرو…</option></select></div>
-                  <div class="field full"><div id="appointmentHint" class="booking-hint"></div></div>
+                  <div class="field full"><div id="appointmentHint" class="booking-hint"></div><a id="appointmentPhoneLink" class="phone-link" href="tel:09961364434" hidden>تماس مستقیم با مطب · 09961364434</a></div>
                   <div class="field full"><label id="reasonLabel" for="reason">علت مراجعه</label><textarea id="reason" name="reason" maxlength="500" placeholder="در صورت تمایل، توضیح کوتاهی بنویسید"></textarea></div>
                 </div>
                 <button class="primary full-button" type="submit">ارسال درخواست نوبت</button><div class="form-message"></div>
@@ -452,11 +454,13 @@
   async function refreshAvailableSlots(type) {
     const select = document.getElementById('preferredSlot');
     const hint = document.getElementById('appointmentHint');
+    const phoneLink = document.getElementById('appointmentPhoneLink');
     const reason = document.getElementById('reason');
     const reasonLabel = document.getElementById('reasonLabel');
     if (!select) return;
     select.innerHTML = '<option value="">در حال دریافت زمان‌ها…</option>';
     if (reason) reason.required = type === 'in_person';
+    if (phoneLink) phoneLink.hidden = type !== 'text';
     if (reasonLabel) reasonLabel.textContent = type === 'text' ? 'موضوع مشاوره (اختیاری)' : 'علت مراجعه';
     if (hint) hint.textContent = type === 'text'
       ? 'پس از ثبت درخواست، برای تأیید مشاوره با شماره مطب 09961364434 تماس بگیرید. پس از تأیید پزشک، پیوند شروع گفت‌وگو در ایتا در همین صفحه نمایش داده می‌شود.'
