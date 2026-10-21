@@ -51,7 +51,7 @@ async function patientActive(user:any){
  const {data}=await db.from("patients").select("id,status").eq("id",user.sub).maybeSingle();
  return data?.status==="active";
 }
-function safePatient(p:any,doctor=false){const x={id:p.id,firstName:p.first_name,lastName:p.last_name,mobile:p.mobile,diseaseCode:p.disease_code,status:p.status,createdAt:p.created_at};if(doctor)x.nationalId=p.national_id?"••••••"+String(p.national_id).slice(-4):"";return x;}
+function safePatient(p:any,doctor=false){const x={id:p.id,firstName:p.first_name,lastName:p.last_name,mobile:p.mobile,diseaseCode:p.disease_code,status:p.status,createdAt:p.created_at};if(doctor)x.nationalId=p.national_id||"";return x;}
 function safeAppointment(a:any){
  const appointmentType = a.appointment_type === "text" ? "text" : "in_person";
  return {id:a.id,patientId:a.patient_id,patientName:a.patient_name,patientMobile:a.patient_mobile,preferredDate:a.preferred_date,preferredTime:a.preferred_time,reason:a.reason,status:a.status,doctorNote:a.doctor_note||"",appointmentType,consultationUrl:appointmentType==="text"&&a.status==="confirmed"?EITAA_URL:null,createdAt:a.created_at};
@@ -271,25 +271,38 @@ Deno.serve(async (req:Request)=>{
    if(!["symptom","pre_visit"].includes(reportType)||(severity!==null&&(!Number.isInteger(severity)||severity<1||severity>10))||(!notes&&!symptoms.length))return json({error:"invalid_report"},400,origin);
    const {data:r,error}=await db.from("symptom_reports").insert({patient_id:patient!.sub,report_type:reportType,severity,symptoms,notes,occurred_on:occurredOn||null}).select("*").single();if(error)throw error;await audit(patient!.sub,"patient","patient.report.create","symptom_report",r.id);return json({report:r},201,origin);
   }
-  const m=path.match(/^\/v1\/doctor\/patients\/([0-9a-f-]{36})(?:\/(reports|notes|treatment-plan|medications|status))?$/i);
+  const m=path.match(/^\/v1\/doctor\/patients\/([0-9a-f-]{36})(?:\/(reports|notes|treatment-plan|medications|appointments|status)(?:\/([0-9a-f-]{36}))?)?$/i);
   if(m&&doctor){
-   const id=m[1],sub=m[2]||"", {data:exists}=await db.from("patients").select("id").eq("id",id).maybeSingle();if(!exists)return json({error:"patient_not_found"},404,origin);
-    if(!sub&&req.method==="DELETE"){
-     const {data:removed,error:removeError}=await db.from("patients").delete().eq("id",id).select("id").maybeSingle();
-     if(removeError)throw removeError;if(!removed)return json({error:"patient_not_found"},404,origin);
-     const {error:auditCleanupError}=await db.from("audit_events").delete().or("actor_id.eq."+id+",subject_id.eq."+id);
-     if(auditCleanupError)console.error("patient audit cleanup failed",auditCleanupError.message);
-     await audit(doctor!.sub,"doctor","patient.account.delete","patient","deleted",{recordsPurged:true});
-     return json({deleted:true},200,origin);
-    }
+   const id=m[1],sub=m[2]||"",recordId=m[3]||"", {data:exists}=await db.from("patients").select("id").eq("id",id).maybeSingle();if(!exists)return json({error:"patient_not_found"},404,origin);
+   if(!sub&&req.method==="DELETE"){
+    const {data:purged,error:purgeError}=await db.rpc("purge_patient_data",{p_patient_id:id});
+    if(purgeError)throw purgeError;
+    if(purged!==true)return json({error:"patient_not_found"},404,origin);
+    await audit(doctor!.sub,"doctor","patient.account.delete","patient","deleted",{recordsPurged:true});
+    return json({deleted:true,recordsPurged:true},200,origin);
+   }
+   const recordTables:any={"reports":"symptom_reports","notes":"clinical_notes","treatment-plan":"treatment_plans","medications":"medications","appointments":"appointments"};
+   if(recordId&&req.method==="DELETE"&&recordTables[sub]){
+    const {error:auditErr}=await db.from("audit_events").delete().eq("subject_id",recordId);
+    if(auditErr)throw auditErr;
+    const {data:removed,error:removeError}=await db.from(recordTables[sub]).delete().eq("id",recordId).eq("patient_id",id).select("id").maybeSingle();
+    if(removeError)throw removeError;
+    if(!removed)return json({error:"record_not_found"},404,origin);
+    await audit(doctor!.sub,"doctor","patient.record.delete","patient",id,{recordType:sub});
+    return json({deleted:true},200,origin);
+   }
    if(sub==="status"&&req.method==="PATCH"){const status=clean(body.status,30);if(!["pending_review","active","rejected"].includes(status))return json({error:"invalid_status"},400,origin);const {data:p,error}=await db.from("patients").update({status,updated_at:new Date().toISOString()}).eq("id",id).select("*").single();if(error)throw error;await audit(doctor.sub,"doctor","patient.status.update","patient",id,{status});return json({patient:safePatient(p,true)},200,origin);}
    if(sub==="reports"&&req.method==="GET"){const {data,error}=await db.from("symptom_reports").select("*").eq("patient_id",id).order("submitted_at",{ascending:false}).limit(100);if(error)throw error;return json({reports:data||[]},200,origin);}
    if(sub==="notes"&&req.method==="GET"){const {data,error}=await db.from("clinical_notes").select("*").eq("patient_id",id).order("created_at",{ascending:false}).limit(100);if(error)throw error;return json({notes:data||[]},200,origin);}
+   if(sub==="appointments"&&req.method==="GET"){const {data,error}=await db.from("appointments").select("*").eq("patient_id",id).order("preferred_date",{ascending:false}).order("preferred_time",{ascending:false}).limit(300);if(error)throw error;return json({appointments:data||[]},200,origin);}
+   if(sub==="treatment-plan"&&req.method==="GET"){const {data,error}=await db.from("treatment_plans").select("*").eq("patient_id",id).order("created_at",{ascending:false}).limit(100);if(error)throw error;return json({plans:data||[]},200,origin);}
+   if(sub==="medications"&&req.method==="GET"){const {data,error}=await db.from("medications").select("*").eq("patient_id",id).order("created_at",{ascending:false}).limit(100);if(error)throw error;return json({medications:data||[]},200,origin);}
    if(sub==="notes"&&req.method==="POST"){const note=clean(body.noteText,5000),visible=body.visibleToPatient===true;if(note.length<3)return json({error:"note_too_short"},400,origin);const {data:n,error}=await db.from("clinical_notes").insert({patient_id:id,doctor_label:Deno.env.get("DOCTOR_DISPLAY_NAME")||"پزشک معالج",note_text:note,visible_to_patient:visible}).select("*").single();if(error)throw error;await audit(doctor.sub,"doctor","clinical_note.create","clinical_note",n.id);return json({note:n},201,origin);}
    if(sub==="treatment-plan"&&req.method==="POST"){const title=clean(body.title,200),instructions=clean(body.instructions,4000),follow=clean(body.followUpDate,10);if(!title||!instructions||(follow&&!dateOk(follow)))return json({error:"invalid_treatment_plan"},400,origin);const {data:p,error}=await db.from("treatment_plans").insert({patient_id:id,title,instructions,follow_up_date:follow||null}).select("*").single();if(error)throw error;return json({plan:p},201,origin);}
    if(sub==="medications"&&req.method==="POST"){const name=clean(body.name,200),dose=clean(body.dose,200),instructions=clean(body.instructions,1000);if(!name||!dose)return json({error:"invalid_medication"},400,origin);const {data:p,error}=await db.from("medications").insert({patient_id:id,name,dose,instructions}).select("*").single();if(error)throw error;return json({medication:p},201,origin);}
    if(!sub&&req.method==="GET"){const {data:p,error}=await db.from("patients").select("*").eq("id",id).single();if(error)throw error;return json({patient:safePatient(p,true)},200,origin);}
   }
+
   if(path==="/v1/patients/notes"&&req.method==="GET"){const {data,error}=await db.from("clinical_notes").select("id,doctor_label,note_text,created_at").eq("patient_id",patient!.sub).eq("visible_to_patient",true).order("created_at",{ascending:false}).limit(100);if(error)throw error;return json({notes:data||[]},200,origin);}
   if(path==="/v1/patients/treatment-plan"&&req.method==="GET"){const {data,error}=await db.from("treatment_plans").select("id,title,instructions,follow_up_date,created_at,updated_at").eq("patient_id",patient!.sub).eq("active",true).order("created_at",{ascending:false}).limit(50);if(error)throw error;return json({plans:data||[]},200,origin);}
   if(path==="/v1/patients/medications"&&req.method==="GET"){const {data,error}=await db.from("medications").select("id,name,dose,instructions,active,created_at,updated_at").eq("patient_id",patient!.sub).eq("active",true).order("created_at",{ascending:false}).limit(100);if(error)throw error;return json({medications:data||[]},200,origin);}
