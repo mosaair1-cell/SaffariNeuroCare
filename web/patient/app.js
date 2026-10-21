@@ -50,6 +50,9 @@
     availability_not_found:'بازه زمانی موردنظر پیدا نشد.'
   };
   const h = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const normalizeDigits = (value) => String(value == null ? '' : value)
+    .replace(/[۰-۹]/g, c => String(c.charCodeAt(0) - 0x06f0))
+    .replace(/[٠-٩]/g, c => String(c.charCodeAt(0) - 0x0660));
   const diseaseTitle = (code) => (diseases.find(d => d[0] === code) || ['','تعیین‌نشده'])[1];
   const statusTitle = (s) => statusLabels[s] || s || 'نامشخص';
   const fmtDate = (value) => {
@@ -221,14 +224,14 @@
         if (isDoctor) {
           data = await api('/doctor/login','POST',{clinicCode:fd.get('clinicCode'),password:fd.get('password')});
         } else {
-          const nationalId = String(fd.get('nationalId') || '').trim();
+          const nationalId = normalizeDigits(fd.get('nationalId')).trim();
           const password = String(fd.get('password') || '');
           const captchaId = String(fd.get('captchaId') || '');
-          const captchaAnswer = String(fd.get('captchaAnswer') || '').trim();
+          const captchaAnswer = normalizeDigits(fd.get('captchaAnswer')).trim();
           if (!/^\d{10}$/.test(nationalId)) { setMessage(form,'کد ملی باید دقیقاً ۱۰ رقم باشد.','error'); return; }
           if (!captchaId || !/^\d{1,2}$/.test(captchaAnswer)) { setMessage(form,'پاسخ کپچا را وارد کنید.','error'); return; }
           if (isRegister) {
-            const mobile = String(fd.get('mobile') || '');
+            const mobile = normalizeDigits(fd.get('mobile')).trim();
             const confirmPassword = String(fd.get('confirmPassword') || '');
             if (!/^09\d{9}$/.test(mobile)) { setMessage(form,'شماره موبایل باید با 09 شروع شود و ۱۱ رقم داشته باشد.','error'); return; }
             if (!/^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z0-9])[\x21-\x7e]{8,12}$/.test(password)) { setMessage(form,'رمز باید ۸ تا ۱۲ نویسه انگلیسی و شامل حرف، عدد و نماد باشد.','error'); return; }
@@ -741,6 +744,16 @@
     });
   }
   window.addEventListener('appinstalled',() => { if (installAppBtn) { installAppBtn.textContent = 'نصب شده'; installAppBtn.disabled = true; } });
+  document.querySelectorAll('[data-open-register]').forEach(link => link.addEventListener('click',event => {
+    event.preventDefault();
+    showLogin(APP_ROLE,'register');
+    document.getElementById('app')?.scrollIntoView({behavior:'smooth',block:'start'});
+  }));
+  document.querySelectorAll('[data-open-login]').forEach(link => link.addEventListener('click',event => {
+    event.preventDefault();
+    showLogin(APP_ROLE,'login');
+    document.getElementById('app')?.scrollIntoView({behavior:'smooth',block:'start'});
+  }));
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
     window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
   }
