@@ -19,6 +19,7 @@
     ['cognition','اختلالات شناختی'],
     ['low_back_pain','کمردرد'],
     ['stroke','سکته مغزی'],
+    ['vertigo','سرگیجه و اختلال تعادل'],
     ['other','سایر'],
     ['unassigned','هنوز مشخص نیست']
   ];
@@ -50,7 +51,9 @@
     slot_unavailable:'این زمان همین حالا رزرو شده یا دیگر قابل انتخاب نیست؛ زمان دیگری را انتخاب کنید.',
     invalid_availability:'روز یا ساعت کاری واردشده معتبر نیست.',
     invalid_leave_range:'بازه مرخصی یا نوع نوبت واردشده معتبر نیست.',
-    availability_not_found:'بازه زمانی موردنظر پیدا نشد.'
+    availability_not_found:'بازه زمانی موردنظر پیدا نشد.',
+    score_not_applicable:'ثبت EDSS فقط برای پرونده بیماران ام‌اس فعال است.',
+    invalid_edss:'نمره EDSS، تاریخ یا توضیحات واردشده معتبر نیست.'
   };
   const h = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const normalizeDigits = (value) => String(value == null ? '' : value)
@@ -412,6 +415,36 @@
     });
   }
 
+  function conditionResourceSection(code) {
+    const resources = {
+      ms: {icon:'MS',title:'همراه تخصصی ام‌اس',description:'برای استفاده از آموزش‌ها و ابزارهای اختصاصی پیگیری ام‌اس، وارد اپ همراه ام‌اس شوید.',button:'ورود به اپ همراه ام‌اس',href:'https://ms.mhsaffari.ir/',hint:'آموزش و پیگیری ویژه ام‌اس'},
+      migraine: {icon:'✦',title:'راهنمای میگرن و سردرد',description:'مقالات آموزشی درباره سردرد، محرک‌ها، تشخیص و مسیرهای درمان را مطالعه کنید.',button:'مطالعه مقالات میگرن و سردرد',href:'https://mhsaffari.ir/articles-migraine-headache.html',hint:'وب‌سایت رسمی دکتر صفاری'},
+      stroke: {icon:'＋',title:'راهنمای سکته مغزی',description:'با علائم هشدار، انواع سکته، عوامل خطر، درمان و راه‌های پیشگیری آشنا شوید.',button:'مطالعه راهنمای سکته مغزی',href:'https://mhsaffari.ir/articles/neurology/stroke-cva-symptoms-types-causes-treatment-prevention.html',hint:'اطلاعات آموزشی معتبر'},
+      vertigo: {icon:'◉',title:'راهنمای سرگیجه و اختلال تعادل',description:'علل شایع سرگیجه، روش‌های بررسی و گزینه‌های درمانی را مرور کنید.',button:'مطالعه مقاله سرگیجه',href:'https://mhsaffari.ir/articles/neurology/vertigo-causes-symptoms-diagnosis-treatment.html',hint:'راهنمای آموزشی نورولوژی'},
+      parkinson: {icon:'✧',title:'راهنمای بیماری پارکینسون',description:'اطلاعاتی درباره علائم، تشخیص و درمان پارکینسون در وب‌سایت رسمی.',button:'مطالعه مقاله پارکینسون',href:'https://mhsaffari.ir/articles/neurology/parkinson.html',hint:'راهنمای آموزشی نورولوژی'},
+      cognition: {icon:'◌',title:'راهنمای اختلالات شناختی و حافظه',description:'فراموشی، اختلال شناختی و بیماری‌های مرتبط با حافظه را بهتر بشناسید.',button:'مطالعه مقاله حافظه و اختلال شناختی',href:'https://mhsaffari.ir/articles/neurology/forgetfulness-alzheimer-dementia-parkinson-transient-global-amnesia.html',hint:'راهنمای آموزشی نورولوژی'},
+      epilepsy: {icon:'⚡',title:'راهنمای تشنج و صرع',description:'با تفاوت تشنج و صرع، علائم، ارزیابی و زمان‌های نیازمند اقدام فوری آشنا شوید.',button:'مطالعه مقاله تشنج و صرع',href:'https://mhsaffari.ir/articles/neurology/seizure-what-is-difference-epilepsy-symptoms-causes-diagnosis-emergency.html',hint:'راهنمای آموزشی نورولوژی'},
+      low_back_pain: {icon:'↕',title:'راهنمای کمردرد و سیاتیک',description:'علت‌ها، علائم هشدار و مسیرهای بررسی و درمان کمردرد را مطالعه کنید.',button:'مطالعه مقاله کمردرد و سیاتیک',href:'https://mhsaffari.ir/articles/neurology/low-back-pain-sciatica-causes-symptoms-diagnosis-treatment.html',hint:'راهنمای آموزشی نورولوژی'},
+      other: {icon:'＋',title:'کتابخانه آموزش مغز و اعصاب',description:'برای آشنایی با سایر بیماری‌ها و موضوعات نورولوژی، مقالات سایت رسمی را ببینید.',button:'مشاهده مقالات مغز و اعصاب',href:'https://mhsaffari.ir/articles-neurology.html',hint:'کتابخانه آموزشی دکتر صفاری'},
+      unassigned: {icon:'＋',title:'کتابخانه آموزش مغز و اعصاب',description:'برای آشنایی با بیماری‌ها و موضوعات مختلف نورولوژی، مقالات سایت رسمی را ببینید.',button:'مشاهده مقالات مغز و اعصاب',href:'https://mhsaffari.ir/articles-neurology.html',hint:'کتابخانه آموزشی دکتر صفاری'}
+    };
+    const item = resources[code] || resources.other;
+    return '<section class="panel condition-resource-panel" aria-label="منبع آموزشی مرتبط با بیماری">' +
+      '<div class="condition-resource-copy"><span class="condition-resource-eyebrow">منبع مرتبط با حوزه پیگیری شما</span><h2>' + h(item.title) + '</h2><p>' + h(item.description) + '</p></div>' +
+      '<a class="condition-resource-button" href="' + h(item.href) + '" target="_blank" rel="noopener noreferrer"><span class="condition-resource-icon">' + h(item.icon) + '</span><span class="condition-resource-label"><strong>' + h(item.button) + '</strong><small>' + h(item.hint) + '</small></span><b aria-hidden="true">←</b></a>' +
+      '</section>';
+  }
+
+  function patientEdssPanel(scores) {
+    const rows = Array.isArray(scores) ? scores : [];
+    const history = rows.length
+      ? '<div class="row-list">' + rows.map(s => '<div class="row-item edss-history-item"><div><strong>نمره EDSS: ' + h(Number(s.score_value).toFixed(1)) + '</strong><p>' + h(s.notes || 'توضیحی برای این ارزیابی ثبت نشده است.') + '</p></div><small class="subline">' + h(fmtDate(s.assessed_on)) + '</small></div>').join('') + '</div>'
+      : '<div class="empty-card">هنوز ارزیابی EDSS در پرونده شما ثبت نشده است. در صورت نیاز، پزشک در جلسه ارزیابی این شاخص را ثبت می‌کند.</div>';
+    return '<section class="panel edss-panel"><div class="panel-heading"><h2>روند ارزیابی EDSS</h2><small>' + rows.length + ' ارزیابی</small></div>' +
+      '<p class="edss-explainer">EDSS شاخصی برای ثبت سطح ناتوانی در ام‌اس است. اعداد این بخش فقط از ارزیابی پزشک نمایش داده می‌شوند و جایگزین توضیح و تصمیم بالینی پزشک نیستند.</p>' +
+      history + '</section>';
+  }
+
   async function loadPatientDashboard() {
     root.innerHTML = '<section class="loading-card"><div class="spinner"></div><p>در حال دریافت اطلاعات حساب…</p></section>';
     try {
@@ -419,17 +452,20 @@
       currentPatient = profile;
       if (profile.requiresPasswordChange) { renderPasswordChange(); return; }
       const active = profile.status === 'active';
-      let appointments = [], reports = [], notes = [], plans = [], medications = [];
+      let appointments = [], reports = [], notes = [], plans = [], medications = [], clinicalScores = [];
       if (active) {
-        const values = await Promise.allSettled([
+        const requests = [
           api('/patients/appointments'), api('/patients/reports'), api('/patients/notes'),
           api('/patients/treatment-plan'), api('/patients/medications')
-        ]);
+        ];
+        if (profile.diseaseCode === 'ms') requests.push(api('/patients/clinical-scores'));
+        const values = await Promise.allSettled(requests);
         appointments = values[0].status === 'fulfilled' ? values[0].value.appointments || [] : [];
         reports = values[1].status === 'fulfilled' ? values[1].value.reports || [] : [];
         notes = values[2].status === 'fulfilled' ? values[2].value.notes || [] : [];
         plans = values[3].status === 'fulfilled' ? values[3].value.plans || [] : [];
         medications = values[4].status === 'fulfilled' ? values[4].value.medications || [] : [];
+        clinicalScores = profile.diseaseCode === 'ms' && values[5]?.status === 'fulfilled' ? values[5].value.scores || [] : [];
       }
       root.innerHTML = `
         <div class="dash-head">
@@ -443,9 +479,11 @@
           ${metric('داروهای ثبت‌شده',String(medications.length),'طبق دستور پزشک')}
           ${metric('گزارش علائم',String(reports.length),'ثبت‌ها و پیش‌ویزیت‌ها')}
         </div>
+        ${conditionResourceSection(profile.diseaseCode)}
         ${active ? `
         <div class="content-grid">
           <div class="stack">
+            ${profile.diseaseCode === 'ms' ? patientEdssPanel(clinicalScores) : ''}
             <section class="panel">
                           <div class="panel-heading"><h2>برنامه پیگیری پزشک</h2><small>اطلاعات ثبت‌شده</small></div>
                           <div class="list">${plans.length ? plans.map(p => simpleCard(p.title,p.instructions,p.follow_up_date)).join('') : '<div class="empty-card">هنوز برنامه پیگیری‌ای ثبت نشده است.</div>'}</div>
