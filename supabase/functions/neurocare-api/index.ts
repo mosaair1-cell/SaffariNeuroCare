@@ -166,6 +166,7 @@ Deno.serve(async (req:Request)=>{
    const hash=Deno.env.get("DOCTOR_PASSWORD_HASH")||"";
    const code=clean(body.clinicCode,40).toUpperCase(),password=String(body.password||"");
    if(!hash)return json({error:"doctor_login_not_configured"},503,origin);
+   if(!(await rateAllowed(req,"doctor-login",10,900)))return json({error:"too_many_attempts"},429,origin);
    if(code!==clinicCode||!(await bcrypt.compare(password,hash)))return json({error:"invalid_credentials"},401,origin);
    const token=await issueSession("00000000-0000-4000-8000-000000000001","doctor");await audit("00000000-0000-4000-8000-000000000001","doctor","doctor.login","session","00000000-0000-4000-8000-000000000001");
    return json({token},200,origin);
