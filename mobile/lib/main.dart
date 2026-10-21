@@ -69,7 +69,7 @@ class SaffariNeuroCareApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Saffari NeuroCare',
+      title: 'همراه سلامت صفاری',
       theme: ThemeData(
         useMaterial3: true,
         scaffoldBackgroundColor: AppColors.bg,
@@ -230,7 +230,7 @@ class _LoginPageState extends State<LoginPage> {
             ),
             const SizedBox(height: 6),
             const Text(
-              'مراقبت هوشمند، همراه با دکتر صفاری',
+              'دسترسی به نوبت، پرونده پزشکی و پیگیری درمان',
               style: TextStyle(color: AppColors.muted),
             ),
             const SizedBox(height: 28),
