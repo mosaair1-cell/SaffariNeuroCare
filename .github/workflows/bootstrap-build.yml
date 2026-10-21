@@ -1,8 +1,7 @@
-name: Build Android APKs and Patient Play Bundle
+name: Build Android APKs
 
 on:
-  push:
-    branches: [main]
+  # Build Android packages only when explicitly requested.
   workflow_dispatch:
 
 concurrency:
@@ -13,12 +12,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      SAFFARI_API_BASE_URL: ${{ vars.SAFFARI_API_BASE_URL || 'https://hiiwexmjrwjaehsvxnvz.supabase.co/functions/v1/neurocare-api/v1' }}
-      SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_86mQsVOsDK92vf9DAGXPFg_-d2OQlWs' }}
-      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      SAFFARI_API_BASE_URL: ${{ vars.SAFFARI_API_BASE_URL }}
+      SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -32,7 +27,7 @@ jobs:
       - name: Build patient ARM64 APK
         working-directory: mobile
         run: |
-          flutter create . --platforms=android --org ir.mhsaffari
+          flutter create . --platforms=android
           python3 - <<'PY'
           from pathlib import Path
           manifest = Path("android/app/src/main/AndroidManifest.xml")
@@ -46,38 +41,14 @@ jobs:
               )
               manifest.write_text(text)
           PY
-          python3 ../scripts/configure_flutter_android.py --label "همراه سلامت صفاری" --application-id "ir.mhsaffari.saffari_neurocare"
-          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
-            test -n "$ANDROID_KEYSTORE_PASSWORD" && test -n "$ANDROID_KEY_ALIAS" && test -n "$ANDROID_KEY_PASSWORD"
-            printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/upload-keystore.jks
-            cat > android/key.properties <<EOF
-            storePassword=$ANDROID_KEYSTORE_PASSWORD
-            keyPassword=$ANDROID_KEY_PASSWORD
-            keyAlias=$ANDROID_KEY_ALIAS
-            storeFile=upload-keystore.jks
-          EOF
-          fi
           flutter pub get
-          flutter build apk --release --target-platform android-arm64 --dart-define="SAFFARI_API_BASE_URL=${SAFFARI_API_BASE_URL:-https://hiiwexmjrwjaehsvxnvz.supabase.co/functions/v1/neurocare-api/v1}" --dart-define="SUPABASE_PUBLISHABLE_KEY=${SUPABASE_PUBLISHABLE_KEY:-sb_publishable_86mQsVOsDK92vf9DAGXPFg_-d2OQlWs}"
+          flutter build apk --release --target-platform android-arm64 --dart-define="SAFFARI_API_BASE_URL=${SAFFARI_API_BASE_URL:-https://YOUR-PROJECT-REF.supabase.co/functions/v1/neurocare-api/v1}" --dart-define="SUPABASE_PUBLISHABLE_KEY=${SUPABASE_PUBLISHABLE_KEY:-YOUR-PUBLISHABLE-KEY}"
           cp build/app/outputs/flutter-apk/app-release.apk ../SaffariNeuroCare-Patient-ARM64.apk
-
-      - name: Build patient Google Play App Bundle
-        working-directory: mobile
-        run: |
-          flutter build appbundle --release --dart-define="SAFFARI_API_BASE_URL=${SAFFARI_API_BASE_URL:-https://hiiwexmjrwjaehsvxnvz.supabase.co/functions/v1/neurocare-api/v1}" --dart-define="SUPABASE_PUBLISHABLE_KEY=${SUPABASE_PUBLISHABLE_KEY:-sb_publishable_86mQsVOsDK92vf9DAGXPFg_-d2OQlWs}"
-          cp build/app/outputs/bundle/release/app-release.aab ../SaffariNeuroCare-Patient.aab
-
-      - name: Upload patient Google Play bundle
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.ANDROID_KEYSTORE_BASE64 != '' && 'SaffariNeuroCare-Patient-Play-Store-AAB' || 'SaffariNeuroCare-Patient-AAB-TEST-ONLY' }}
-          path: SaffariNeuroCare-Patient.aab
-          if-no-files-found: error
 
       - name: Analyze patient APK size
         working-directory: mobile
         run: |
-          flutter build apk --release --target-platform android-arm64 --dart-define="SAFFARI_API_BASE_URL=${SAFFARI_API_BASE_URL:-https://hiiwexmjrwjaehsvxnvz.supabase.co/functions/v1/neurocare-api/v1}" --dart-define="SUPABASE_PUBLISHABLE_KEY=${SUPABASE_PUBLISHABLE_KEY:-sb_publishable_86mQsVOsDK92vf9DAGXPFg_-d2OQlWs}" --analyze-size > ../patient-size-report.txt
+          flutter build apk --release --target-platform android-arm64 --dart-define="SAFFARI_API_BASE_URL=${SAFFARI_API_BASE_URL:-https://YOUR-PROJECT-REF.supabase.co/functions/v1/neurocare-api/v1}" --dart-define="SUPABASE_PUBLISHABLE_KEY=${SUPABASE_PUBLISHABLE_KEY:-YOUR-PUBLISHABLE-KEY}" --analyze-size > ../patient-size-report.txt
           tail -n 40 ../patient-size-report.txt || true
 
       - name: Upload patient APK
@@ -97,7 +68,7 @@ jobs:
       - name: Build doctor ARM64 APK
         working-directory: doctor_mobile
         run: |
-          flutter create . --platforms=android --org ir.mhsaffari
+          flutter create . --platforms=android
           python3 - <<'PY'
           from pathlib import Path
           manifest = Path("android/app/src/main/AndroidManifest.xml")
@@ -111,25 +82,14 @@ jobs:
               )
               manifest.write_text(text)
           PY
-          python3 ../scripts/configure_flutter_android.py --label "پنل پزشک صفاری" --application-id "ir.mhsaffari.saffari_neurocare_doctor"
-          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
-            test -n "$ANDROID_KEYSTORE_PASSWORD" && test -n "$ANDROID_KEY_ALIAS" && test -n "$ANDROID_KEY_PASSWORD"
-            printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/upload-keystore.jks
-            cat > android/key.properties <<EOF
-            storePassword=$ANDROID_KEYSTORE_PASSWORD
-            keyPassword=$ANDROID_KEY_PASSWORD
-            keyAlias=$ANDROID_KEY_ALIAS
-            storeFile=upload-keystore.jks
-          EOF
-          fi
           flutter pub get
-          flutter build apk --release --target-platform android-arm64 --dart-define="SAFFARI_API_BASE_URL=${SAFFARI_API_BASE_URL:-https://hiiwexmjrwjaehsvxnvz.supabase.co/functions/v1/neurocare-api/v1}" --dart-define="SUPABASE_PUBLISHABLE_KEY=${SUPABASE_PUBLISHABLE_KEY:-sb_publishable_86mQsVOsDK92vf9DAGXPFg_-d2OQlWs}"
+          flutter build apk --release --target-platform android-arm64 --dart-define="SAFFARI_API_BASE_URL=${SAFFARI_API_BASE_URL:-https://YOUR-PROJECT-REF.supabase.co/functions/v1/neurocare-api/v1}" --dart-define="SUPABASE_PUBLISHABLE_KEY=${SUPABASE_PUBLISHABLE_KEY:-YOUR-PUBLISHABLE-KEY}"
           cp build/app/outputs/flutter-apk/app-release.apk ../SaffariNeuroCare-Doctor-ARM64.apk
 
       - name: Analyze doctor APK size
         working-directory: doctor_mobile
         run: |
-          flutter build apk --release --target-platform android-arm64 --dart-define="SAFFARI_API_BASE_URL=${SAFFARI_API_BASE_URL:-https://hiiwexmjrwjaehsvxnvz.supabase.co/functions/v1/neurocare-api/v1}" --dart-define="SUPABASE_PUBLISHABLE_KEY=${SUPABASE_PUBLISHABLE_KEY:-sb_publishable_86mQsVOsDK92vf9DAGXPFg_-d2OQlWs}" --analyze-size > ../doctor-size-report.txt
+          flutter build apk --release --target-platform android-arm64 --dart-define="SAFFARI_API_BASE_URL=${SAFFARI_API_BASE_URL:-https://YOUR-PROJECT-REF.supabase.co/functions/v1/neurocare-api/v1}" --dart-define="SUPABASE_PUBLISHABLE_KEY=${SUPABASE_PUBLISHABLE_KEY:-YOUR-PUBLISHABLE-KEY}" --analyze-size > ../doctor-size-report.txt
           tail -n 40 ../doctor-size-report.txt || true
 
       - name: Upload doctor APK
