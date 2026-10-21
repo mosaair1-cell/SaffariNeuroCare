@@ -465,7 +465,7 @@
       const result = await api('/patients/availability?type=' + encodeURIComponent(type));
       const slots = result.slots || [];
       select.innerHTML = slots.length
-        ? slots.map(slot => '<option value="' + h(slot.date) + '|' + h(slot.time) + '">' + h(fmtDate(slot.date)) + ' · ' + h(slot.time) + '</option>').join('')
+        ? '<option value="">یک زمان را انتخاب کنید</option>' + slots.map(slot => '<option value="' + h(slot.date) + '|' + h(slot.time) + '">' + h(fmtDate(slot.date)) + ' · ' + h(slot.time) + '</option>').join('')
         : '<option value="">فعلاً زمانی برای رزرو تعریف نشده است</option>';
       if (!slots.length && hint) hint.textContent += ' برای اطلاع از زمان‌های جدید با مطب تماس بگیرید.';
     } catch (error) {
@@ -547,6 +547,7 @@
     </div>`;
   }
   const weekdayNames = ['یکشنبه','دوشنبه','سه‌شنبه','چهارشنبه','پنجشنبه','جمعه','شنبه'];
+  const weekdayOrder = [{label:'شنبه',value:6},{label:'یکشنبه',value:0},{label:'دوشنبه',value:1},{label:'سه‌شنبه',value:2},{label:'چهارشنبه',value:3},{label:'پنجشنبه',value:4},{label:'جمعه',value:5}];
   function renderAvailability(row) {
     const typeTitle = row.appointment_type === 'text' ? 'مشاوره متنی' : 'نوبت حضوری';
     return '<div class="availability-row"><div><strong>' + h(typeTitle) + ' · ' + h(weekdayNames[Number(row.day_of_week)] || '') + '</strong><small>' + h(String(row.start_time).slice(0,5)) + ' تا ' + h(String(row.end_time).slice(0,5)) + ' · هر نوبت ' + h(row.slot_minutes) + ' دقیقه</small></div><div class="availability-row-actions"><span class="badge ' + (row.is_active ? 'active' : 'cancelled') + '">' + (row.is_active ? 'فعال' : 'غیرفعال') + '</span><button type="button" class="ghost-button" data-availability-toggle="' + h(row.id) + '" data-active="' + String(row.is_active) + '">' + (row.is_active ? 'غیرفعال‌کردن' : 'فعال‌کردن') + '</button></div></div>';
@@ -589,7 +590,7 @@
           <form id="availabilityForm">
             <div class="form-grid">
               <div class="field"><label for="availabilityType">نوع نوبت</label><select id="availabilityType" name="appointmentType"><option value="in_person">حضوری در مطب</option><option value="text">مشاوره متنی</option></select></div>
-              <div class="field"><label for="availabilityDay">روز هفته</label><select id="availabilityDay" name="dayOfWeek">${weekdayNames.map((d,i)=>'<option value="'+i+'">'+h(d)+'</option>').join('')}</select></div>
+              <div class="field"><label for="availabilityDay">روز هفته</label><select id="availabilityDay" name="dayOfWeek">${weekdayOrder.map(d=>'<option value="'+d.value+'">'+h(d.label)+'</option>').join('')}</select></div>
               <div class="field"><label for="availabilityStart">از ساعت</label><input id="availabilityStart" name="startTime" type="time" value="09:00" required></div>
               <div class="field"><label for="availabilityEnd">تا ساعت</label><input id="availabilityEnd" name="endTime" type="time" value="12:00" required></div>
               <div class="field"><label for="availabilityDuration">مدت هر نوبت</label><select id="availabilityDuration" name="slotMinutes"><option value="15">۱۵ دقیقه</option><option value="20">۲۰ دقیقه</option><option value="30" selected>۳۰ دقیقه</option><option value="45">۴۵ دقیقه</option><option value="60">۶۰ دقیقه</option></select></div>
