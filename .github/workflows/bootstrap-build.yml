@@ -51,11 +51,11 @@ jobs:
             test -n "$ANDROID_KEYSTORE_PASSWORD" && test -n "$ANDROID_KEY_ALIAS" && test -n "$ANDROID_KEY_PASSWORD"
             printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/upload-keystore.jks
             cat > android/key.properties <<EOF
-storePassword=$ANDROID_KEYSTORE_PASSWORD
-keyPassword=$ANDROID_KEY_PASSWORD
-keyAlias=$ANDROID_KEY_ALIAS
-storeFile=upload-keystore.jks
-EOF
+            storePassword=$ANDROID_KEYSTORE_PASSWORD
+            keyPassword=$ANDROID_KEY_PASSWORD
+            keyAlias=$ANDROID_KEY_ALIAS
+            storeFile=upload-keystore.jks
+          EOF
           fi
           flutter pub get
           flutter build apk --release --target-platform android-arm64 --dart-define="SAFFARI_API_BASE_URL=${SAFFARI_API_BASE_URL:-https://hiiwexmjrwjaehsvxnvz.supabase.co/functions/v1/neurocare-api/v1}" --dart-define="SUPABASE_PUBLISHABLE_KEY=${SUPABASE_PUBLISHABLE_KEY:-sb_publishable_86mQsVOsDK92vf9DAGXPFg_-d2OQlWs}"
@@ -116,11 +116,11 @@ EOF
             test -n "$ANDROID_KEYSTORE_PASSWORD" && test -n "$ANDROID_KEY_ALIAS" && test -n "$ANDROID_KEY_PASSWORD"
             printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/upload-keystore.jks
             cat > android/key.properties <<EOF
-storePassword=$ANDROID_KEYSTORE_PASSWORD
-keyPassword=$ANDROID_KEY_PASSWORD
-keyAlias=$ANDROID_KEY_ALIAS
-storeFile=upload-keystore.jks
-EOF
+            storePassword=$ANDROID_KEYSTORE_PASSWORD
+            keyPassword=$ANDROID_KEY_PASSWORD
+            keyAlias=$ANDROID_KEY_ALIAS
+            storeFile=upload-keystore.jks
+          EOF
           fi
           flutter pub get
           flutter build apk --release --target-platform android-arm64 --dart-define="SAFFARI_API_BASE_URL=${SAFFARI_API_BASE_URL:-https://hiiwexmjrwjaehsvxnvz.supabase.co/functions/v1/neurocare-api/v1}" --dart-define="SUPABASE_PUBLISHABLE_KEY=${SUPABASE_PUBLISHABLE_KEY:-sb_publishable_86mQsVOsDK92vf9DAGXPFg_-d2OQlWs}"
