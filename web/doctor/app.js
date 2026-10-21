@@ -66,6 +66,9 @@
   const jalaliMonthFormatter = new Intl.DateTimeFormat('fa-IR-u-ca-persian', {
     year:'numeric', month:'long'
   });
+  const jalaliDayNumberFormatter = new Intl.DateTimeFormat('fa-IR-u-ca-persian', {
+    day:'numeric'
+  });
   const jalaliFullDateFormatter = new Intl.DateTimeFormat('fa-IR-u-ca-persian', {
     weekday:'long', year:'numeric', month:'long', day:'numeric'
   });
@@ -576,7 +579,7 @@
         const selected = bookingCalendar.selectedDate === dateIso;
         const dateLabel = jalaliFullDateFormatter.format(dateFromISO(dateIso));
         html += '<button type="button" class="calendar-day available' + (selected ? ' selected' : '') + '" data-calendar-date="' + h(dateIso) + '" aria-pressed="' + String(selected) + '" aria-label="' + h(dateLabel) + '">' +
-          '<span>' + h(jalaliDateParts(dateFromISO(dateIso)).day) + '</span><small>' + h(available.length) + ' زمان</small></button>';
+          '<span>' + h(jalaliDayNumberFormatter.format(dateFromISO(dateIso))) + '</span><small>' + h(available.length) + ' زمان</small></button>';
       } else {
         // Keep the calendar layout aligned, but do not display unavailable dates or make them selectable.
         html += '<span class="calendar-day-empty" aria-hidden="true"></span>';
