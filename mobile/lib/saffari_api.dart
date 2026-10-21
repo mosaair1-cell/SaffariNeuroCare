@@ -15,11 +15,11 @@ class SaffariApi {
 
   static const String baseUrl = String.fromEnvironment(
     'SAFFARI_API_BASE_URL',
-    defaultValue: 'https://hiiwexmjrwjaehsvxnvz.supabase.co/functions/v1/neurocare-api/v1',
+    defaultValue: 'https://YOUR-PROJECT-REF.supabase.co/functions/v1/neurocare-api/v1',
   );
   static const String publishableKey = String.fromEnvironment(
     'SUPABASE_PUBLISHABLE_KEY',
-    defaultValue: 'sb_publishable_86mQsVOsDK92vf9DAGXPFg_-d2OQlWs',
+    defaultValue: 'YOUR-PUBLISHABLE-KEY',
   );
 
   static Future<Map<String, dynamic>> _request(
