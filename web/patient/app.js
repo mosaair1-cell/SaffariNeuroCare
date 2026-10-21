@@ -60,6 +60,65 @@
     const val = String(value).slice(0,10);
     return val.replace(/-/g,'/');
   };
+  const jalaliPartsFormatter = new Intl.DateTimeFormat('fa-IR-u-ca-persian', {
+    year:'numeric', month:'numeric', day:'numeric'
+  });
+  const jalaliMonthFormatter = new Intl.DateTimeFormat('fa-IR-u-ca-persian', {
+    year:'numeric', month:'long'
+  });
+  const jalaliFullDateFormatter = new Intl.DateTimeFormat('fa-IR-u-ca-persian', {
+    weekday:'long', year:'numeric', month:'long', day:'numeric'
+  });
+  function dateFromISO(value) {
+    const parts = String(value || '').slice(0,10).split('-').map(Number);
+    return new Date(parts[0], (parts[1] || 1) - 1, parts[2] || 1, 12, 0, 0, 0);
+  }
+  function isoFromDate(date) {
+    return [date.getFullYear(),String(date.getMonth()+1).padStart(2,'0'),String(date.getDate()).padStart(2,'0')].join('-');
+  }
+  function shiftDate(date, amount) {
+    const next = new Date(date.getTime());
+    next.setDate(next.getDate() + amount);
+    return next;
+  }
+  function jalaliDateParts(date) {
+    const parts = jalaliPartsFormatter.formatToParts(date);
+    const partNumber = (name) => {
+      const value = parts.find(part => part.type === name)?.value || '';
+      return Number(normalizeDigits(value).replace(/[^0-9]/g,''));
+    };
+    const year = partNumber('year');
+    const month = partNumber('month');
+    const day = partNumber('day');
+    return {year,month,day,key:String(year) + '-' + String(month).padStart(2,'0')};
+  }
+  function attachPasswordToggles(scope) {
+    if (!scope) return;
+    scope.querySelectorAll('input[type="password"]').forEach(input => {
+      if (input.dataset.passwordToggleReady === 'true') return;
+      input.dataset.passwordToggleReady = 'true';
+      const wrap = document.createElement('div');
+      wrap.className = 'password-input-wrap';
+      input.parentNode.insertBefore(wrap,input);
+      wrap.appendChild(input);
+      const toggle = document.createElement('button');
+      toggle.type = 'button';
+      toggle.className = 'password-toggle';
+      toggle.setAttribute('aria-label','نمایش رمز عبور');
+      toggle.title = 'نمایش رمز عبور';
+      const eyeOpen = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.2 12s3.5-6.3 9.8-6.3 9.8 6.3 9.8 6.3-3.5 6.3-9.8 6.3S2.2 12 2.2 12Z"/><circle cx="12" cy="12" r="3"/></svg>';
+      const eyeClosed = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M10.6 5.9A10.9 10.9 0 0 1 12 5.7c6.3 0 9.8 6.3 9.8 6.3a17.4 17.4 0 0 1-3.1 3.7M6.2 6.8C3.7 8.5 2.2 12 2.2 12s3.5 6.3 9.8 6.3a10.8 10.8 0 0 0 4.1-.8"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>';
+      toggle.innerHTML = eyeOpen;
+      toggle.addEventListener('click',() => {
+        const reveal = input.type === 'password';
+        input.type = reveal ? 'text' : 'password';
+        toggle.innerHTML = reveal ? eyeClosed : eyeOpen;
+        toggle.setAttribute('aria-label',reveal ? 'پنهان کردن رمز عبور' : 'نمایش رمز عبور');
+        toggle.title = reveal ? 'پنهان کردن رمز عبور' : 'نمایش رمز عبور';
+      });
+      wrap.appendChild(toggle);
+    });
+  }
   function errorMessage(error) {
     const text = String(error && error.message ? error.message : error || '');
     return errorLabels[text] || text || 'خطای نامشخص';
@@ -212,6 +271,7 @@
       <div class="auth-footer">
         ${isDoctor ? '<span>دسترسی فقط برای پزشک مجاز است.</span>' : (isRegister ? '<span>قبلاً حساب ساخته‌اید؟</span><button class="link-button" type="button" id="modeLogin">ورود به حساب</button>' : '<span>حساب ندارید؟</span><button class="link-button" type="button" id="modeRegister">ثبت‌نام بیمار</button>')}
       </div>`;
+    attachPasswordToggles(area);
     const form = document.getElementById('authForm');
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
@@ -318,6 +378,7 @@
           <p>رمز عبور را مستقل از کد ملی انتخاب کنید؛ از رمزهای کوتاه یا قابل حدس استفاده نکنید.</p>
         </aside>
       </div>`;
+    attachPasswordToggles(root);
     document.getElementById('logoutBtn')?.addEventListener('click', logout);
     const form = document.getElementById('passwordChangeForm');
     form.addEventListener('submit', async (event) => {
@@ -384,7 +445,25 @@
               <form id="appointmentForm">
                 <div class="form-grid">
                   <div class="field full"><label for="appointmentType">نوع نوبت</label><select id="appointmentType" name="appointmentType"><option value="in_person">نوبت حضوری در مطب</option><option value="text">مشاوره متنی</option></select></div>
-                  <div class="field full"><label for="preferredSlot">روز و ساعت قابل رزرو</label><select id="preferredSlot" name="preferredSlot" required><option value="">در حال دریافت زمان‌های قابل رزرو…</option></select></div>
+                  <div class="field full">
+                    <label for="calendarDays">روز قابل رزرو (تقویم هجری شمسی)</label>
+                    <div class="jalali-calendar" id="jalaliCalendar">
+                      <div class="jalali-calendar-head">
+                        <button type="button" class="calendar-nav" id="calendarPrev" aria-label="ماه قبل" disabled>‹</button>
+                        <strong id="calendarMonthLabel">در حال دریافت زمان‌ها…</strong>
+                        <button type="button" class="calendar-nav" id="calendarNext" aria-label="ماه بعد" disabled>›</button>
+                      </div>
+                      <div class="calendar-weekdays" aria-hidden="true"><span>شنبه</span><span>یکشنبه</span><span>دوشنبه</span><span>سه‌شنبه</span><span>چهارشنبه</span><span>پنجشنبه</span><span>جمعه</span></div>
+                      <div class="calendar-grid" id="calendarDays" role="group" aria-label="فقط روزهای دارای نوبت آزاد"><div class="calendar-empty-note">در حال دریافت تقویم…</div></div>
+                      <div class="calendar-selected-date" id="selectedDateLabel" aria-live="polite">ابتدا یکی از روزهای قابل رزرو را انتخاب کنید.</div>
+                    </div>
+                    <input id="preferredSlot" name="preferredSlot" type="hidden" value="">
+                  </div>
+                  <div class="field full">
+                    <label for="availableTime">ساعت‌های آزاد همان روز</label>
+                    <select id="availableTime" required disabled><option value="">ابتدا یک روز قابل رزرو را انتخاب کنید</option></select>
+                    <small class="field-help">فقط ساعت‌های آزاد همان روز قابل انتخاب هستند.</small>
+                  </div>
                   <div class="field full"><div id="appointmentHint" class="booking-hint"></div><a id="appointmentPhoneLink" class="phone-link" href="tel:09961364434" hidden>تماس مستقیم با مطب · 09961364434</a></div>
                   <div class="field full"><label id="reasonLabel" for="reason">علت مراجعه</label><textarea id="reason" name="reason" maxlength="500" placeholder="در صورت تمایل، توضیح کوتاهی بنویسید"></textarea></div>
                 </div>
@@ -435,9 +514,9 @@
             <section class="panel study-panel">
               <div class="panel-heading"><h2>مطالعه بیشتر</h2><small>آرشیو مقالات سایت رسمی</small></div>
               <div class="study-grid">
-                <a class="study-card" href="https://mhsaffari.ir/articles/ms/" target="_blank" rel="noopener"><span class="study-icon">MS</span><span><strong>آرشیو مقالات ام‌اس</strong><small>علائم، تشخیص و مسیرهای درمان و پیگیری</small></span><b>←</b></a>
-                <a class="study-card" href="https://mhsaffari.ir/articles/migraine/" target="_blank" rel="noopener"><span class="study-icon">✦</span><span><strong>آرشیو میگرن و سردرد</strong><small>آموزش‌های علمی درباره سردرد و درمان</small></span><b>←</b></a>
-                <a class="study-card" href="https://mhsaffari.ir/articles/neurology/" target="_blank" rel="noopener"><span class="study-icon">＋</span><span><strong>آرشیو مغز و اعصاب</strong><small>مقالات عمومی نورولوژی و اختلالات عصبی</small></span><b>←</b></a>
+                <a class="study-card" href="https://mhsaffari.ir/articles-ms.html" target="_blank" rel="noopener"><span class="study-icon">MS</span><span><strong>آرشیو مقالات ام‌اس</strong><small>علائم، تشخیص و مسیرهای درمان و پیگیری</small></span><b>←</b></a>
+                <a class="study-card" href="https://mhsaffari.ir/articles-migraine-headache.html" target="_blank" rel="noopener"><span class="study-icon">✦</span><span><strong>آرشیو میگرن و سردرد</strong><small>آموزش‌های علمی درباره سردرد و درمان</small></span><b>←</b></a>
+                <a class="study-card" href="https://mhsaffari.ir/articles-neurology.html" target="_blank" rel="noopener"><span class="study-icon">＋</span><span><strong>آرشیو مغز و اعصاب</strong><small>مقالات عمومی نورولوژی و اختلالات عصبی</small></span><b>←</b></a>
               </div>
             </section>
           </div>
@@ -451,14 +530,115 @@
       document.getElementById('logoutBtn')?.addEventListener('click',logout);
     }
   }
+  let availabilityRequestSequence = 0;
+  let bookingCalendar = {slotsByDate:Object.create(null),months:[],monthIndex:0,selectedDate:''};
+  const calendarWeekOrder = ['شنبه','یکشنبه','دوشنبه','سه‌شنبه','چهارشنبه','پنجشنبه','جمعه'];
+
+  function renderJalaliCalendar() {
+    const monthLabel = document.getElementById('calendarMonthLabel');
+    const daysGrid = document.getElementById('calendarDays');
+    const previous = document.getElementById('calendarPrev');
+    const next = document.getElementById('calendarNext');
+    const selectedLabel = document.getElementById('selectedDateLabel');
+    if (!monthLabel || !daysGrid) return;
+    const months = bookingCalendar.months;
+    if (!months.length) {
+      monthLabel.textContent = 'زمانی برای رزرو موجود نیست';
+      daysGrid.innerHTML = '<div class="calendar-empty-note">فعلاً روز قابل رزروی تعریف نشده است.</div>';
+      if (previous) previous.disabled = true;
+      if (next) next.disabled = true;
+      if (selectedLabel) selectedLabel.textContent = 'با تعریف زمان‌های جدید، روزهای قابل رزرو در این تقویم نمایش داده می‌شوند.';
+      return;
+    }
+    bookingCalendar.monthIndex = Math.min(Math.max(bookingCalendar.monthIndex,0),months.length-1);
+    const month = months[bookingCalendar.monthIndex];
+    const anchor = dateFromISO(month.firstDate);
+    const anchorParts = jalaliDateParts(anchor);
+    const firstDay = shiftDate(anchor,1-anchorParts.day);
+    monthLabel.textContent = month.label;
+    if (previous) previous.disabled = bookingCalendar.monthIndex <= 0;
+    if (next) next.disabled = bookingCalendar.monthIndex >= months.length-1;
+
+    const weekdayOffset = (firstDay.getDay()+1)%7;
+    let daysCount = 0;
+    for (let day=1;day<=31;day++) {
+      const current = shiftDate(firstDay,day-1);
+      const parts = jalaliDateParts(current);
+      if (parts.year !== month.year || parts.month !== month.month) break;
+      daysCount = day;
+    }
+    let html = '';
+    for (let empty=0;empty<weekdayOffset;empty++) html += '<span class="calendar-day-empty" aria-hidden="true"></span>';
+    for (let day=1;day<=daysCount;day++) {
+      const dateIso = isoFromDate(shiftDate(firstDay,day-1));
+      const available = bookingCalendar.slotsByDate[dateIso] || [];
+      if (available.length) {
+        const selected = bookingCalendar.selectedDate === dateIso;
+        const dateLabel = jalaliFullDateFormatter.format(dateFromISO(dateIso));
+        html += '<button type="button" class="calendar-day available' + (selected ? ' selected' : '') + '" data-calendar-date="' + h(dateIso) + '" aria-pressed="' + String(selected) + '" aria-label="' + h(dateLabel) + '">' +
+          '<span>' + h(jalaliDateParts(dateFromISO(dateIso)).day) + '</span><small>' + h(available.length) + ' زمان</small></button>';
+      } else {
+        // Keep the calendar layout aligned, but do not display unavailable dates or make them selectable.
+        html += '<span class="calendar-day-empty" aria-hidden="true"></span>';
+      }
+    }
+    while ((weekdayOffset+daysCount)%7 !== 0) { html += '<span class="calendar-day-empty" aria-hidden="true"></span>'; daysCount++; }
+    daysGrid.innerHTML = html;
+    if (selectedLabel && !bookingCalendar.selectedDate) selectedLabel.textContent = 'ابتدا یکی از روزهای دارای زمان آزاد را انتخاب کنید.';
+    else if (selectedLabel && bookingCalendar.selectedDate) selectedLabel.textContent = jalaliFullDateFormatter.format(dateFromISO(bookingCalendar.selectedDate));
+  }
+
+  function setupJalaliCalendar(slots) {
+    const byDate = Object.create(null);
+    const byMonth = Object.create(null);
+    const validSlots = (Array.isArray(slots) ? slots : []).filter(slot =>
+      slot && /^\d{4}-\d{2}-\d{2}$/.test(String(slot.date || '')) && /^\d{2}:\d{2}/.test(String(slot.time || ''))
+    ).map(slot => ({date:String(slot.date),time:String(slot.time)}))
+      .sort((a,b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
+    validSlots.forEach(slot => {
+      if (!byDate[slot.date]) byDate[slot.date] = [];
+      if (!byDate[slot.date].some(existing => existing.time === slot.time)) byDate[slot.date].push(slot);
+      const parts = jalaliDateParts(dateFromISO(slot.date));
+      if (!byMonth[parts.key]) {
+        byMonth[parts.key] = {key:parts.key,year:parts.year,month:parts.month,label:jalaliMonthFormatter.format(dateFromISO(slot.date)),firstDate:slot.date};
+      }
+      if (slot.date < byMonth[parts.key].firstDate) byMonth[parts.key].firstDate = slot.date;
+    });
+    bookingCalendar = {
+      slotsByDate:byDate,
+      months:Object.values(byMonth).sort((a,b) => a.firstDate.localeCompare(b.firstDate)),
+      monthIndex:0,
+      selectedDate:''
+    };
+    const timeSelect = document.getElementById('availableTime');
+    const slotInput = document.getElementById('preferredSlot');
+    if (timeSelect) {
+      timeSelect.disabled = true;
+      timeSelect.innerHTML = '<option value="">ابتدا یک روز قابل رزرو را انتخاب کنید</option>';
+    }
+    if (slotInput) slotInput.value = '';
+    renderJalaliCalendar();
+  }
+
   async function refreshAvailableSlots(type) {
-    const select = document.getElementById('preferredSlot');
+    const requestSequence = ++availabilityRequestSequence;
+    const slotInput = document.getElementById('preferredSlot');
+    const timeSelect = document.getElementById('availableTime');
     const hint = document.getElementById('appointmentHint');
     const phoneLink = document.getElementById('appointmentPhoneLink');
     const reason = document.getElementById('reason');
     const reasonLabel = document.getElementById('reasonLabel');
-    if (!select) return;
-    select.innerHTML = '<option value="">در حال دریافت زمان‌ها…</option>';
+    if (!slotInput || !timeSelect) return;
+    slotInput.value = '';
+    timeSelect.disabled = true;
+    timeSelect.innerHTML = '<option value="">در حال دریافت ساعت‌های آزاد…</option>';
+    const monthLabel = document.getElementById('calendarMonthLabel');
+    const daysGrid = document.getElementById('calendarDays');
+    const selectedLabel = document.getElementById('selectedDateLabel');
+    if (monthLabel) monthLabel.textContent = 'در حال دریافت زمان‌ها…';
+    if (daysGrid) daysGrid.innerHTML = '<div class="calendar-empty-note">در حال دریافت تقویم…</div>';
+    if (selectedLabel) selectedLabel.textContent = 'فقط روزهای قابل رزرو نمایش داده می‌شوند.';
+    bookingCalendar = {slotsByDate:Object.create(null),months:[],monthIndex:0,selectedDate:''};
     if (reason) reason.required = type === 'in_person';
     if (phoneLink) phoneLink.hidden = type !== 'text';
     if (reasonLabel) reasonLabel.textContent = type === 'text' ? 'موضوع مشاوره (اختیاری)' : 'علت مراجعه';
@@ -467,19 +647,54 @@
       : 'فقط زمان‌هایی نمایش داده می‌شوند که مطب برای نوبت حضوری باز کرده است. نوبت پس از تأیید مطب قطعی می‌شود.';
     try {
       const result = await api('/patients/availability?type=' + encodeURIComponent(type));
+      if (requestSequence !== availabilityRequestSequence) return;
       const slots = result.slots || [];
-      select.innerHTML = slots.length
-        ? '<option value="">یک زمان را انتخاب کنید</option>' + slots.map(slot => '<option value="' + h(slot.date) + '|' + h(slot.time) + '">' + h(fmtDate(slot.date)) + ' · ' + h(slot.time) + '</option>').join('')
-        : '<option value="">فعلاً زمانی برای رزرو تعریف نشده است</option>';
+      setupJalaliCalendar(slots);
       if (!slots.length && hint) hint.textContent += ' برای اطلاع از زمان‌های جدید با مطب تماس بگیرید.';
     } catch (error) {
-      select.innerHTML = '<option value="">دریافت زمان‌ها ناموفق بود</option>';
+      if (requestSequence !== availabilityRequestSequence) return;
+      setupJalaliCalendar([]);
       if (hint) hint.textContent = errorMessage(error);
     }
   }
+
   function bindPatientForms() {
     const appointmentForm = document.getElementById('appointmentForm');
     const appointmentType = document.getElementById('appointmentType');
+    const previousMonth = document.getElementById('calendarPrev');
+    const nextMonth = document.getElementById('calendarNext');
+    const daysGrid = document.getElementById('calendarDays');
+    const timeSelect = document.getElementById('availableTime');
+    const slotInput = document.getElementById('preferredSlot');
+    if (previousMonth) previousMonth.addEventListener('click',() => {
+      bookingCalendar.monthIndex = Math.max(0,bookingCalendar.monthIndex-1);
+      renderJalaliCalendar();
+    });
+    if (nextMonth) nextMonth.addEventListener('click',() => {
+      bookingCalendar.monthIndex = Math.min(bookingCalendar.months.length-1,bookingCalendar.monthIndex+1);
+      renderJalaliCalendar();
+    });
+    if (daysGrid) daysGrid.addEventListener('click',event => {
+      const dayButton = event.target.closest('[data-calendar-date]');
+      if (!dayButton) return;
+      const dateIso = dayButton.dataset.calendarDate;
+      const freeTimes = bookingCalendar.slotsByDate[dateIso] || [];
+      if (!freeTimes.length) return;
+      bookingCalendar.selectedDate = dateIso;
+      if (slotInput) slotInput.value = '';
+      if (timeSelect) {
+        timeSelect.innerHTML = '<option value="">ساعت را انتخاب کنید</option>' + freeTimes.map(slot =>
+          '<option value="' + h(slot.time) + '">' + h(String(slot.time).slice(0,5)) + '</option>'
+        ).join('');
+        timeSelect.disabled = false;
+        timeSelect.value = '';
+      }
+      renderJalaliCalendar();
+    });
+    if (timeSelect) timeSelect.addEventListener('change',() => {
+      if (slotInput) slotInput.value = bookingCalendar.selectedDate && timeSelect.value
+        ? bookingCalendar.selectedDate + '|' + timeSelect.value : '';
+    });
     if (appointmentType) {
       appointmentType.addEventListener('change',() => refreshAvailableSlots(appointmentType.value));
       refreshAvailableSlots(appointmentType.value || 'in_person');
@@ -752,7 +967,7 @@
   document.querySelectorAll('[data-open-register]').forEach(link => link.addEventListener('click',event => {
     event.preventDefault();
     showLogin(APP_ROLE,'register');
-    document.getElementById('app')?.scrollIntoView({behavior:'smooth',block:'start'});
+    requestAnimationFrame(() => document.querySelector('#app .auth-card')?.scrollIntoView({behavior:'smooth',block:'center'}));
   }));
   document.querySelectorAll('[data-open-login]').forEach(link => link.addEventListener('click',event => {
     event.preventDefault();
