@@ -193,7 +193,7 @@ Deno.serve(async (req:Request)=>{
   if(!user)return json({error:"unauthorized"},401,origin);
   if(patient && path!=="/v1/patients/me" && !(await patientActive(patient)))return json({error:"awaiting_doctor_approval"},403,origin);
   if(path==="/v1/doctor/patients"&&req.method==="GET"){
-   const search=clean(urlObj.searchParams.get("q"),80).replace(/[^\p{L}\p{N}\s-]/gu," ").trim();
+   const search=clean(urlObj.searchParams.get("q"),80).replace(/[۰-۹]/g,c=>String(c.charCodeAt(0)-0x06f0)).replace(/[٠-٩]/g,c=>String(c.charCodeAt(0)-0x0660)).replace(/[^\p{L}\p{N}\s-]/gu," ").trim();
    let query=db.from("patients").select("*").order("created_at",{ascending:false});
    if(search){
     const terms=search.split(/\s+/).filter(Boolean).slice(0,5),filters:string[]=[];
