@@ -1,7 +1,7 @@
 {
-  "name": "Saffari NeuroCare Patient",
-  "short_name": "NeuroCare بیمار",
-  "description": "وب‌اپ اختصاصی بیمار",
+  "name": "سامانه نوبت‌دهی دکتر محمدحسین صفاری",
+  "short_name": "نوبت صفاری",
+  "description": "سامانه نوبت‌دهی و پیگیری بیمار دکتر صفاری",
   "lang": "fa",
   "dir": "rtl",
   "start_url": "./",
