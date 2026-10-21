@@ -134,7 +134,7 @@ Deno.serve(async (req:Request)=>{
   }
   let path=incomingPath.replace(/\/+$/,"") || "/health";
 
-  if(path==="/health" && req.method==="GET") return json({status:"ok",service:"saffari-neurocare-supabase",version:"1.0.0"},200,origin);
+  if((path==="/health" || path==="/v1/health") && req.method==="GET") return json({status:"ok",service:"saffari-neurocare-supabase",version:"1.0.0"},200,origin);
   const body=req.method==="GET"?{}:await req.json().catch(()=>({}));
   if(path==="/v1/captcha/challenge"&&req.method==="POST"){
    if(!(await rateAllowed(req,"captcha",60,3600)))return json({error:"too_many_attempts"},429,origin);
