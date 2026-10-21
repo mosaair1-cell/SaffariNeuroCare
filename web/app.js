@@ -15,6 +15,9 @@
     ['epilepsy','صرع'],
     ['parkinson','پارکینسون'],
     ['cognition','اختلالات شناختی'],
+    ['low_back_pain','کمردرد'],
+    ['stroke','سکته مغزی'],
+    ['other','سایر'],
     ['unassigned','هنوز مشخص نیست']
   ];
   const statusLabels = {
@@ -25,7 +28,7 @@
   const errorLabels = {
     unauthorized:'نشست شما پایان یافته است؛ دوباره وارد شوید.',
     forbidden:'این بخش برای حساب شما در دسترس نیست.',
-    invalid_credentials:'شماره موبایل/کد ملی یا اطلاعات ورود پزشک درست نیست.',
+    invalid_credentials:'کد ملی یا رمز عبور واردشده صحیح نیست.',
     invalid_registration_data:'اطلاعات واردشده کامل یا معتبر نیست.',
     invalid_clinic_code:'کد کلینیک معتبر نیست.',
     patient_already_registered:'این شماره موبایل یا کد ملی قبلاً ثبت شده است.',
@@ -38,9 +41,18 @@
     password_min_length_12:'رمز جدید باید حداقل ۱۲ نویسه داشته باشد.',
     password_must_not_be_national_id:'رمز عبور نباید برابر کد ملی باشد.',
     current_password_invalid:'رمز عبور فعلی صحیح نیست.',
-    rate_limit_unavailable:'سامانه کنترل تلاش‌های ورود موقتاً در دسترس نیست.'
+    rate_limit_unavailable:'سامانه کنترل تلاش‌های ورود موقتاً در دسترس نیست.',
+    invalid_captcha:'پاسخ کپچا درست نیست یا زمان آن تمام شده؛ سؤال تازه را حل کنید.',
+    invalid_patient_password:'رمز بیمار باید ۸ تا ۱۲ نویسه انگلیسی و شامل حرف، عدد و نماد باشد.',
+    report_notes_too_long:'توضیحات علائم حداکثر ۲۰۰ نویسه می‌تواند باشد.',
+    slot_unavailable:'این زمان همین حالا رزرو شده یا دیگر قابل انتخاب نیست؛ زمان دیگری را انتخاب کنید.',
+    invalid_availability:'روز یا ساعت کاری واردشده معتبر نیست.',
+    availability_not_found:'بازه زمانی موردنظر پیدا نشد.'
   };
   const h = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const normalizeDigits = (value) => String(value == null ? '' : value)
+    .replace(/[۰-۹]/g, c => String(c.charCodeAt(0) - 0x06f0))
+    .replace(/[٠-٩]/g, c => String(c.charCodeAt(0) - 0x0660));
   const diseaseTitle = (code) => (diseases.find(d => d[0] === code) || ['','تعیین‌نشده'])[1];
   const statusTitle = (s) => statusLabels[s] || s || 'نامشخص';
   const fmtDate = (value) => {
@@ -78,6 +90,10 @@
     }
     return data;
   }
+  function setSeoLanding(show) {
+    const section = document.getElementById('seoLanding');
+    if (section) section.hidden = !show;
+  }
   function messageBox(message, type = 'error') {
     return '<div class="message ' + type + '" role="status">' + h(message) + '</div>';
   }
@@ -107,6 +123,7 @@
     if (refreshBtn) refreshBtn.addEventListener('click', () => loadDashboard());
   }
   function showLogin(initialRole = APP_ROLE, initialMode = 'login') {
+    setSeoLanding(true);
     role = APP_ROLE; token = ''; currentPatient = null;
     const mode = initialMode;
     root.innerHTML = `
@@ -131,14 +148,35 @@
       </div>`;
     renderLoginForm(mode);
   }
+  async function loadCaptcha(form) {
+    if (APP_ROLE === 'doctor' || !form) return;
+    const question = form.querySelector('#captchaQuestion');
+    const challengeId = form.querySelector('#captchaId');
+    const answer = form.querySelector('#captchaAnswer');
+    if (!question || !challengeId || !answer) return;
+    question.textContent = 'در حال بارگذاری…';
+    challengeId.value = '';
+    answer.value = '';
+    const refresh = form.querySelector('#refreshCaptcha');
+    if (refresh) refresh.disabled = true;
+    try {
+      const data = await api('/captcha/challenge','POST',{});
+      question.textContent = data.question || '—';
+      challengeId.value = data.challengeId || '';
+    } catch (_) {
+      question.textContent = 'بارگذاری ناموفق بود';
+    } finally {
+      if (refresh) refresh.disabled = false;
+    }
+  }
   function renderLoginForm(mode) {
     const area = document.getElementById('loginFormArea');
     if (!area) return;
     const isDoctor = APP_ROLE === 'doctor';
     const isRegister = !isDoctor && mode === 'register';
     area.innerHTML = `
-      <h1>${isDoctor ? 'ورود به پنل پزشک' : (isRegister ? 'ساخت حساب بیمار' : 'خوش آمدید')}</h1>
-      <p class="lead">${isDoctor ? 'برای ورود به پنل، مشخصات حساب پزشک را وارد کنید.' : (isRegister ? 'اطلاعات پایه را ثبت کنید تا پزشک بتواند حساب را بررسی و فعال کند.' : 'برای مشاهده نوبت‌ها، گزارش‌ها و برنامه پیگیری وارد حساب خود شوید.')}</p>
+      <h1>${isDoctor ? 'ورود به پنل پزشک' : (isRegister ? 'ساخت حساب بیمار' : 'ورود بیمار')}</h1>
+      <p class="lead">${isDoctor ? 'برای ورود به پنل، مشخصات حساب پزشک را وارد کنید.' : (isRegister ? 'اطلاعات خود را ثبت کنید تا پزشک حساب را بررسی و فعال کند.' : 'برای ورود، کد ملی و رمز عبور خود را وارد کنید.')}</p>
       <form id="authForm" novalidate>
         <div class="form-grid">
           ${isDoctor ? `
@@ -149,14 +187,26 @@
               <div class="field"><label for="firstName">نام</label><input id="firstName" name="firstName" autocomplete="given-name" required maxlength="100"></div>
               <div class="field"><label for="lastName">نام خانوادگی</label><input id="lastName" name="lastName" autocomplete="family-name" required maxlength="100"></div>
               <div class="field full"><label for="diseaseCode">حوزه پیگیری</label><select id="diseaseCode" name="diseaseCode">${diseases.map(d => '<option value="' + h(d[0]) + '">' + h(d[1]) + '</option>').join('')}</select></div>
-              <div class="field full"><label for="clinicCode">کد کلینیک</label><input id="clinicCode" name="clinicCode" value="${h(CLINIC_CODE)}" required></div>
+              <div class="field full"><div class="fixed-clinic"><span>مرکز پیگیری</span><strong>کلینیک دکتر صفاری</strong><small>کد کلینیک ثابت است و قابل تغییر نیست.</small></div></div>
+              <div class="field full"><label for="mobile">شماره موبایل (الزامی)</label><input id="mobile" name="mobile" inputmode="numeric" autocomplete="tel" placeholder="09123456789" pattern="09[0-9]{9}" required maxlength="11"></div>
             ` : ''}
-            <div class="field full"><label for="mobile">شماره موبایل</label><input id="mobile" name="mobile" inputmode="numeric" autocomplete="tel" placeholder="09123456789" pattern="09[0-9]{9}" required maxlength="11"></div>
-            ${isRegister ? '<div class="field full"><label for="nationalId">کد ملی (رمز اولیه)</label><input id="nationalId" name="nationalId" inputmode="numeric" autocomplete="off" placeholder="۱۰ رقم" pattern="[0-9]{10}" required maxlength="10"></div>' : '<div class="field full"><label for="patientPassword">رمز عبور</label><input id="patientPassword" name="password" type="password" autocomplete="current-password" required minlength="10" placeholder="رمز عبور مستقل یا کد ملی اولیه"></div>'}
+            <div class="field full"><label for="nationalId">کد ملی / نام کاربری</label><input id="nationalId" name="nationalId" inputmode="numeric" autocomplete="username" placeholder="کد ملی ۱۰ رقمی" pattern="[0-9]{10}" required maxlength="10"></div>
+            <div class="field full"><label for="password">${isRegister ? 'انتخاب رمز عبور امن' : 'رمز عبور'}</label><input id="password" name="password" type="password" autocomplete="${isRegister ? 'new-password' : 'current-password'}" required minlength="8" maxlength="12" pattern="[!-~]{8,12}" placeholder="${isRegister ? '۸ تا ۱۲ نویسه انگلیسی' : 'رمز عبور حساب'}"></div>
+            ${isRegister ? '<div class="field full"><label for="confirmPassword">تکرار رمز عبور</label><input id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password" required minlength="8" maxlength="12" pattern="[!-~]{8,12}"></div>' : ''}
           `}
         </div>
-        ${!isDoctor ? '<p class="hint">نسخه فعلی برای سازگاری با اپ آزمایشی از کد ملی به‌عنوان اعتبار اولیه ورود استفاده می‌کند. برای استفاده با اطلاعات واقعی بیمار، احراز هویت مستقل و امن باید قبل از انتشار نهایی فعال شود.</p>' : ''}
-        <button class="primary full-button" type="submit">${isDoctor ? 'ورود به پنل پزشک' : (isRegister ? 'ثبت‌نام و ارسال برای بررسی' : 'ورود به حساب')}</button>
+        ${!isDoctor ? `
+          <div class="captcha-box">
+            <label for="captchaAnswer">کپچای امنیتی: <strong id="captchaQuestion">در حال بارگذاری…</strong></label>
+            <div class="captcha-row">
+              <input id="captchaAnswer" name="captchaAnswer" inputmode="numeric" pattern="[0-9]{1,2}" maxlength="2" placeholder="پاسخ" required>
+              <button class="ghost-button" id="refreshCaptcha" type="button">سؤال تازه</button>
+            </div>
+            <input id="captchaId" name="captchaId" type="hidden" value="">
+          </div>
+          <p class="hint">${isRegister ? 'نام کاربری شما کد ملی است. رمز باید ۸ تا ۱۲ نویسه انگلیسی و شامل حرف، عدد و نماد باشد.' : 'با کد ملی و رمز عبوری که هنگام ثبت‌نام انتخاب کرده‌اید وارد شوید.'}</p>
+        ` : ''}
+        <button class="primary full-button" type="submit">${isDoctor ? 'ورود به پنل پزشک' : (isRegister ? 'ثبت‌نام و ارسال برای بررسی' : 'ورود به حساب بیمار')}</button>
         <div class="form-message"></div>
       </form>
       <div class="auth-footer">
@@ -173,14 +223,26 @@
         let data;
         if (isDoctor) {
           data = await api('/doctor/login','POST',{clinicCode:fd.get('clinicCode'),password:fd.get('password')});
-        } else if (isRegister) {
-          data = await api('/patients/register','POST',{
-            firstName:fd.get('firstName'),lastName:fd.get('lastName'),
-            mobile:fd.get('mobile'),nationalId:fd.get('nationalId'),
-            diseaseCode:fd.get('diseaseCode'),clinicCode:fd.get('clinicCode')
-          });
         } else {
-          data = await api('/patients/login','POST',{mobile:fd.get('mobile'),password:fd.get('password')});
+          const nationalId = normalizeDigits(fd.get('nationalId')).trim();
+          const password = String(fd.get('password') || '');
+          const captchaId = String(fd.get('captchaId') || '');
+          const captchaAnswer = normalizeDigits(fd.get('captchaAnswer')).trim();
+          if (!/^\d{10}$/.test(nationalId)) { setMessage(form,'کد ملی باید دقیقاً ۱۰ رقم باشد.','error'); return; }
+          if (!captchaId || !/^\d{1,2}$/.test(captchaAnswer)) { setMessage(form,'پاسخ کپچا را وارد کنید.','error'); return; }
+          if (isRegister) {
+            const mobile = normalizeDigits(fd.get('mobile')).trim();
+            const confirmPassword = String(fd.get('confirmPassword') || '');
+            if (!/^09\d{9}$/.test(mobile)) { setMessage(form,'شماره موبایل باید با 09 شروع شود و ۱۱ رقم داشته باشد.','error'); return; }
+            if (!/^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z0-9])[\x21-\x7e]{8,12}$/.test(password)) { setMessage(form,'رمز باید ۸ تا ۱۲ نویسه انگلیسی و شامل حرف، عدد و نماد باشد.','error'); return; }
+            if (password !== confirmPassword) { setMessage(form,'تکرار رمز عبور یکسان نیست.','error'); return; }
+            data = await api('/patients/register','POST',{
+              firstName:fd.get('firstName'),lastName:fd.get('lastName'),mobile:fd.get('mobile'),
+              nationalId,password,diseaseCode:fd.get('diseaseCode'),clinicCode:CLINIC_CODE,captchaId,captchaAnswer
+            });
+          } else {
+            data = await api('/patients/login','POST',{nationalId,password,captchaId,captchaAnswer});
+          }
         }
         token = String(data.token || '');
         role = APP_ROLE;
@@ -190,10 +252,11 @@
         await loadDashboard();
       } catch (error) {
         setMessage(form,errorMessage(error),'error');
+        if (!isDoctor) await loadCaptcha(form);
       } finally {
         if (document.body.contains(submit)) {
           submit.disabled = false;
-          submit.textContent = isDoctor ? 'ورود به پنل پزشک' : (isRegister ? 'ثبت‌نام و ارسال برای بررسی' : 'ورود به حساب');
+          submit.textContent = isDoctor ? 'ورود به پنل پزشک' : (isRegister ? 'ثبت‌نام و ارسال برای بررسی' : 'ورود به حساب بیمار');
         }
       }
     });
@@ -201,9 +264,14 @@
     if (loginBtn) loginBtn.addEventListener('click',() => renderLoginForm('login'));
     const registerBtn = document.getElementById('modeRegister');
     if (registerBtn) registerBtn.addEventListener('click',() => renderLoginForm('register'));
+    if (!isDoctor) {
+      document.getElementById('refreshCaptcha')?.addEventListener('click',() => loadCaptcha(form));
+      loadCaptcha(form);
+    }
   }
   async function loadDashboard() {
     if (!token) return showLogin(APP_ROLE,'login');
+    setSeoLanding(false);
     if (APP_ROLE === 'doctor') return loadDoctorDashboard();
     return loadPatientDashboard();
   }
@@ -211,8 +279,11 @@
     return '<div class="metric"><span class="label">' + h(label) + '</span><strong>' + h(value) + '</strong>' + (sub ? '<small>' + h(sub) + '</small>' : '') + '</div>';
   }
   function appointmentCard(a) {
+    const isText = a.appointmentType === 'text';
     return `<div class="appointment-card">
-      <div class="appointment-top"><div><div class="patient-name">${h(fmtDate(a.preferredDate))} · ${h(String(a.preferredTime || '').slice(0,5))}</div><div class="subline">${h(a.reason || 'بدون توضیح')}</div></div><span class="badge ${h(a.status)}">${h(statusTitle(a.status))}</span></div>
+      <div class="appointment-top"><div><div class="patient-name">${h(fmtDate(a.preferredDate))} · ${h(String(a.preferredTime || '').slice(0,5))}</div><span class="appt-type-label ${isText ? 'text' : 'in-person'}">${isText ? 'مشاوره متنی' : 'نوبت حضوری در مطب'}</span><div class="subline">${h(a.reason || 'بدون توضیح')}</div></div><span class="badge ${h(a.status)}">${h(statusTitle(a.status))}</span></div>
+      ${isText && a.status === 'requested' ? '<div class="consultation-notice">برای تأیید درخواست مشاوره متنی، با شماره مطب <strong>09961364434</strong> تماس بگیرید.</div>' : ''}
+      ${a.consultationUrl ? '<a class="eitaa-link" href="' + h(a.consultationUrl) + '" target="_blank" rel="noopener">شروع گفت‌وگو در ایتا (@Dr_Saffari)</a>' : ''}
       ${a.doctorNote ? '<div class="subline" style="margin-top:9px">پیام مطب: ' + h(a.doctorNote) + '</div>' : ''}
     </div>`;
   }
@@ -310,9 +381,10 @@
               <div class="panel-heading"><h2>درخواست نوبت</h2><small>نوبت پس از تأیید مطب قطعی است</small></div>
               <form id="appointmentForm">
                 <div class="form-grid">
-                  <div class="field"><label for="preferredDate">تاریخ پیشنهادی</label><input id="preferredDate" name="preferredDate" type="date" min="${new Date().toISOString().slice(0,10)}" required></div>
-                  <div class="field"><label for="preferredTime">ساعت پیشنهادی</label><input id="preferredTime" name="preferredTime" type="time" required></div>
-                  <div class="field full"><label for="reason">علت مراجعه</label><textarea id="reason" name="reason" maxlength="1000" required placeholder="در چند جمله علت مراجعه را بنویسید"></textarea></div>
+                  <div class="field full"><label for="appointmentType">نوع نوبت</label><select id="appointmentType" name="appointmentType"><option value="in_person">نوبت حضوری در مطب</option><option value="text">مشاوره متنی</option></select></div>
+                  <div class="field full"><label for="preferredSlot">روز و ساعت قابل رزرو</label><select id="preferredSlot" name="preferredSlot" required><option value="">در حال دریافت زمان‌های قابل رزرو…</option></select></div>
+                  <div class="field full"><div id="appointmentHint" class="booking-hint"></div></div>
+                  <div class="field full"><label id="reasonLabel" for="reason">علت مراجعه</label><textarea id="reason" name="reason" maxlength="500" placeholder="در صورت تمایل، توضیح کوتاهی بنویسید"></textarea></div>
                 </div>
                 <button class="primary full-button" type="submit">ارسال درخواست نوبت</button><div class="form-message"></div>
               </form>
@@ -324,18 +396,18 @@
             <section class="panel">
               <div class="panel-heading"><h2>گزارش علائم / پیش از ویزیت</h2><small>گزارش برای بررسی پزشک</small></div>
               <form id="reportForm">
-                <div class="field full"><label>علائم اخیر</label><div class="chips">
-                  <label class="chip"><input type="checkbox" name="symptoms" value="headache"> سردرد</label>
-                  <label class="chip"><input type="checkbox" name="symptoms" value="fatigue"> خستگی</label>
-                  <label class="chip"><input type="checkbox" name="symptoms" value="numbness"> گزگز / بی‌حسی</label>
-                  <label class="chip"><input type="checkbox" name="symptoms" value="vision"> مشکل بینایی</label>
-                  <label class="chip"><input type="checkbox" name="symptoms" value="balance"> اختلال تعادل</label>
-                  <label class="chip"><input type="checkbox" name="symptoms" value="sleep"> اختلال خواب</label>
+                <div class="field full"><label>علائم اخیر (چند مورد قابل انتخاب است)</label><div class="symptom-options">
+                  <label class="symptom-chip"><input type="checkbox" name="symptoms" value="headache"><span>سردرد</span></label>
+                  <label class="symptom-chip"><input type="checkbox" name="symptoms" value="fatigue"><span>خستگی</span></label>
+                  <label class="symptom-chip"><input type="checkbox" name="symptoms" value="numbness"><span>گزگز / بی‌حسی</span></label>
+                  <label class="symptom-chip"><input type="checkbox" name="symptoms" value="vision"><span>مشکل بینایی</span></label>
+                  <label class="symptom-chip"><input type="checkbox" name="symptoms" value="balance"><span>اختلال تعادل</span></label>
+                  <label class="symptom-chip"><input type="checkbox" name="symptoms" value="sleep"><span>اختلال خواب</span></label>
                 </div></div>
                 <div class="form-grid" style="margin-top:14px">
                   <div class="field"><label for="severity">شدت کلی (۱ تا ۱۰)</label><input id="severity" type="number" name="severity" min="1" max="10" value="3"></div>
                   <div class="field"><label for="occurredOn">تاریخ گزارش</label><input id="occurredOn" type="date" name="occurredOn" value="${new Date().toISOString().slice(0,10)}"></div>
-                  <div class="field full"><label for="reportNotes">توضیحات</label><textarea id="reportNotes" name="notes" maxlength="4000" placeholder="زمان شروع، مدت، تغییر علائم و نکات مهم را بنویسید"></textarea></div>
+                  <div class="field full"><label for="reportNotes">توضیحات (حداکثر ۲۰۰ نویسه)</label><textarea id="reportNotes" name="notes" maxlength="200" placeholder="زمان شروع، مدت و تغییر علائم را کوتاه بنویسید"></textarea><small class="field-help">برای اطلاعات ضروری؛ حداکثر ۲۰۰ نویسه.</small></div>
                 </div>
                 <button class="primary full-button" type="submit">ثبت گزارش برای پزشک</button><div class="form-message"></div>
               </form>
@@ -358,12 +430,12 @@
               <div class="panel-heading"><h2>پیام‌ها و یادداشت‌های پزشک</h2><small>قابل مشاهده برای شما</small></div>
               <div class="row-list">${notes.length ? notes.map(noteCard).join('') : '<div class="empty-card">هنوز یادداشتی برای نمایش وجود ندارد.</div>'}</div>
             </section>
-            <section class="panel">
-              <div class="panel-heading"><h2>مطالعه بیشتر</h2><small>سایت رسمی</small></div>
-              <div class="row-list">
-                <div class="row-item"><div><strong>راهنمای جامع ام‌اس</strong><p>آشنایی با علائم و مسیر پیگیری بیماری</p></div><a href="https://mhsaffari.ir/articles/ms/multiple-sclerosis-ms.html" target="_blank" rel="noopener">مطالعه ↗</a></div>
-                <div class="row-item"><div><strong>درمان میگرن</strong><p>اطلاعات آموزشی درباره سردرد و درمان</p></div><a href="https://mhsaffari.ir/articles/migraine/migraine-treatment-comprehensive-saffari.html" target="_blank" rel="noopener">مطالعه ↗</a></div>
-                <div class="row-item"><div><strong>مقالات مغز و اعصاب</strong><p>محتوای آموزشی منتشرشده در سایت</p></div><a href="https://mhsaffari.ir/" target="_blank" rel="noopener">مشاهده ↗</a></div>
+            <section class="panel study-panel">
+              <div class="panel-heading"><h2>مطالعه بیشتر</h2><small>آرشیو مقالات سایت رسمی</small></div>
+              <div class="study-grid">
+                <a class="study-card" href="https://mhsaffari.ir/articles/ms/" target="_blank" rel="noopener"><span class="study-icon">MS</span><span><strong>آرشیو مقالات ام‌اس</strong><small>علائم، تشخیص و مسیرهای درمان و پیگیری</small></span><b>←</b></a>
+                <a class="study-card" href="https://mhsaffari.ir/articles/migraine/" target="_blank" rel="noopener"><span class="study-icon">✦</span><span><strong>آرشیو میگرن و سردرد</strong><small>آموزش‌های علمی درباره سردرد و درمان</small></span><b>←</b></a>
+                <a class="study-card" href="https://mhsaffari.ir/articles/neurology/" target="_blank" rel="noopener"><span class="study-icon">＋</span><span><strong>آرشیو مغز و اعصاب</strong><small>مقالات عمومی نورولوژی و اختلالات عصبی</small></span><b>←</b></a>
               </div>
             </section>
           </div>
@@ -377,20 +449,64 @@
       document.getElementById('logoutBtn')?.addEventListener('click',logout);
     }
   }
+  async function refreshAvailableSlots(type) {
+    const select = document.getElementById('preferredSlot');
+    const hint = document.getElementById('appointmentHint');
+    const reason = document.getElementById('reason');
+    const reasonLabel = document.getElementById('reasonLabel');
+    if (!select) return;
+    select.innerHTML = '<option value="">در حال دریافت زمان‌ها…</option>';
+    if (reason) reason.required = type === 'in_person';
+    if (reasonLabel) reasonLabel.textContent = type === 'text' ? 'موضوع مشاوره (اختیاری)' : 'علت مراجعه';
+    if (hint) hint.textContent = type === 'text'
+      ? 'پس از ثبت درخواست، برای تأیید مشاوره با شماره مطب 09961364434 تماس بگیرید. پس از تأیید پزشک، پیوند شروع گفت‌وگو در ایتا در همین صفحه نمایش داده می‌شود.'
+      : 'فقط زمان‌هایی نمایش داده می‌شوند که مطب برای نوبت حضوری باز کرده است. نوبت پس از تأیید مطب قطعی می‌شود.';
+    try {
+      const result = await api('/patients/availability?type=' + encodeURIComponent(type));
+      const slots = result.slots || [];
+      select.innerHTML = slots.length
+        ? slots.map(slot => '<option value="' + h(slot.date) + '|' + h(slot.time) + '">' + h(fmtDate(slot.date)) + ' · ' + h(slot.time) + '</option>').join('')
+        : '<option value="">فعلاً زمانی برای رزرو تعریف نشده است</option>';
+      if (!slots.length && hint) hint.textContent += ' برای اطلاع از زمان‌های جدید با مطب تماس بگیرید.';
+    } catch (error) {
+      select.innerHTML = '<option value="">دریافت زمان‌ها ناموفق بود</option>';
+      if (hint) hint.textContent = errorMessage(error);
+    }
+  }
   function bindPatientForms() {
     const appointmentForm = document.getElementById('appointmentForm');
+    const appointmentType = document.getElementById('appointmentType');
+    if (appointmentType) {
+      appointmentType.addEventListener('change',() => refreshAvailableSlots(appointmentType.value));
+      refreshAvailableSlots(appointmentType.value || 'in_person');
+    }
     if (appointmentForm) appointmentForm.addEventListener('submit',async (event) => {
       event.preventDefault();
       const submit = appointmentForm.querySelector('button[type="submit"]');
       submit.disabled = true;
       const f = new FormData(appointmentForm);
+      const type = String(f.get('appointmentType') || 'in_person');
+      const slot = String(f.get('preferredSlot') || '').split('|');
+      const reason = String(f.get('reason') || '').trim();
+      if (slot.length !== 2 || !slot[0] || !slot[1]) {
+        setMessage(appointmentForm,'لطفاً یک زمان قابل رزرو انتخاب کنید.','error'); submit.disabled = false; return;
+      }
+      if (type === 'in_person' && !reason) {
+        setMessage(appointmentForm,'علت مراجعه را کوتاه بنویسید.','error'); submit.disabled = false; return;
+      }
       try {
         await api('/patients/appointments','POST',{
-          preferredDate:f.get('preferredDate'),preferredTime:f.get('preferredTime'),reason:f.get('reason')
+          appointmentType:type,preferredDate:slot[0],preferredTime:slot[1],reason
         });
-        setMessage(appointmentForm,'درخواست ثبت شد؛ تا تأیید مطب، نوبت قطعی نیست.','ok');
         await loadPatientDashboard();
-      } catch (e) { setMessage(appointmentForm,errorMessage(e),'error'); submit.disabled = false; }
+        const updatedForm = document.getElementById('appointmentForm');
+        if (updatedForm) setMessage(updatedForm,type === 'text'
+          ? 'درخواست مشاوره متنی ثبت شد. لطفاً برای تأیید با شماره مطب 09961364434 تماس بگیرید. پس از تأیید پزشک، لینک گفت‌وگو در ایتا در همین صفحه ظاهر می‌شود.'
+          : 'درخواست نوبت حضوری ثبت شد؛ تا تأیید مطب، نوبت قطعی نیست.','ok');
+      } catch (e) {
+        setMessage(appointmentForm,errorMessage(e),'error');
+        submit.disabled = false;
+      }
     });
     const reportForm = document.getElementById('reportForm');
     if (reportForm) reportForm.addEventListener('submit',async (event) => {
@@ -420,20 +536,28 @@
     </div>`;
   }
   function renderDoctorAppointment(a) {
+    const isText = a.appointmentType === 'text';
     return `<div class="appointment-card">
-      <div class="appointment-top"><div><div class="patient-name">${h(a.patientName || 'بیمار')} · ${h(fmtDate(a.preferredDate))} · ${h(String(a.preferredTime || '').slice(0,5))}</div><div class="subline">${h(a.patientMobile || '')}</div><p style="line-height:1.9;white-space:pre-wrap;margin:9px 0 0">${h(a.reason || '')}</p></div><span class="badge ${h(a.status)}">${h(statusTitle(a.status))}</span></div>
+      <div class="appointment-top"><div><div class="patient-name">${h(a.patientName || 'بیمار')} · ${h(fmtDate(a.preferredDate))} · ${h(String(a.preferredTime || '').slice(0,5))}</div><span class="appt-type-label ${isText ? 'text' : 'in-person'}">${isText ? 'مشاوره متنی' : 'نوبت حضوری'}</span><div class="subline">${h(a.patientMobile || '')}</div><p style="line-height:1.9;white-space:pre-wrap;margin:9px 0 0">${h(a.reason || '')}</p></div><span class="badge ${h(a.status)}">${h(statusTitle(a.status))}</span></div>
+      ${isText && a.status === 'requested' ? '<div class="consultation-notice">با تأیید درخواست، لینک ایتای پزشک در حساب بیمار نمایش داده می‌شود.</div>' : ''}
       <div class="card-actions">
-        ${a.status === 'requested' ? '<button class="primary" data-appt-status="confirmed" data-id="' + h(a.id) + '">تأیید نوبت</button><button class="danger-button" data-appt-status="rejected" data-id="' + h(a.id) + '">رد درخواست</button>' : ''}
+        ${a.status === 'requested' ? '<button class="primary" data-appt-status="confirmed" data-id="' + h(a.id) + '">تأیید نوبت / مشاوره</button><button class="danger-button" data-appt-status="rejected" data-id="' + h(a.id) + '">رد درخواست</button>' : ''}
         ${a.status === 'confirmed' ? '<button class="secondary" data-appt-status="completed" data-id="' + h(a.id) + '">ثبت انجام ویزیت</button><button class="ghost-button" data-appt-status="cancelled" data-id="' + h(a.id) + '">لغو نوبت</button>' : ''}
       </div>
     </div>`;
   }
+  const weekdayNames = ['یکشنبه','دوشنبه','سه‌شنبه','چهارشنبه','پنجشنبه','جمعه','شنبه'];
+  function renderAvailability(row) {
+    const typeTitle = row.appointment_type === 'text' ? 'مشاوره متنی' : 'نوبت حضوری';
+    return '<div class="availability-row"><div><strong>' + h(typeTitle) + ' · ' + h(weekdayNames[Number(row.day_of_week)] || '') + '</strong><small>' + h(String(row.start_time).slice(0,5)) + ' تا ' + h(String(row.end_time).slice(0,5)) + ' · هر نوبت ' + h(row.slot_minutes) + ' دقیقه</small></div><div class="availability-row-actions"><span class="badge ' + (row.is_active ? 'active' : 'cancelled') + '">' + (row.is_active ? 'فعال' : 'غیرفعال') + '</span><button type="button" class="ghost-button" data-availability-toggle="' + h(row.id) + '" data-active="' + String(row.is_active) + '">' + (row.is_active ? 'غیرفعال‌کردن' : 'فعال‌کردن') + '</button></div></div>';
+  }
   async function loadDoctorDashboard() {
     root.innerHTML = '<section class="loading-card"><div class="spinner"></div><p>در حال دریافت اطلاعات سرور…</p></section>';
     try {
-      const values = await Promise.all([api('/doctor/patients'),api('/doctor/appointments')]);
+      const values = await Promise.all([api('/doctor/patients'),api('/doctor/appointments'),api('/doctor/availability')]);
       const patients = values[0].patients || [];
       const appointments = values[1].appointments || [];
+      const availability = values[2].availability || [];
       const pending = patients.filter(p => p.status === 'pending_review').length;
       const requested = appointments.filter(a => a.status === 'requested').length;
       root.innerHTML = `
@@ -459,8 +583,39 @@
               <p class="lead" style="margin:0;font-size:14px">این پنل فقط اطلاعات ذخیره‌شده در سرور را نمایش می‌دهد. تصمیم‌گیری درباره تشخیص یا تغییر درمان باید توسط پزشک انجام شود.</p>
             </section>
           </div>
-        </div>`;
+        </div>
+        <section class="panel availability-panel">
+          <div class="panel-heading"><h2>تعریف زمان‌های نوبت‌گیری</h2><small>برنامه هفتگی برای هر نوع نوبت</small></div>
+          <form id="availabilityForm">
+            <div class="form-grid">
+              <div class="field"><label for="availabilityType">نوع نوبت</label><select id="availabilityType" name="appointmentType"><option value="in_person">حضوری در مطب</option><option value="text">مشاوره متنی</option></select></div>
+              <div class="field"><label for="availabilityDay">روز هفته</label><select id="availabilityDay" name="dayOfWeek">${weekdayNames.map((d,i)=>'<option value="'+i+'">'+h(d)+'</option>').join('')}</select></div>
+              <div class="field"><label for="availabilityStart">از ساعت</label><input id="availabilityStart" name="startTime" type="time" value="09:00" required></div>
+              <div class="field"><label for="availabilityEnd">تا ساعت</label><input id="availabilityEnd" name="endTime" type="time" value="12:00" required></div>
+              <div class="field"><label for="availabilityDuration">مدت هر نوبت</label><select id="availabilityDuration" name="slotMinutes"><option value="15">۱۵ دقیقه</option><option value="20">۲۰ دقیقه</option><option value="30" selected>۳۰ دقیقه</option><option value="45">۴۵ دقیقه</option><option value="60">۶۰ دقیقه</option></select></div>
+            </div>
+            <button class="primary full-button" type="submit">ذخیره زمان‌بندی</button><div class="form-message"></div>
+          </form>
+          <div class="availability-list" id="availabilityList">${availability.length ? availability.map(renderAvailability).join('') : '<div class="empty-card">هنوز زمان‌بندی‌ای تعریف نشده است.</div>'}</div>
+        </section>`;
       bindCommon();
+      const availabilityForm = document.getElementById('availabilityForm');
+      availabilityForm?.addEventListener('submit',async e => {
+        e.preventDefault();
+        const button = availabilityForm.querySelector('button[type="submit"]');
+        button.disabled = true;
+        const f = new FormData(availabilityForm);
+        try {
+          await api('/doctor/availability','POST',{appointmentType:f.get('appointmentType'),dayOfWeek:Number(f.get('dayOfWeek')),startTime:f.get('startTime'),endTime:f.get('endTime'),slotMinutes:Number(f.get('slotMinutes'))});
+          await loadDoctorDashboard();
+        } catch (error) { setMessage(availabilityForm,errorMessage(error),'error'); button.disabled = false; }
+      });
+      root.querySelectorAll('[data-availability-toggle]').forEach(btn => btn.addEventListener('click',async () => {
+        try {
+          await api('/doctor/availability/' + encodeURIComponent(btn.dataset.availabilityToggle),'PATCH',{isActive:btn.dataset.active !== 'true'});
+          await loadDoctorDashboard();
+        } catch(error) { alert(errorMessage(error)); }
+      }));
       root.querySelectorAll('[data-action]').forEach(btn => btn.addEventListener('click', async () => {
         const id = btn.dataset.id;
         const action = btn.dataset.action;
@@ -565,8 +720,42 @@
       } catch (error) { setMessage(medForm,errorMessage(error),'error'); btn.disabled = false; }
     });
   }
+  let deferredInstallPrompt = null;
+  const installAppBtn = document.getElementById('installAppBtn');
+  window.addEventListener('beforeinstallprompt',event => {
+    event.preventDefault();
+    deferredInstallPrompt = event;
+    if (installAppBtn) installAppBtn.textContent = 'نصب نرم‌افزار';
+  });
+  if (installAppBtn) {
+    const alreadyInstalled = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+    if (alreadyInstalled) { installAppBtn.textContent = 'نصب شده'; installAppBtn.disabled = true; }
+    installAppBtn.addEventListener('click',async () => {
+      if (alreadyInstalled) return;
+      if (deferredInstallPrompt) {
+        deferredInstallPrompt.prompt();
+        await deferredInstallPrompt.userChoice;
+        deferredInstallPrompt = null;
+      } else if (/iphone|ipad|ipod/i.test(navigator.userAgent)) {
+        alert('برای نصب روی آیفون، در Safari دکمه Share را بزنید و گزینه Add to Home Screen را انتخاب کنید.');
+      } else {
+        alert('از منوی مرورگر گزینه «نصب برنامه» یا «افزودن به صفحه اصلی» را انتخاب کنید.');
+      }
+    });
+  }
+  window.addEventListener('appinstalled',() => { if (installAppBtn) { installAppBtn.textContent = 'نصب شده'; installAppBtn.disabled = true; } });
+  document.querySelectorAll('[data-open-register]').forEach(link => link.addEventListener('click',event => {
+    event.preventDefault();
+    showLogin(APP_ROLE,'register');
+    document.getElementById('app')?.scrollIntoView({behavior:'smooth',block:'start'});
+  }));
+  document.querySelectorAll('[data-open-login]').forEach(link => link.addEventListener('click',event => {
+    event.preventDefault();
+    showLogin(APP_ROLE,'login');
+    document.getElementById('app')?.scrollIntoView({behavior:'smooth',block:'start'});
+  }));
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
     window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
   }
-  if (token && role) loadDashboard(); else showLogin('patient','login');
+  if (token && role) loadDashboard(); else showLogin('patient','login');  if (token && role) loadDashboard(); else showLogin('patient','login');
 })();
