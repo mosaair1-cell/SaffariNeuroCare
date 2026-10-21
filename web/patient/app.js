@@ -535,20 +535,28 @@
     </div>`;
   }
   function renderDoctorAppointment(a) {
-    return `<div class="appointment-card">
-      <div class="appointment-top"><div><div class="patient-name">${h(a.patientName || 'بیمار')} · ${h(fmtDate(a.preferredDate))} · ${h(String(a.preferredTime || '').slice(0,5))}</div><div class="subline">${h(a.patientMobile || '')}</div><p style="line-height:1.9;white-space:pre-wrap;margin:9px 0 0">${h(a.reason || '')}</p></div><span class="badge ${h(a.status)}">${h(statusTitle(a.status))}</span></div>
+    const isText = a.appointmentType === 'text';
+    return \`<div class="appointment-card">
+      <div class="appointment-top"><div><div class="patient-name">\${h(a.patientName || 'بیمار')} · \${h(fmtDate(a.preferredDate))} · \${h(String(a.preferredTime || '').slice(0,5))}</div><span class="appt-type-label \${isText ? 'text' : 'in-person'}">\${isText ? 'مشاوره متنی' : 'نوبت حضوری'}</span><div class="subline">\${h(a.patientMobile || '')}</div><p style="line-height:1.9;white-space:pre-wrap;margin:9px 0 0">\${h(a.reason || '')}</p></div><span class="badge \${h(a.status)}">\${h(statusTitle(a.status))}</span></div>
+      \${isText && a.status === 'requested' ? '<div class="consultation-notice">با تأیید درخواست، لینک ایتای پزشک در حساب بیمار نمایش داده می‌شود.</div>' : ''}
       <div class="card-actions">
-        ${a.status === 'requested' ? '<button class="primary" data-appt-status="confirmed" data-id="' + h(a.id) + '">تأیید نوبت</button><button class="danger-button" data-appt-status="rejected" data-id="' + h(a.id) + '">رد درخواست</button>' : ''}
-        ${a.status === 'confirmed' ? '<button class="secondary" data-appt-status="completed" data-id="' + h(a.id) + '">ثبت انجام ویزیت</button><button class="ghost-button" data-appt-status="cancelled" data-id="' + h(a.id) + '">لغو نوبت</button>' : ''}
+        \${a.status === 'requested' ? '<button class="primary" data-appt-status="confirmed" data-id="' + h(a.id) + '">تأیید نوبت / مشاوره</button><button class="danger-button" data-appt-status="rejected" data-id="' + h(a.id) + '">رد درخواست</button>' : ''}
+        \${a.status === 'confirmed' ? '<button class="secondary" data-appt-status="completed" data-id="' + h(a.id) + '">ثبت انجام ویزیت</button><button class="ghost-button" data-appt-status="cancelled" data-id="' + h(a.id) + '">لغو نوبت</button>' : ''}
       </div>
-    </div>`;
+    </div>\`;
+  }
+  const weekdayNames = ['یکشنبه','دوشنبه','سه‌شنبه','چهارشنبه','پنجشنبه','جمعه','شنبه'];
+  function renderAvailability(row) {
+    const typeTitle = row.appointment_type === 'text' ? 'مشاوره متنی' : 'نوبت حضوری';
+    return '<div class="availability-row"><div><strong>' + h(typeTitle) + ' · ' + h(weekdayNames[Number(row.day_of_week)] || '') + '</strong><small>' + h(String(row.start_time).slice(0,5)) + ' تا ' + h(String(row.end_time).slice(0,5)) + ' · هر نوبت ' + h(row.slot_minutes) + ' دقیقه</small></div><div class="availability-row-actions"><span class="badge ' + (row.is_active ? 'active' : 'cancelled') + '">' + (row.is_active ? 'فعال' : 'غیرفعال') + '</span><button type="button" class="ghost-button" data-availability-toggle="' + h(row.id) + '" data-active="' + String(row.is_active) + '">' + (row.is_active ? 'غیرفعال‌کردن' : 'فعال‌کردن') + '</button></div></div>';
   }
   async function loadDoctorDashboard() {
     root.innerHTML = '<section class="loading-card"><div class="spinner"></div><p>در حال دریافت اطلاعات سرور…</p></section>';
     try {
-      const values = await Promise.all([api('/doctor/patients'),api('/doctor/appointments')]);
+      const values = await Promise.all([api('/doctor/patients'),api('/doctor/appointments'),api('/doctor/availability')]);
       const patients = values[0].patients || [];
       const appointments = values[1].appointments || [];
+      const availability = values[2].availability || [];
       const pending = patients.filter(p => p.status === 'pending_review').length;
       const requested = appointments.filter(a => a.status === 'requested').length;
       root.innerHTML = `
@@ -574,8 +582,39 @@
               <p class="lead" style="margin:0;font-size:14px">این پنل فقط اطلاعات ذخیره‌شده در سرور را نمایش می‌دهد. تصمیم‌گیری درباره تشخیص یا تغییر درمان باید توسط پزشک انجام شود.</p>
             </section>
           </div>
-        </div>`;
+        </div>
+        <section class="panel availability-panel">
+          <div class="panel-heading"><h2>تعریف زمان‌های نوبت‌گیری</h2><small>برنامه هفتگی برای هر نوع نوبت</small></div>
+          <form id="availabilityForm">
+            <div class="form-grid">
+              <div class="field"><label for="availabilityType">نوع نوبت</label><select id="availabilityType" name="appointmentType"><option value="in_person">حضوری در مطب</option><option value="text">مشاوره متنی</option></select></div>
+              <div class="field"><label for="availabilityDay">روز هفته</label><select id="availabilityDay" name="dayOfWeek">\${weekdayNames.map((d,i)=>'<option value="'+i+'">'+h(d)+'</option>').join('')}</select></div>
+              <div class="field"><label for="availabilityStart">از ساعت</label><input id="availabilityStart" name="startTime" type="time" value="09:00" required></div>
+              <div class="field"><label for="availabilityEnd">تا ساعت</label><input id="availabilityEnd" name="endTime" type="time" value="12:00" required></div>
+              <div class="field"><label for="availabilityDuration">مدت هر نوبت</label><select id="availabilityDuration" name="slotMinutes"><option value="15">۱۵ دقیقه</option><option value="20">۲۰ دقیقه</option><option value="30" selected>۳۰ دقیقه</option><option value="45">۴۵ دقیقه</option><option value="60">۶۰ دقیقه</option></select></div>
+            </div>
+            <button class="primary full-button" type="submit">ذخیره زمان‌بندی</button><div class="form-message"></div>
+          </form>
+          <div class="availability-list" id="availabilityList">\${availability.length ? availability.map(renderAvailability).join('') : '<div class="empty-card">هنوز زمان‌بندی‌ای تعریف نشده است.</div>'}</div>
+        </section>
       bindCommon();
+      const availabilityForm = document.getElementById('availabilityForm');
+      availabilityForm?.addEventListener('submit',async e => {
+        e.preventDefault();
+        const button = availabilityForm.querySelector('button[type="submit"]');
+        button.disabled = true;
+        const f = new FormData(availabilityForm);
+        try {
+          await api('/doctor/availability','POST',{appointmentType:f.get('appointmentType'),dayOfWeek:Number(f.get('dayOfWeek')),startTime:f.get('startTime'),endTime:f.get('endTime'),slotMinutes:Number(f.get('slotMinutes'))});
+          await loadDoctorDashboard();
+        } catch (error) { setMessage(availabilityForm,errorMessage(error),'error'); button.disabled = false; }
+      });
+      root.querySelectorAll('[data-availability-toggle]').forEach(btn => btn.addEventListener('click',async () => {
+        try {
+          await api('/doctor/availability/' + encodeURIComponent(btn.dataset.availabilityToggle),'PATCH',{isActive:btn.dataset.active !== 'true'});
+          await loadDoctorDashboard();
+        } catch(error) { alert(errorMessage(error)); }
+      }));
       root.querySelectorAll('[data-action]').forEach(btn => btn.addEventListener('click', async () => {
         const id = btn.dataset.id;
         const action = btn.dataset.action;
@@ -680,8 +719,32 @@
       } catch (error) { setMessage(medForm,errorMessage(error),'error'); btn.disabled = false; }
     });
   }
+  let deferredInstallPrompt = null;
+  const installAppBtn = document.getElementById('installAppBtn');
+  window.addEventListener('beforeinstallprompt',event => {
+    event.preventDefault();
+    deferredInstallPrompt = event;
+    if (installAppBtn) installAppBtn.textContent = 'نصب نرم‌افزار';
+  });
+  if (installAppBtn) {
+    const alreadyInstalled = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+    if (alreadyInstalled) { installAppBtn.textContent = 'نصب شده'; installAppBtn.disabled = true; }
+    installAppBtn.addEventListener('click',async () => {
+      if (alreadyInstalled) return;
+      if (deferredInstallPrompt) {
+        deferredInstallPrompt.prompt();
+        await deferredInstallPrompt.userChoice;
+        deferredInstallPrompt = null;
+      } else if (/iphone|ipad|ipod/i.test(navigator.userAgent)) {
+        alert('برای نصب روی آیفون، در Safari دکمه Share را بزنید و گزینه Add to Home Screen را انتخاب کنید.');
+      } else {
+        alert('از منوی مرورگر گزینه «نصب برنامه» یا «افزودن به صفحه اصلی» را انتخاب کنید.');
+      }
+    });
+  }
+  window.addEventListener('appinstalled',() => { if (installAppBtn) { installAppBtn.textContent = 'نصب شده'; installAppBtn.disabled = true; } });
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
     window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
   }
-  if (token && role) loadDashboard(); else showLogin('patient','login');
+  if (token && role) loadDashboard(); else showLogin('patient','login');  if (token && role) loadDashboard(); else showLogin('patient','login');
 })();
