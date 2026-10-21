@@ -312,8 +312,8 @@ Deno.serve(async (req:Request)=>{
     return json({scores:data||[]},200,origin);
    }
    if(sub==="clinical-scores"&&req.method==="POST"){
-    const scoreValue=Number(normalize(body.scoreValue)),assessedOn=clean(body.assessedOn,10),rawNotes=String(body.notes||""),notes=clean(rawNotes,500);
-    if(!Number.isFinite(scoreValue)||scoreValue<0||scoreValue>10||Math.abs(scoreValue*2-Math.round(scoreValue*2))>1e-8||!dateOk(assessedOn)||assessedOn>tehranNow().date||rawNotes.length>500)return json({error:"invalid_edss"},400,origin);
+    const rawScore=normalize(body.scoreValue),scoreValue=Number(rawScore),assessedOn=clean(body.assessedOn,10),rawNotes=String(body.notes||""),notes=clean(rawNotes,500);
+    if(!rawScore||!Number.isFinite(scoreValue)||scoreValue<0||scoreValue>10||Math.abs(scoreValue*2-Math.round(scoreValue*2))>1e-8||!dateOk(assessedOn)||assessedOn>tehranNow().date||rawNotes.length>500)return json({error:"invalid_edss"},400,origin);
     const {data:score,error}=await db.from("clinical_scores").insert({patient_id:id,score_type:"edss",score_value:scoreValue,assessed_on:assessedOn,notes:notes||null,created_by:doctor!.sub}).select("id,score_type,score_value,assessed_on,notes,created_at").single();
     if(error)throw error;
     await audit(doctor!.sub,"doctor","clinical_score.edss.create","clinical_score",score.id,{patientId:id,scoreValue,assessedOn});
