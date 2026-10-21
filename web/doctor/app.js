@@ -5,6 +5,8 @@
   const API_BASE = String(cfg.API_BASE_URL || '').replace(/\/+$/, '');
   const CLINIC_CODE = String(cfg.CLINIC_CODE || 'SAFFARI');
   const APP_ROLE = cfg.APP_ROLE === 'doctor' ? 'doctor' : 'patient';
+  document.documentElement.classList.add(APP_ROLE === 'doctor' ? 'role-doctor' : 'role-patient');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', APP_ROLE === 'doctor' ? '#4c1d95' : '#0f766e');
   let token = sessionStorage.getItem('snc_token') || '';
   let role = APP_ROLE;
   let currentPatient = null;
@@ -22,7 +24,7 @@
   ];
   const statusLabels = {
     pending_review:'در انتظار تأیید پزشک', active:'فعال', rejected:'تأیید نشده',
-    requested:'درخواست ثبت شد', confirmed:'نوبت تأیید شد', completed:'انجام شد',
+    requested:'درخواست ثبت شد', confirmed:'نوبت تأیید شد', completed:'ویزیت شد',
     cancelled:'لغو شد', symptom:'ثبت علائم', pre_visit:'گزارش پیش از ویزیت'
   };
   const errorLabels = {
@@ -47,6 +49,7 @@
     report_notes_too_long:'توضیحات علائم حداکثر ۲۰۰ نویسه می‌تواند باشد.',
     slot_unavailable:'این زمان همین حالا رزرو شده یا دیگر قابل انتخاب نیست؛ زمان دیگری را انتخاب کنید.',
     invalid_availability:'روز یا ساعت کاری واردشده معتبر نیست.',
+    invalid_leave_range:'بازه مرخصی یا نوع نوبت واردشده معتبر نیست.',
     availability_not_found:'بازه زمانی موردنظر پیدا نشد.'
   };
   const h = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -754,6 +757,7 @@
         <button class="secondary" data-action="detail" data-id="${h(p.id)}">پرونده</button>
         ${status !== 'active' ? '<button class="primary" data-action="approve" data-id="' + h(p.id) + '">تأیید حساب</button>' : ''}
         ${status !== 'rejected' ? '<button class="danger-button" data-action="reject" data-id="' + h(p.id) + '">عدم تأیید</button>' : ''}
+        <button class="danger-button" data-action="delete" data-id="${h(p.id)}" data-name="${h((p.firstName || '') + ' ' + (p.lastName || ''))}">حذف کامل حساب</button>
       </div>
     </div>`;
   }
@@ -763,8 +767,9 @@
       <div class="appointment-top"><div><div class="patient-name">${h(a.patientName || 'بیمار')} · ${h(fmtDate(a.preferredDate))} · ${h(String(a.preferredTime || '').slice(0,5))}</div><span class="appt-type-label ${isText ? 'text' : 'in-person'}">${isText ? 'مشاوره متنی' : 'نوبت حضوری'}</span><div class="subline">${h(a.patientMobile || '')}</div><p style="line-height:1.9;white-space:pre-wrap;margin:9px 0 0">${h(a.reason || '')}</p></div><span class="badge ${h(a.status)}">${h(statusTitle(a.status))}</span></div>
       ${isText && a.status === 'requested' ? '<div class="consultation-notice">با تأیید درخواست، لینک ایتای پزشک در حساب بیمار نمایش داده می‌شود.</div>' : ''}
       <div class="card-actions">
+        <button class="secondary" data-appt-patient="${h(a.patientId)}">پرونده و ثبت توصیه</button>
         ${a.status === 'requested' ? '<button class="primary" data-appt-status="confirmed" data-id="' + h(a.id) + '">تأیید نوبت / مشاوره</button><button class="danger-button" data-appt-status="rejected" data-id="' + h(a.id) + '">رد درخواست</button>' : ''}
-        ${a.status === 'confirmed' ? '<button class="secondary" data-appt-status="completed" data-id="' + h(a.id) + '">ثبت انجام ویزیت</button><button class="ghost-button" data-appt-status="cancelled" data-id="' + h(a.id) + '">لغو نوبت</button>' : ''}
+        ${a.status === 'confirmed' ? '<button class="primary" data-appt-status="completed" data-id="' + h(a.id) + '">ویزیت شد</button><button class="ghost-button" data-appt-status="cancelled" data-id="' + h(a.id) + '">لغو نوبت</button>' : ''}
       </div>
     </div>`;
   }
@@ -774,13 +779,20 @@
     const typeTitle = row.appointment_type === 'text' ? 'مشاوره متنی' : 'نوبت حضوری';
     return '<div class="availability-row"><div><strong>' + h(typeTitle) + ' · ' + h(weekdayNames[Number(row.day_of_week)] || '') + '</strong><small>' + h(String(row.start_time).slice(0,5)) + ' تا ' + h(String(row.end_time).slice(0,5)) + ' · هر نوبت ' + h(row.slot_minutes) + ' دقیقه</small></div><div class="availability-row-actions"><span class="badge ' + (row.is_active ? 'active' : 'cancelled') + '">' + (row.is_active ? 'فعال' : 'غیرفعال') + '</span><button type="button" class="ghost-button" data-availability-toggle="' + h(row.id) + '" data-active="' + String(row.is_active) + '">' + (row.is_active ? 'غیرفعال‌کردن' : 'فعال‌کردن') + '</button></div></div>';
   }
+  function renderLeaveRow(row) {
+    const typeTitle = row.appointment_type === 'in_person' ? 'فقط نوبت حضوری' : (row.appointment_type === 'text' ? 'فقط مشاوره متنی' : 'همه انواع نوبت');
+    const start = jalaliFullDateFormatter.format(dateFromISO(String(row.start_date).slice(0,10)));
+    const end = jalaliFullDateFormatter.format(dateFromISO(String(row.end_date).slice(0,10)));
+    return '<div class="availability-row leave-row"><div><strong>' + h(start) + (row.start_date === row.end_date ? '' : ' تا ' + h(end)) + '</strong><small>' + h(typeTitle) + (row.reason ? ' · ' + h(row.reason) : '') + '</small></div><div class="availability-row-actions"><span class="badge ' + (row.is_active ? 'active' : 'cancelled') + '">' + (row.is_active ? 'فعال' : 'غیرفعال') + '</span><button type="button" class="ghost-button" data-leave-toggle="' + h(row.id) + '" data-active="' + String(row.is_active) + '">' + (row.is_active ? 'غیرفعال‌کردن' : 'فعال‌کردن') + '</button></div></div>';
+  }
   async function loadDoctorDashboard() {
     root.innerHTML = '<section class="loading-card"><div class="spinner"></div><p>در حال دریافت اطلاعات سرور…</p></section>';
     try {
-      const values = await Promise.all([api('/doctor/patients'),api('/doctor/appointments'),api('/doctor/availability')]);
+      const values = await Promise.all([api('/doctor/patients'),api('/doctor/appointments'),api('/doctor/availability'),api('/doctor/leaves')]);
       const patients = values[0].patients || [];
       const appointments = values[1].appointments || [];
       const availability = values[2].availability || [];
+      const leaves = values[3].leaves || [];
       const pending = patients.filter(p => p.status === 'pending_review').length;
       const requested = appointments.filter(a => a.status === 'requested').length;
       root.innerHTML = `
@@ -792,14 +804,15 @@
           ${metric('کل نوبت‌ها',String(appointments.length),'درخواست و نوبت‌های ثبت‌شده')}
         </div>
         <div class="content-grid">
-          <section class="panel">
-            <div class="panel-heading"><h2>بیماران</h2><small>${patients.length} مورد</small></div>
+          <section class="panel patient-directory-panel">
+            <div class="panel-heading"><h2>بیماران</h2><small id="patientsCount">${patients.length} مورد</small></div>
+            <div class="field patient-search-field"><label for="patientSearchInput">جستجوی بیمار</label><input id="patientSearchInput" type="search" autocomplete="off" placeholder="نام، نام خانوادگی، موبایل یا کد ملی"><small class="hint">برای یافتن بیمار می‌توانید بخشی از هر مشخصه را وارد کنید.</small></div>
             <div class="list" id="patientsList">${patients.length ? patients.map(renderPatientRow).join('') : '<div class="empty-card">هنوز بیماری در سرور ثبت نشده است. پس از ثبت‌نام بیمار، این فهرست به‌روزرسانی می‌شود.</div>'}</div>
           </section>
           <div class="stack">
             <section class="panel">
-              <div class="panel-heading"><h2>درخواست‌های نوبت</h2><small>${appointments.length} مورد</small></div>
-              <div class="list" id="appointmentsList">${appointments.length ? appointments.map(renderDoctorAppointment).join('') : '<div class="empty-card">هنوز درخواستی برای نوبت ثبت نشده است.</div>'}</div>
+              <div class="panel-heading"><h2>درخواست‌های نوبت و نوبت‌های آینده</h2><small>${appointments.length} مورد</small></div>
+              <div class="list" id="appointmentsList">${appointments.length ? appointments.map(renderDoctorAppointment).join('') : '<div class="empty-card">در حال حاضر درخواست باز یا نوبت آینده‌ای وجود ندارد.</div>'}</div>
             </section>
             <section class="panel">
               <div class="panel-heading"><h2>نکته مهم</h2></div>
@@ -820,6 +833,20 @@
             <button class="primary full-button" type="submit">ذخیره زمان‌بندی</button><div class="form-message"></div>
           </form>
           <div class="availability-list" id="availabilityList">${availability.length ? availability.map(renderAvailability).join('') : '<div class="empty-card">هنوز زمان‌بندی‌ای تعریف نشده است.</div>'}</div>
+        </section>
+        <section class="panel leave-panel">
+          <div class="panel-heading"><h2>مرخصی و عدم پذیرش نوبت</h2><small>تعریف بازه‌ای</small></div>
+          <p class="hint leave-hint">در بازه مرخصی، سامانه هیچ زمان جدیدی برای نوع نوبت انتخاب‌شده پیشنهاد نمی‌کند. نوبت‌های قبلی خودکار لغو نمی‌شوند و باید جداگانه بررسی شوند.</p>
+          <form id="leaveForm">
+            <div class="form-grid">
+              <div class="field"><label for="leaveStartDate">شروع مرخصی</label><input id="leaveStartDate" name="startDate" type="date" required></div>
+              <div class="field"><label for="leaveEndDate">پایان مرخصی</label><input id="leaveEndDate" name="endDate" type="date" required></div>
+              <div class="field"><label for="leaveType">نوع نوبت</label><select id="leaveType" name="appointmentType"><option value="">همه انواع نوبت</option><option value="in_person">فقط نوبت حضوری</option><option value="text">فقط مشاوره متنی</option></select></div>
+              <div class="field"><label for="leaveReason">توضیح (اختیاری)</label><input id="leaveReason" name="reason" maxlength="300" placeholder="مثلاً مرخصی یا همایش"></div>
+            </div>
+            <button class="primary full-button" type="submit">ثبت بازه مرخصی</button><div class="form-message"></div>
+          </form>
+          <div class="availability-list" id="leaveList">${leaves.length ? leaves.map(renderLeaveRow).join('') : '<div class="empty-card">هنوز بازه مرخصی ثبت نشده است.</div>'}</div>
         </section>`;
       bindCommon();
       const availabilityForm = document.getElementById('availabilityForm');
@@ -839,26 +866,70 @@
           await loadDoctorDashboard();
         } catch(error) { alert(errorMessage(error)); }
       }));
-      root.querySelectorAll('[data-action]').forEach(btn => btn.addEventListener('click', async () => {
-        const id = btn.dataset.id;
-        const action = btn.dataset.action;
+      root.querySelectorAll('[data-leave-toggle]').forEach(btn => btn.addEventListener('click',async () => {
         try {
-          if (action === 'detail') return loadDoctorPatient(id);
-          const status = action === 'approve' ? 'active' : 'rejected';
-          if (!confirm(status === 'active' ? 'حساب این بیمار تأیید شود؟' : 'ثبت‌نام این بیمار تأیید نشود؟')) return;
-          await api('/doctor/patients/' + encodeURIComponent(id) + '/status','PATCH',{status});
+          await api('/doctor/leaves/' + encodeURIComponent(btn.dataset.leaveToggle),'PATCH',{isActive:btn.dataset.active !== 'true'});
           await loadDoctorDashboard();
-        } catch (e) { alert(errorMessage(e)); }
+        } catch(error) { alert(errorMessage(error)); }
       }));
+      const leaveForm = document.getElementById('leaveForm');
+      leaveForm?.addEventListener('submit',async e => {
+        e.preventDefault();
+        const button=leaveForm.querySelector('button[type="submit"]');button.disabled=true;
+        const f=new FormData(leaveForm);
+        if(String(f.get('endDate')||'')<String(f.get('startDate')||'')){setMessage(leaveForm,'تاریخ پایان باید هم‌روز یا بعد از تاریخ شروع باشد.','error');button.disabled=false;return;}
+        try{
+          await api('/doctor/leaves','POST',{startDate:f.get('startDate'),endDate:f.get('endDate'),appointmentType:f.get('appointmentType'),reason:f.get('reason')});
+          await loadDoctorDashboard();
+        }catch(error){setMessage(leaveForm,errorMessage(error),'error');button.disabled=false;}
+      });
+      let patientSearchTimer;
+      const patientSearchInput=document.getElementById('patientSearchInput');
+      patientSearchInput?.addEventListener('input',()=>{
+        clearTimeout(patientSearchTimer);
+        const query=patientSearchInput.value.trim();
+        patientSearchTimer=setTimeout(async()=>{
+          const list=document.getElementById('patientsList'),count=document.getElementById('patientsCount');
+          if(!list)return;
+          list.innerHTML='<div class="empty-card">در حال جستجو…</div>';
+          try{
+            const result=await api('/doctor/patients'+(query?'?q='+encodeURIComponent(query):''));
+            const matches=result.patients||[];
+            list.innerHTML=matches.length?matches.map(renderPatientRow).join(''):'<div class="empty-card">بیماری با این مشخصات پیدا نشد.</div>';
+            if(count)count.textContent=String(matches.length)+' مورد';
+          }catch(error){list.innerHTML='<div class="empty-card">'+h(errorMessage(error))+'</div>';}
+        },250);
+      });
+      document.getElementById('patientsList')?.addEventListener('click',async event=>{
+        const btn=event.target instanceof Element ? event.target.closest('[data-action]') : null;
+        if(!btn)return;
+        const id=btn.dataset.id,action=btn.dataset.action;
+        try{
+          if(action==='detail')return loadDoctorPatient(id);
+          if(action==='delete'){
+            const name=btn.dataset.name||'این بیمار';
+            if(!confirm('حذف کامل حساب '+name+'؟ همه نوبت‌ها، گزارش‌ها، یادداشت‌ها و برنامه‌های وابسته حذف می‌شوند و این کار قابل بازگشت نیست.'))return;
+            if(!confirm('برای آزادشدن کد ملی و موبایل و امکان ثبت‌نام مجدد، حساب بیمار و پرونده وابسته کاملاً حذف شود؟'))return;
+            await api('/doctor/patients/'+encodeURIComponent(id),'DELETE');
+            await loadDoctorDashboard();
+            return;
+          }
+          const status=action==='approve'?'active':'rejected';
+          if(!confirm(status==='active'?'حساب این بیمار تأیید شود؟':'ثبت‌نام این بیمار تأیید نشود؟'))return;
+          await api('/doctor/patients/'+encodeURIComponent(id)+'/status','PATCH',{status});
+          await loadDoctorDashboard();
+        }catch(error){alert(errorMessage(error));}
+      });
+      root.querySelectorAll('[data-appt-patient]').forEach(btn=>btn.addEventListener('click',()=>loadDoctorPatient(btn.dataset.apptPatient)));
       root.querySelectorAll('[data-appt-status]').forEach(btn => btn.addEventListener('click',async () => {
         try {
+          if(btn.dataset.apptStatus==='completed'&&!confirm('آیا این بیمار ویزیت شد؟ در صورت نیاز، ابتدا «پرونده و ثبت توصیه» را باز کنید و توصیه‌های لازم را ثبت کنید.'))return;
           let doctorNote = '';
           if (btn.dataset.apptStatus === 'rejected') doctorNote = prompt('پیام کوتاه برای بیمار (اختیاری):','') || '';
           await api('/doctor/appointments/' + encodeURIComponent(btn.dataset.id) + '/status','PATCH',{status:btn.dataset.apptStatus,doctorNote});
           await loadDoctorDashboard();
         } catch (e) { alert(errorMessage(e)); }
-      }));
-    } catch (error) {
+      }));    } catch (error) {
       root.innerHTML = '<section class="panel"><h2>اتصال پنل پزشک برقرار نشد</h2>' + messageBox(errorMessage(error),'error') + '<div class="card-actions"><button class="secondary" id="retryBtn">تلاش دوباره</button><button class="ghost-button" id="logoutBtn">خروج امن</button></div></section>';
       document.getElementById('retryBtn')?.addEventListener('click',loadDashboard);
       document.getElementById('logoutBtn')?.addEventListener('click',logout);
