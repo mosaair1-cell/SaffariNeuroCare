@@ -137,3 +137,71 @@ button:disabled{cursor:not-allowed;opacity:.55}
   .patient-top,.appointment-top{flex-direction:column}
   .site-footer{padding:18px 14px}
 }
+
+
+/* V2 patient booking, accessibility and SEO */
+.site-actions{display:flex;align-items:center;justify-content:flex-start;gap:10px;flex-wrap:wrap}
+.site-actions .site-link{background:#fff;border-color:#d7e7e5;color:var(--teal-dark);box-shadow:0 5px 14px rgba(13,104,112,.06)}
+.install-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:10px 15px;border:1px solid #0d6870;border-radius:13px;background:linear-gradient(135deg,#0d6870,#16858a);color:#fff;font-size:13px;font-weight:800;box-shadow:0 7px 18px rgba(13,104,112,.18);white-space:nowrap}
+.install-button:before{content:"↓";font-size:17px;line-height:1}
+.install-button:disabled{background:#e6f3ef;color:#35715d;border-color:#c4e5d6;box-shadow:none}
+.seo-landing{max-width:1136px;margin:14px auto 22px;padding:0 22px;color:var(--ink)}
+.seo-landing[hidden]{display:none!important}
+.seo-hero{position:relative;overflow:hidden;padding:clamp(24px,4vw,46px);border:1px solid #cfe5e2;border-radius:28px;background:radial-gradient(circle at 100% 0,#d8eeeb 0,transparent 38%),linear-gradient(125deg,#fff 5%,#f0f9f7 100%);box-shadow:0 18px 44px rgba(20,75,77,.08)}
+.seo-hero:after{content:"";position:absolute;left:-50px;bottom:-80px;width:210px;height:210px;border:30px solid rgba(13,104,112,.05);border-radius:50%;pointer-events:none}
+.seo-kicker{display:inline-flex;padding:7px 11px;border-radius:100px;background:#dff1ee;color:var(--teal-dark);font-size:12px;font-weight:800}
+.seo-hero h1{max-width:800px;margin:18px 0 12px;font-size:clamp(26px,4vw,40px);line-height:1.5;letter-spacing:-.6px}
+.seo-lead{max-width:870px;margin:0;color:#506b6d;line-height:2.05;font-size:15px}
+.seo-actions{display:flex;gap:11px;flex-wrap:wrap;margin-top:23px}
+.seo-cta,.seo-secondary-cta{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:12px 18px;border-radius:14px;font-size:13px;font-weight:800;transition:transform .18s,box-shadow .18s}
+.seo-cta{background:linear-gradient(130deg,#0d6870,#16858a);color:white;box-shadow:0 9px 20px #0d687026}
+.seo-secondary-cta{background:#fff;color:var(--teal-dark);border:1px solid var(--line)}
+.seo-cta:hover,.seo-secondary-cta:hover,.study-card:hover{transform:translateY(-2px)}
+.seo-service-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:16px}
+.seo-service-card{padding:19px 20px;background:#fff;border:1px solid var(--line);border-radius:20px;box-shadow:0 9px 24px rgba(20,75,77,.045)}
+.seo-service-icon{display:grid;place-items:center;width:40px;height:40px;border-radius:14px;background:#e6f5f2;color:var(--teal);font-size:21px;font-weight:800}
+.seo-service-card h2{margin:12px 0 6px;font-size:16px}
+.seo-service-card p{margin:0;color:var(--muted);font-size:13px;line-height:1.9}
+.seo-steps{margin-top:14px;padding:17px 20px;border-radius:18px;background:#edf6f5;border:1px solid #d7eae7}
+.seo-steps h2{margin:0 0 6px;font-size:16px}
+.seo-steps p{margin:0;color:#587274;font-size:13px;line-height:2}
+.fixed-clinic{display:flex;flex-direction:column;gap:5px;padding:13px 15px;background:#f0f8f6;border:1px solid #d4e9e4;border-radius:13px}
+.fixed-clinic span,.fixed-clinic small{color:var(--muted);font-size:12px}
+.fixed-clinic strong{color:var(--teal-dark);font-size:14px}
+.captcha-box{margin-top:16px;padding:14px;background:#f1f8f7;border:1px solid #d9eae7;border-radius:16px}
+.captcha-box>label{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:#496466;font-size:13px;font-weight:700}
+.captcha-box>label strong{display:inline-flex;align-items:center;justify-content:center;min-width:74px;padding:7px 12px;border-radius:9px;background:#fff;color:var(--teal-dark);border:1px dashed #a8cfca;font-size:16px;letter-spacing:.8px}
+.captcha-row{display:flex;gap:9px;align-items:center;margin-top:10px}
+.captcha-row input{width:100%;max-width:150px;text-align:center}
+.captcha-row button{flex-shrink:0}
+.booking-hint{padding:12px 14px;border-radius:13px;border:1px solid #dcebe8;background:#f1f8f6;color:#527173;font-size:12px;line-height:1.9}
+.appt-type-label{display:inline-flex;margin-top:7px;padding:5px 9px;border-radius:9px;font-size:11px;font-weight:800}
+.appt-type-label.in-person{background:#e8f3ef;color:#28644c}
+.appt-type-label.text{background:#ecedfb;color:#5552a1}
+.consultation-notice{margin-top:12px;padding:11px 13px;border-radius:12px;background:#fff6e5;border:1px solid #f0dfb8;color:#76581c;font-size:12px;line-height:1.9}
+.eitaa-link{display:inline-flex;margin-top:12px;padding:11px 14px;border-radius:12px;background:#e9f6ee;color:#246a47;border:1px solid #cae9d6;font-size:13px;font-weight:800}
+.symptom-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:9px}
+.symptom-chip{position:relative;display:flex;align-items:center;justify-content:center;min-height:47px;padding:9px 12px;border:1px solid var(--line);border-radius:13px;background:#fbfdfd;color:#536d70;font-size:12px;font-weight:700;cursor:pointer;transition:background .15s,border-color .15s,box-shadow .15s}
+.symptom-chip input{position:absolute;opacity:0;inset:0;width:100%;height:100%;cursor:pointer}
+.symptom-chip:has(input:checked){background:#e6f4f1;border-color:#79b9b0;color:var(--teal-dark);box-shadow:inset 0 0 0 1px #b8ddd6}
+.symptom-chip:has(input:focus-visible){outline:2px solid #16858a;outline-offset:2px}
+.field-help{display:block;margin-top:6px;color:var(--muted);font-size:11px;line-height:1.8}
+.study-grid{display:grid;gap:11px;margin-top:4px}
+.study-card{display:grid;grid-template-columns:46px minmax(0,1fr) 20px;gap:12px;align-items:center;padding:14px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(100deg,#fff,#f8fbfb);transition:transform .18s,border-color .18s,box-shadow .18s}
+.study-card:hover{border-color:#b7d9d4;box-shadow:0 7px 18px rgba(13,104,112,.06)}
+.study-card>span:nth-child(2){display:flex;flex-direction:column;gap:4px}
+.study-card strong{font-size:13px;color:var(--ink)}
+.study-card small{font-size:11px;line-height:1.8;color:var(--muted)}
+.study-card>b{font-size:19px;color:var(--teal);text-align:center}
+.study-icon{display:grid;place-items:center;width:44px;height:44px;border-radius:14px;background:#e5f3f0;color:var(--teal);font-size:15px;font-weight:900}
+.availability-panel{margin-top:18px}
+.availability-panel form{padding:14px 0 18px;border-bottom:1px solid var(--line)}
+.availability-list{display:grid;gap:9px;margin-top:15px}
+.availability-row{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:13px 14px;border:1px solid var(--line);border-radius:14px;background:#fbfdfd}
+.availability-row>div:first-child{display:flex;flex-direction:column;gap:5px}
+.availability-row strong{font-size:13px}
+.availability-row small{color:var(--muted);font-size:11px}
+.availability-row-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.availability-row-actions button{padding:8px 10px;font-size:11px}
+@media(max-width:760px){.seo-service-grid{grid-template-columns:1fr}.seo-hero{padding:24px}.seo-landing{padding:0 15px}.seo-service-card{padding:15px}.symptom-options{grid-template-columns:repeat(2,minmax(0,1fr))}.availability-row{align-items:flex-start;flex-direction:column}}
+@media(max-width:550px){.site-header{align-items:flex-start;flex-direction:column}.site-actions{width:100%}.site-actions .site-link,.install-button{flex:1}.seo-hero h1{font-size:26px}.seo-lead{font-size:13px}.seo-actions>*{flex:1}.seo-service-grid{gap:9px}.captcha-row{align-items:stretch}.captcha-row input{max-width:none}.study-card{grid-template-columns:40px minmax(0,1fr) 18px;padding:11px}.study-icon{width:38px;height:38px}.availability-row-actions{width:100%;justify-content:space-between}}
