@@ -184,6 +184,25 @@ create unique index if not exists doctor_availability_slot_unique
 create index if not exists doctor_availability_active_idx
   on public.doctor_availability (appointment_type, day_of_week) where is_active = true;
 
+create table if not exists public.doctor_leave_ranges (
+  id uuid primary key default gen_random_uuid(),
+  start_date date not null,
+  end_date date not null,
+  appointment_type varchar(20) null
+    check (appointment_type is null or appointment_type in ('in_person','text')),
+  reason varchar(300) not null default '',
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  check (start_date <= end_date)
+);
+create index if not exists doctor_leave_ranges_dates_idx
+  on public.doctor_leave_ranges (start_date, end_date)
+  where is_active = true;
+create index if not exists doctor_leave_ranges_type_idx
+  on public.doctor_leave_ranges (appointment_type, start_date, end_date)
+  where is_active = true;
+
 create table if not exists public.captcha_challenges (
   id uuid primary key,
   answer_hash text not null,
@@ -200,6 +219,7 @@ alter table public.doctor_accounts enable row level security;
 alter table public.sessions enable row level security;
 alter table public.doctor_sessions enable row level security;
 alter table public.doctor_availability enable row level security;
+alter table public.doctor_leave_ranges enable row level security;
 alter table public.captcha_challenges enable row level security;
 alter table public.appointments enable row level security;
 alter table public.symptom_reports enable row level security;
@@ -212,13 +232,13 @@ alter table public.auth_rate_limits enable row level security;
 revoke all on table public.patients, public.doctor_accounts, public.sessions,
   public.appointments, public.symptom_reports, public.clinical_notes,
   public.treatment_plans, public.medications, public.audit_events, public.auth_rate_limits,
-  public.doctor_sessions, public.doctor_availability, public.captcha_challenges
+  public.doctor_sessions, public.doctor_availability, public.doctor_leave_ranges, public.captcha_challenges
   from public, anon, authenticated;
 
 grant all on table public.patients, public.doctor_accounts, public.sessions,
   public.appointments, public.symptom_reports, public.clinical_notes,
   public.treatment_plans, public.medications, public.audit_events, public.auth_rate_limits,
-  public.doctor_sessions, public.doctor_availability, public.captcha_challenges
+  public.doctor_sessions, public.doctor_availability, public.doctor_leave_ranges, public.captcha_challenges
   to service_role;
 
 revoke all on function public.consume_neurocare_rate_limit(text, integer, integer) from public, anon, authenticated;
