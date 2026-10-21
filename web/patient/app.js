@@ -201,13 +201,13 @@
         <aside class="auth-aside">
           <div>
             <span class="aside-kicker">${APP_ROLE === 'doctor' ? 'دسترسی حرفه‌ای پزشک' : 'حساب اختصاصی بیمار'}</span>
-            <h2>${APP_ROLE === 'doctor' ? 'مدیریت متمرکز مراقبت بیماران.' : 'پیگیری منظم‌تر، همراه شما.'}</h2>
-            <p>${APP_ROLE === 'doctor' ? 'مشاهده و تأیید بیماران، بررسی گزارش‌ها، مدیریت نوبت‌ها و ثبت برنامه پیگیری از پنل پزشک.' : 'درخواست نوبت، ثبت گزارش علائم و مشاهده برنامه پیگیری که پزشک برای شما ثبت کرده است.'}</p>
+            <h2>${APP_ROLE === 'doctor' ? 'مدیریت متمرکز مراقبت بیماران.' : 'پرونده شما، برنامه پیگیری و مراقبت مستمر.'}</h2>
+            <p>${APP_ROLE === 'doctor' ? 'مشاهده و تأیید بیماران، بررسی گزارش‌ها، مدیریت نوبت‌ها و ثبت برنامه پیگیری از پنل پزشک.' : 'دسترسی به سوابق پرونده، برنامه پیگیری، داروها و یادداشت‌های پزشک؛ همراه با ثبت علائم و مدیریت نوبت‌ها.'}</p>
           </div>
           <div class="aside-points">
-            <div class="aside-point"><span>✓</span><div><b>پرونده مختص هر بیمار</b><small>اطلاعات از سرور دریافت می‌شود؛ نمونه بیمار ساختگی نمایش داده نمی‌شود.</small></div></div>
-            <div class="aside-point"><span>✓</span><div><b>پیگیری نوبت و علائم</b><small>وضعیت نوبت و توصیه‌های ثبت‌شده در حساب کاربر در دسترس است.</small></div></div>
-            <div class="aside-point"><span>↗</span><div><b>آموزش معتبر</b><small>دسترسی به مقالات آموزشی سایت رسمی mhsaffari.ir.</small></div></div>
+            <div class="aside-point"><span>✓</span><div><b>سوابق پرونده پزشکی</b><small>مشاهده یادداشت‌ها، گزارش علائم و اطلاعات ثبت‌شده برای حساب خودتان.</small></div></div>
+            <div class="aside-point"><span>✓</span><div><b>برنامه درمان و پیگیری</b><small>برنامه پیگیری و داروهای ثبت‌شده توسط پزشک را دنبال کنید.</small></div></div>
+            <div class="aside-point"><span>↗</span><div><b>ثبت علائم و پیگیری</b><small>گزارش وضعیت خود را برای بررسی پزشک در سوابق ثبت کنید.</small></div></div>
           </div>
         </aside>
       </div>`;
@@ -433,102 +433,100 @@
       }
       root.innerHTML = `
         <div class="dash-head">
-          <div><h1>سلام ${h(profile.firstName || 'بیمار')} عزیز</h1><p>پنل اختصاصی بیمار · ${h(diseaseTitle(profile.diseaseCode))}</p></div>
+          <div><h1>سلام ${h(profile.firstName || 'بیمار')} عزیز</h1><p>پرونده سلامت و پیگیری درمان · ${h(diseaseTitle(profile.diseaseCode))}</p></div>
           ${headerActions()}
         </div>
         ${!active ? '<div class="notice-card warning"><strong>' + h(statusTitle(profile.status)) + '</strong><br>پس از بررسی حساب توسط پزشک، امکانات ثبت نوبت و پیگیری فعال می‌شود. تا آن زمان اطلاعات پزشکی دیگری وارد نکنید.</div>' : ''}
         <div class="metrics">
-          ${metric('وضعیت حساب',active ? 'فعال' : (profile.status === 'rejected' ? 'نیازمند تماس' : 'در انتظار'),statusTitle(profile.status))}
-          ${metric('درخواست نوبت',String(appointments.length),'نوبت‌های ثبت‌شده')}
-          ${metric('گزارش‌های من',String(reports.length),'گزارش علائم و پیش‌ویزیت')}
-          ${metric('برنامه پیگیری',String(plans.length),'برنامه‌های فعال')}
+          ${metric('برنامه پیگیری',String(plans.length),'برنامه‌های ثبت‌شده پزشک')}
+          ${metric('یادداشت‌های پزشک',String(notes.length),'سوابق قابل مشاهده')}
+          ${metric('داروهای ثبت‌شده',String(medications.length),'طبق دستور پزشک')}
+          ${metric('گزارش علائم',String(reports.length),'ثبت‌ها و پیش‌ویزیت‌ها')}
         </div>
         ${active ? `
         <div class="content-grid">
           <div class="stack">
             <section class="panel">
-              <div class="panel-heading"><h2>درخواست نوبت</h2><small>نوبت پس از تأیید مطب قطعی است</small></div>
-              <form id="appointmentForm">
-                <div class="form-grid">
-                  <div class="field full"><label for="appointmentType">نوع نوبت</label><select id="appointmentType" name="appointmentType"><option value="in_person">نوبت حضوری در مطب</option><option value="text">مشاوره متنی</option></select></div>
-                  <div class="field full">
-                    <label for="calendarDays">روز قابل رزرو (تقویم هجری شمسی)</label>
-                    <div class="jalali-calendar" id="jalaliCalendar">
-                      <div class="jalali-calendar-head">
-                        <button type="button" class="calendar-nav" id="calendarPrev" aria-label="ماه قبل" disabled>‹</button>
-                        <strong id="calendarMonthLabel">در حال دریافت زمان‌ها…</strong>
-                        <button type="button" class="calendar-nav" id="calendarNext" aria-label="ماه بعد" disabled>›</button>
-                      </div>
-                      <div class="calendar-weekdays" aria-hidden="true"><span>شنبه</span><span>یکشنبه</span><span>دوشنبه</span><span>سه‌شنبه</span><span>چهارشنبه</span><span>پنجشنبه</span><span>جمعه</span></div>
-                      <div class="calendar-grid" id="calendarDays" role="group" aria-label="فقط روزهای دارای نوبت آزاد"><div class="calendar-empty-note">در حال دریافت تقویم…</div></div>
-                      <div class="calendar-selected-date" id="selectedDateLabel" aria-live="polite">ابتدا یکی از روزهای قابل رزرو را انتخاب کنید.</div>
-                    </div>
-                    <input id="preferredSlot" name="preferredSlot" type="hidden" value="">
-                  </div>
-                  <div class="field full">
-                    <label for="availableTime">ساعت‌های آزاد همان روز</label>
-                    <select id="availableTime" required disabled><option value="">ابتدا یک روز قابل رزرو را انتخاب کنید</option></select>
-                    <small class="field-help">فقط ساعت‌های آزاد همان روز قابل انتخاب هستند.</small>
-                  </div>
-                  <div class="field full"><div id="appointmentHint" class="booking-hint"></div><a id="appointmentPhoneLink" class="phone-link" href="tel:09961364434" hidden>تماس مستقیم با مطب · 09961364434</a></div>
-                  <div class="field full"><label id="reasonLabel" for="reason">علت مراجعه</label><textarea id="reason" name="reason" maxlength="500" placeholder="در صورت تمایل، توضیح کوتاهی بنویسید"></textarea></div>
-                </div>
-                <button class="primary full-button" type="submit">ارسال درخواست نوبت</button><div class="form-message"></div>
-              </form>
-            </section>
+                          <div class="panel-heading"><h2>برنامه پیگیری پزشک</h2><small>اطلاعات ثبت‌شده</small></div>
+                          <div class="list">${plans.length ? plans.map(p => simpleCard(p.title,p.instructions,p.follow_up_date)).join('') : '<div class="empty-card">هنوز برنامه پیگیری‌ای ثبت نشده است.</div>'}</div>
+                        </section>
             <section class="panel">
-              <div class="panel-heading"><h2>نوبت‌های من</h2><small>${appointments.length} مورد</small></div>
-              <div class="list">${appointments.length ? appointments.map(appointmentCard).join('') : '<div class="empty-card">هنوز درخواست نوبتی ثبت نشده است.</div>'}</div>
-            </section>
+                          <div class="panel-heading"><h2>داروهای ثبت‌شده</h2><small>طبق دستور پزشک</small></div>
+                          <div class="list">${medications.length ? medications.map(m => simpleCard(m.name, (m.dose || '') + (m.instructions ? ' · ' + m.instructions : ''),m.created_at)).join('') : '<div class="empty-card">دارویی برای نمایش ثبت نشده است.</div>'}</div>
+                        </section>
             <section class="panel">
-              <div class="panel-heading"><h2>گزارش علائم / پیش از ویزیت</h2><small>گزارش برای بررسی پزشک</small></div>
-              <form id="reportForm">
-                <div class="field full"><label>علائم اخیر (چند مورد قابل انتخاب است)</label><div class="symptom-options">
-                  <label class="symptom-chip"><input type="checkbox" name="symptoms" value="headache"><span>سردرد</span></label>
-                  <label class="symptom-chip"><input type="checkbox" name="symptoms" value="fatigue"><span>خستگی</span></label>
-                  <label class="symptom-chip"><input type="checkbox" name="symptoms" value="numbness"><span>گزگز / بی‌حسی</span></label>
-                  <label class="symptom-chip"><input type="checkbox" name="symptoms" value="vision"><span>مشکل بینایی</span></label>
-                  <label class="symptom-chip"><input type="checkbox" name="symptoms" value="balance"><span>اختلال تعادل</span></label>
-                  <label class="symptom-chip"><input type="checkbox" name="symptoms" value="sleep"><span>اختلال خواب</span></label>
-                </div></div>
-                <div class="form-grid" style="margin-top:14px">
-                  <div class="field"><label for="severity">شدت کلی (۱ تا ۱۰)</label><input id="severity" type="number" name="severity" min="1" max="10" value="3"></div>
-                  <div class="field"><label for="occurredOn">تاریخ گزارش</label><input id="occurredOn" type="date" name="occurredOn" value="${new Date().toISOString().slice(0,10)}"></div>
-                  <div class="field full"><label for="reportNotes">توضیحات (حداکثر ۲۰۰ نویسه)</label><textarea id="reportNotes" name="notes" maxlength="200" placeholder="زمان شروع، مدت و تغییر علائم را کوتاه بنویسید"></textarea><small class="field-help">برای اطلاعات ضروری؛ حداکثر ۲۰۰ نویسه.</small></div>
-                </div>
-                <button class="primary full-button" type="submit">ثبت گزارش برای پزشک</button><div class="form-message"></div>
-              </form>
-            </section>
+                          <div class="panel-heading"><h2>پیام‌ها و یادداشت‌های پزشک</h2><small>قابل مشاهده برای شما</small></div>
+                          <div class="row-list">${notes.length ? notes.map(noteCard).join('') : '<div class="empty-card">هنوز یادداشتی برای نمایش وجود ندارد.</div>'}</div>
+                        </section>
             <section class="panel">
-              <div class="panel-heading"><h2>گزارش‌های قبلی</h2><small>${reports.length} مورد</small></div>
-              <div class="row-list">${reports.length ? reports.map(r => '<div class="row-item"><div><strong>' + h(statusTitle(r.report_type)) + ' · شدت ' + h(r.severity || '—') + '</strong><p>' + h([...(Array.isArray(r.symptoms) ? r.symptoms : []),r.notes].filter(Boolean).join('، ')) + '</p></div><small class="subline">' + h(fmtDate(r.submitted_at)) + '</small></div>').join('') : '<div class="empty-card">هنوز گزارشی ثبت نشده است.</div>'}</div>
-            </section>
+                          <div class="panel-heading"><h2>گزارش‌های قبلی</h2><small>${reports.length} مورد</small></div>
+                          <div class="row-list">${reports.length ? reports.map(r => '<div class="row-item"><div><strong>' + h(statusTitle(r.report_type)) + ' · شدت ' + h(r.severity || '—') + '</strong><p>' + h([...(Array.isArray(r.symptoms) ? r.symptoms : []),r.notes].filter(Boolean).join('، ')) + '</p></div><small class="subline">' + h(fmtDate(r.submitted_at)) + '</small></div>').join('') : '<div class="empty-card">هنوز گزارشی ثبت نشده است.</div>'}</div>
+                        </section>
+            <section class="panel">
+                          <div class="panel-heading"><h2>گزارش علائم / پیش از ویزیت</h2><small>گزارش برای بررسی پزشک</small></div>
+                          <form id="reportForm">
+                            <div class="field full"><label>علائم اخیر (چند مورد قابل انتخاب است)</label><div class="symptom-options">
+                              <label class="symptom-chip"><input type="checkbox" name="symptoms" value="headache"><span>سردرد</span></label>
+                              <label class="symptom-chip"><input type="checkbox" name="symptoms" value="fatigue"><span>خستگی</span></label>
+                              <label class="symptom-chip"><input type="checkbox" name="symptoms" value="numbness"><span>گزگز / بی‌حسی</span></label>
+                              <label class="symptom-chip"><input type="checkbox" name="symptoms" value="vision"><span>مشکل بینایی</span></label>
+                              <label class="symptom-chip"><input type="checkbox" name="symptoms" value="balance"><span>اختلال تعادل</span></label>
+                              <label class="symptom-chip"><input type="checkbox" name="symptoms" value="sleep"><span>اختلال خواب</span></label>
+                            </div></div>
+                            <div class="form-grid" style="margin-top:14px">
+                              <div class="field"><label for="severity">شدت کلی (۱ تا ۱۰)</label><input id="severity" type="number" name="severity" min="1" max="10" value="3"></div>
+                              <div class="field"><label for="occurredOn">تاریخ گزارش</label><input id="occurredOn" type="date" name="occurredOn" value="${new Date().toISOString().slice(0,10)}"></div>
+                              <div class="field full"><label for="reportNotes">توضیحات (حداکثر ۲۰۰ نویسه)</label><textarea id="reportNotes" name="notes" maxlength="200" placeholder="زمان شروع، مدت و تغییر علائم را کوتاه بنویسید"></textarea><small class="field-help">برای اطلاعات ضروری؛ حداکثر ۲۰۰ نویسه.</small></div>
+                            </div>
+                            <button class="primary full-button" type="submit">ثبت گزارش برای پزشک</button><div class="form-message"></div>
+                          </form>
+                        </section>
           </div>
           <div class="stack">
             <section class="panel">
-              <div class="panel-heading"><h2>برنامه پیگیری پزشک</h2><small>اطلاعات ثبت‌شده</small></div>
-              <div class="list">${plans.length ? plans.map(p => simpleCard(p.title,p.instructions,p.follow_up_date)).join('') : '<div class="empty-card">هنوز برنامه پیگیری‌ای ثبت نشده است.</div>'}</div>
-            </section>
+                          <div class="panel-heading"><h2>درخواست نوبت</h2><small>نوبت پس از تأیید مطب قطعی است</small></div>
+                          <form id="appointmentForm">
+                            <div class="form-grid">
+                              <div class="field full"><label for="appointmentType">نوع نوبت</label><select id="appointmentType" name="appointmentType"><option value="in_person">نوبت حضوری در مطب</option><option value="text">مشاوره متنی</option></select></div>
+                              <div class="field full">
+                                <label for="calendarDays">روز قابل رزرو (تقویم هجری شمسی)</label>
+                                <div class="jalali-calendar" id="jalaliCalendar">
+                                  <div class="jalali-calendar-head">
+                                    <button type="button" class="calendar-nav" id="calendarPrev" aria-label="ماه قبل" disabled>‹</button>
+                                    <strong id="calendarMonthLabel">در حال دریافت زمان‌ها…</strong>
+                                    <button type="button" class="calendar-nav" id="calendarNext" aria-label="ماه بعد" disabled>›</button>
+                                  </div>
+                                  <div class="calendar-weekdays" aria-hidden="true"><span>شنبه</span><span>یکشنبه</span><span>دوشنبه</span><span>سه‌شنبه</span><span>چهارشنبه</span><span>پنجشنبه</span><span>جمعه</span></div>
+                                  <div class="calendar-grid" id="calendarDays" role="group" aria-label="فقط روزهای دارای نوبت آزاد"><div class="calendar-empty-note">در حال دریافت تقویم…</div></div>
+                                  <div class="calendar-selected-date" id="selectedDateLabel" aria-live="polite">ابتدا یکی از روزهای قابل رزرو را انتخاب کنید.</div>
+                                </div>
+                                <input id="preferredSlot" name="preferredSlot" type="hidden" value="">
+                              </div>
+                              <div class="field full">
+                                <label for="availableTime">ساعت‌های آزاد همان روز</label>
+                                <select id="availableTime" required disabled><option value="">ابتدا یک روز قابل رزرو را انتخاب کنید</option></select>
+                                <small class="field-help">فقط ساعت‌های آزاد همان روز قابل انتخاب هستند.</small>
+                              </div>
+                              <div class="field full"><div id="appointmentHint" class="booking-hint"></div><a id="appointmentPhoneLink" class="phone-link" href="tel:09961364434" hidden>تماس مستقیم با مطب · 09961364434</a></div>
+                              <div class="field full"><label id="reasonLabel" for="reason">علت مراجعه</label><textarea id="reason" name="reason" maxlength="500" placeholder="در صورت تمایل، توضیح کوتاهی بنویسید"></textarea></div>
+                            </div>
+                            <button class="primary full-button" type="submit">ارسال درخواست نوبت</button><div class="form-message"></div>
+                          </form>
+                        </section>
             <section class="panel">
-              <div class="panel-heading"><h2>داروهای ثبت‌شده</h2><small>طبق دستور پزشک</small></div>
-              <div class="list">${medications.length ? medications.map(m => simpleCard(m.name, (m.dose || '') + (m.instructions ? ' · ' + m.instructions : ''),m.created_at)).join('') : '<div class="empty-card">دارویی برای نمایش ثبت نشده است.</div>'}</div>
-            </section>
-            <section class="panel">
-              <div class="panel-heading"><h2>پیام‌ها و یادداشت‌های پزشک</h2><small>قابل مشاهده برای شما</small></div>
-              <div class="row-list">${notes.length ? notes.map(noteCard).join('') : '<div class="empty-card">هنوز یادداشتی برای نمایش وجود ندارد.</div>'}</div>
-            </section>
+                          <div class="panel-heading"><h2>نوبت‌های من</h2><small>${appointments.length} مورد</small></div>
+                          <div class="list">${appointments.length ? appointments.map(appointmentCard).join('') : '<div class="empty-card">هنوز درخواست نوبتی ثبت نشده است.</div>'}</div>
+                        </section>
             <section class="panel study-panel">
-              <div class="panel-heading"><h2>مطالعه بیشتر</h2><small>آرشیو مقالات سایت رسمی</small></div>
-              <div class="study-grid">
-                <a class="study-card" href="https://mhsaffari.ir/articles-ms.html" target="_blank" rel="noopener"><span class="study-icon">MS</span><span><strong>آرشیو مقالات ام‌اس</strong><small>علائم، تشخیص و مسیرهای درمان و پیگیری</small></span><b>←</b></a>
-                <a class="study-card" href="https://mhsaffari.ir/articles-migraine-headache.html" target="_blank" rel="noopener"><span class="study-icon">✦</span><span><strong>آرشیو میگرن و سردرد</strong><small>آموزش‌های علمی درباره سردرد و درمان</small></span><b>←</b></a>
-                <a class="study-card" href="https://mhsaffari.ir/articles-neurology.html" target="_blank" rel="noopener"><span class="study-icon">＋</span><span><strong>آرشیو مغز و اعصاب</strong><small>مقالات عمومی نورولوژی و اختلالات عصبی</small></span><b>←</b></a>
-              </div>
-            </section>
+                          <div class="panel-heading"><h2>مطالعه بیشتر</h2><small>آرشیو مقالات سایت رسمی</small></div>
+                          <div class="study-grid">
+                            <a class="study-card" href="https://mhsaffari.ir/articles-ms.html" target="_blank" rel="noopener"><span class="study-icon">MS</span><span><strong>آرشیو مقالات ام‌اس</strong><small>علائم، تشخیص و مسیرهای درمان و پیگیری</small></span><b>←</b></a>
+                            <a class="study-card" href="https://mhsaffari.ir/articles-migraine-headache.html" target="_blank" rel="noopener"><span class="study-icon">✦</span><span><strong>آرشیو میگرن و سردرد</strong><small>آموزش‌های علمی درباره سردرد و درمان</small></span><b>←</b></a>
+                            <a class="study-card" href="https://mhsaffari.ir/articles-neurology.html" target="_blank" rel="noopener"><span class="study-icon">＋</span><span><strong>آرشیو مغز و اعصاب</strong><small>مقالات عمومی نورولوژی و اختلالات عصبی</small></span><b>←</b></a>
+                          </div>
+                        </section>
           </div>
-        </div>` : ''}
-      `;
-      bindCommon();
+        </div>      bindCommon();
       if (active) bindPatientForms();
     } catch (error) {
       root.innerHTML = '<section class="panel"><h2>دریافت اطلاعات ناموفق بود</h2>' + messageBox(errorMessage(error),'error') + '<div class="card-actions"><button class="secondary" id="retryBtn">تلاش دوباره</button><button class="ghost-button" id="logoutBtn">خروج امن</button></div></section>';
