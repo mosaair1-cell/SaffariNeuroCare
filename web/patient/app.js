@@ -269,6 +269,7 @@
   }
   async function loadDashboard() {
     if (!token) return showLogin(APP_ROLE,'login');
+    setSeoLanding(false);
     if (APP_ROLE === 'doctor') return loadDoctorDashboard();
     return loadPatientDashboard();
   }
@@ -276,10 +277,13 @@
     return '<div class="metric"><span class="label">' + h(label) + '</span><strong>' + h(value) + '</strong>' + (sub ? '<small>' + h(sub) + '</small>' : '') + '</div>';
   }
   function appointmentCard(a) {
-    return `<div class="appointment-card">
-      <div class="appointment-top"><div><div class="patient-name">${h(fmtDate(a.preferredDate))} · ${h(String(a.preferredTime || '').slice(0,5))}</div><div class="subline">${h(a.reason || 'بدون توضیح')}</div></div><span class="badge ${h(a.status)}">${h(statusTitle(a.status))}</span></div>
-      ${a.doctorNote ? '<div class="subline" style="margin-top:9px">پیام مطب: ' + h(a.doctorNote) + '</div>' : ''}
-    </div>`;
+    const isText = a.appointmentType === 'text';
+    return \`<div class="appointment-card">
+      <div class="appointment-top"><div><div class="patient-name">\${h(fmtDate(a.preferredDate))} · \${h(String(a.preferredTime || '').slice(0,5))}</div><span class="appt-type-label \${isText ? 'text' : 'in-person'}">\${isText ? 'مشاوره متنی' : 'نوبت حضوری در مطب'}</span><div class="subline">\${h(a.reason || 'بدون توضیح')}</div></div><span class="badge \${h(a.status)}">\${h(statusTitle(a.status))}</span></div>
+      \${isText && a.status === 'requested' ? '<div class="consultation-notice">برای تأیید درخواست مشاوره متنی، با شماره مطب <strong>09961364434</strong> تماس بگیرید.</div>' : ''}
+      \${a.consultationUrl ? '<a class="eitaa-link" href="' + h(a.consultationUrl) + '" target="_blank" rel="noopener">شروع گفت‌وگو در ایتا (@Dr_Saffari)</a>' : ''}
+      \${a.doctorNote ? '<div class="subline" style="margin-top:9px">پیام مطب: ' + h(a.doctorNote) + '</div>' : ''}
+    </div>\`;
   }
   function noteCard(n) {
     return '<div class="row-item"><div><strong>' + h(n.doctorLabel || 'پزشک معالج') + '</strong><p>' + h(n.noteText || '') + '</p></div><small class="subline">' + h(fmtDate(n.createdAt)) + '</small></div>';
@@ -375,9 +379,10 @@
               <div class="panel-heading"><h2>درخواست نوبت</h2><small>نوبت پس از تأیید مطب قطعی است</small></div>
               <form id="appointmentForm">
                 <div class="form-grid">
-                  <div class="field"><label for="preferredDate">تاریخ پیشنهادی</label><input id="preferredDate" name="preferredDate" type="date" min="${new Date().toISOString().slice(0,10)}" required></div>
-                  <div class="field"><label for="preferredTime">ساعت پیشنهادی</label><input id="preferredTime" name="preferredTime" type="time" required></div>
-                  <div class="field full"><label for="reason">علت مراجعه</label><textarea id="reason" name="reason" maxlength="1000" required placeholder="در چند جمله علت مراجعه را بنویسید"></textarea></div>
+                  <div class="field full"><label for="appointmentType">نوع نوبت</label><select id="appointmentType" name="appointmentType"><option value="in_person">نوبت حضوری در مطب</option><option value="text">مشاوره متنی</option></select></div>
+                  <div class="field full"><label for="preferredSlot">روز و ساعت قابل رزرو</label><select id="preferredSlot" name="preferredSlot" required><option value="">در حال دریافت زمان‌های قابل رزرو…</option></select></div>
+                  <div class="field full"><div id="appointmentHint" class="booking-hint"></div></div>
+                  <div class="field full"><label id="reasonLabel" for="reason">علت مراجعه</label><textarea id="reason" name="reason" maxlength="500" placeholder="در صورت تمایل، توضیح کوتاهی بنویسید"></textarea></div>
                 </div>
                 <button class="primary full-button" type="submit">ارسال درخواست نوبت</button><div class="form-message"></div>
               </form>
@@ -389,19 +394,20 @@
             <section class="panel">
               <div class="panel-heading"><h2>گزارش علائم / پیش از ویزیت</h2><small>گزارش برای بررسی پزشک</small></div>
               <form id="reportForm">
-                <div class="field full"><label>علائم اخیر</label><div class="chips">
-                  <label class="chip"><input type="checkbox" name="symptoms" value="headache"> سردرد</label>
-                  <label class="chip"><input type="checkbox" name="symptoms" value="fatigue"> خستگی</label>
-                  <label class="chip"><input type="checkbox" name="symptoms" value="numbness"> گزگز / بی‌حسی</label>
-                  <label class="chip"><input type="checkbox" name="symptoms" value="vision"> مشکل بینایی</label>
-                  <label class="chip"><input type="checkbox" name="symptoms" value="balance"> اختلال تعادل</label>
-                  <label class="chip"><input type="checkbox" name="symptoms" value="sleep"> اختلال خواب</label>
+                <div class="field full"><label>علائم اخیر (چند مورد قابل انتخاب است)</label><div class="symptom-options">
+                  <label class="symptom-chip"><input type="checkbox" name="symptoms" value="headache"><span>سردرد</span></label>
+                  <label class="symptom-chip"><input type="checkbox" name="symptoms" value="fatigue"><span>خستگی</span></label>
+                  <label class="symptom-chip"><input type="checkbox" name="symptoms" value="numbness"><span>گزگز / بی‌حسی</span></label>
+                  <label class="symptom-chip"><input type="checkbox" name="symptoms" value="vision"><span>مشکل بینایی</span></label>
+                  <label class="symptom-chip"><input type="checkbox" name="symptoms" value="balance"><span>اختلال تعادل</span></label>
+                  <label class="symptom-chip"><input type="checkbox" name="symptoms" value="sleep"><span>اختلال خواب</span></label>
                 </div></div>
                 <div class="form-grid" style="margin-top:14px">
                   <div class="field"><label for="severity">شدت کلی (۱ تا ۱۰)</label><input id="severity" type="number" name="severity" min="1" max="10" value="3"></div>
                   <div class="field"><label for="occurredOn">تاریخ گزارش</label><input id="occurredOn" type="date" name="occurredOn" value="${new Date().toISOString().slice(0,10)}"></div>
-                  <div class="field full"><label for="reportNotes">توضیحات</label><textarea id="reportNotes" name="notes" maxlength="4000" placeholder="زمان شروع، مدت، تغییر علائم و نکات مهم را بنویسید"></textarea></div>
+                  <div class="field full"><label for="reportNotes">توضیحات (حداکثر ۲۰۰ نویسه)</label><textarea id="reportNotes" name="notes" maxlength="200" placeholder="زمان شروع، مدت و تغییر علائم را کوتاه بنویسید"></textarea><small class="field-help">برای اطلاعات ضروری؛ حداکثر ۲۰۰ نویسه.</small></div>
                 </div>
+                <button class="primary full-button" type="submit">ثبت گزارش برای پزشک</button>                </div>
                 <button class="primary full-button" type="submit">ثبت گزارش برای پزشک</button><div class="form-message"></div>
               </form>
             </section>
@@ -423,12 +429,12 @@
               <div class="panel-heading"><h2>پیام‌ها و یادداشت‌های پزشک</h2><small>قابل مشاهده برای شما</small></div>
               <div class="row-list">${notes.length ? notes.map(noteCard).join('') : '<div class="empty-card">هنوز یادداشتی برای نمایش وجود ندارد.</div>'}</div>
             </section>
-            <section class="panel">
-              <div class="panel-heading"><h2>مطالعه بیشتر</h2><small>سایت رسمی</small></div>
-              <div class="row-list">
-                <div class="row-item"><div><strong>راهنمای جامع ام‌اس</strong><p>آشنایی با علائم و مسیر پیگیری بیماری</p></div><a href="https://mhsaffari.ir/articles/ms/multiple-sclerosis-ms.html" target="_blank" rel="noopener">مطالعه ↗</a></div>
-                <div class="row-item"><div><strong>درمان میگرن</strong><p>اطلاعات آموزشی درباره سردرد و درمان</p></div><a href="https://mhsaffari.ir/articles/migraine/migraine-treatment-comprehensive-saffari.html" target="_blank" rel="noopener">مطالعه ↗</a></div>
-                <div class="row-item"><div><strong>مقالات مغز و اعصاب</strong><p>محتوای آموزشی منتشرشده در سایت</p></div><a href="https://mhsaffari.ir/" target="_blank" rel="noopener">مشاهده ↗</a></div>
+            <section class="panel study-panel">
+              <div class="panel-heading"><h2>مطالعه بیشتر</h2><small>آرشیو مقالات سایت رسمی</small></div>
+              <div class="study-grid">
+                <a class="study-card" href="https://mhsaffari.ir/articles/ms/" target="_blank" rel="noopener"><span class="study-icon">MS</span><span><strong>آرشیو مقالات ام‌اس</strong><small>علائم، تشخیص و مسیرهای درمان و پیگیری</small></span><b>←</b></a>
+                <a class="study-card" href="https://mhsaffari.ir/articles/migraine/" target="_blank" rel="noopener"><span class="study-icon">✦</span><span><strong>آرشیو میگرن و سردرد</strong><small>آموزش‌های علمی درباره سردرد و درمان</small></span><b>←</b></a>
+                <a class="study-card" href="https://mhsaffari.ir/articles/neurology/" target="_blank" rel="noopener"><span class="study-icon">＋</span><span><strong>آرشیو مغز و اعصاب</strong><small>مقالات عمومی نورولوژی و اختلالات عصبی</small></span><b>←</b></a>
               </div>
             </section>
           </div>
@@ -442,20 +448,64 @@
       document.getElementById('logoutBtn')?.addEventListener('click',logout);
     }
   }
+  async function refreshAvailableSlots(type) {
+    const select = document.getElementById('preferredSlot');
+    const hint = document.getElementById('appointmentHint');
+    const reason = document.getElementById('reason');
+    const reasonLabel = document.getElementById('reasonLabel');
+    if (!select) return;
+    select.innerHTML = '<option value="">در حال دریافت زمان‌ها…</option>';
+    if (reason) reason.required = type === 'in_person';
+    if (reasonLabel) reasonLabel.textContent = type === 'text' ? 'موضوع مشاوره (اختیاری)' : 'علت مراجعه';
+    if (hint) hint.textContent = type === 'text'
+      ? 'پس از ثبت درخواست، برای تأیید مشاوره با شماره مطب 09961364434 تماس بگیرید. پس از تأیید پزشک، پیوند شروع گفت‌وگو در ایتا در همین صفحه نمایش داده می‌شود.'
+      : 'فقط زمان‌هایی نمایش داده می‌شوند که مطب برای نوبت حضوری باز کرده است. نوبت پس از تأیید مطب قطعی می‌شود.';
+    try {
+      const result = await api('/patients/availability?type=' + encodeURIComponent(type));
+      const slots = result.slots || [];
+      select.innerHTML = slots.length
+        ? slots.map(slot => '<option value="' + h(slot.date) + '|' + h(slot.time) + '">' + h(fmtDate(slot.date)) + ' · ' + h(slot.time) + '</option>').join('')
+        : '<option value="">فعلاً زمانی برای رزرو تعریف نشده است</option>';
+      if (!slots.length && hint) hint.textContent += ' برای اطلاع از زمان‌های جدید با مطب تماس بگیرید.';
+    } catch (error) {
+      select.innerHTML = '<option value="">دریافت زمان‌ها ناموفق بود</option>';
+      if (hint) hint.textContent = errorMessage(error);
+    }
+  }
   function bindPatientForms() {
-    const appointmentForm = document.getElementById('appointmentForm');
+    const appointmentForm = document.getElementById('appointmentForm');    const appointmentForm = document.getElementById('appointmentForm');
+    const appointmentType = document.getElementById('appointmentType');
+    if (appointmentType) {
+      appointmentType.addEventListener('change',() => refreshAvailableSlots(appointmentType.value));
+      refreshAvailableSlots(appointmentType.value || 'in_person');
+    }
     if (appointmentForm) appointmentForm.addEventListener('submit',async (event) => {
       event.preventDefault();
       const submit = appointmentForm.querySelector('button[type="submit"]');
       submit.disabled = true;
       const f = new FormData(appointmentForm);
+      const type = String(f.get('appointmentType') || 'in_person');
+      const slot = String(f.get('preferredSlot') || '').split('|');
+      const reason = String(f.get('reason') || '').trim();
+      if (slot.length !== 2 || !slot[0] || !slot[1]) {
+        setMessage(appointmentForm,'لطفاً یک زمان قابل رزرو انتخاب کنید.','error'); submit.disabled = false; return;
+      }
+      if (type === 'in_person' && !reason) {
+        setMessage(appointmentForm,'علت مراجعه را کوتاه بنویسید.','error'); submit.disabled = false; return;
+      }
       try {
         await api('/patients/appointments','POST',{
-          preferredDate:f.get('preferredDate'),preferredTime:f.get('preferredTime'),reason:f.get('reason')
+          appointmentType:type,preferredDate:slot[0],preferredTime:slot[1],reason
         });
-        setMessage(appointmentForm,'درخواست ثبت شد؛ تا تأیید مطب، نوبت قطعی نیست.','ok');
         await loadPatientDashboard();
-      } catch (e) { setMessage(appointmentForm,errorMessage(e),'error'); submit.disabled = false; }
+        const updatedForm = document.getElementById('appointmentForm');
+        if (updatedForm) setMessage(updatedForm,type === 'text'
+          ? 'درخواست مشاوره متنی ثبت شد. لطفاً برای تأیید با شماره مطب 09961364434 تماس بگیرید. پس از تأیید پزشک، لینک گفت‌وگو در ایتا در همین صفحه ظاهر می‌شود.'
+          : 'درخواست نوبت حضوری ثبت شد؛ تا تأیید مطب، نوبت قطعی نیست.','ok');
+      } catch (e) {
+        setMessage(appointmentForm,errorMessage(e),'error');
+        submit.disabled = false;
+      }
     });
     const reportForm = document.getElementById('reportForm');
     if (reportForm) reportForm.addEventListener('submit',async (event) => {
