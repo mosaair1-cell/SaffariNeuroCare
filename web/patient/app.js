@@ -15,6 +15,9 @@
     ['epilepsy','صرع'],
     ['parkinson','پارکینسون'],
     ['cognition','اختلالات شناختی'],
+    ['low_back_pain','کمردرد'],
+    ['stroke','سکته مغزی'],
+    ['other','سایر'],
     ['unassigned','هنوز مشخص نیست']
   ];
   const statusLabels = {
@@ -25,7 +28,7 @@
   const errorLabels = {
     unauthorized:'نشست شما پایان یافته است؛ دوباره وارد شوید.',
     forbidden:'این بخش برای حساب شما در دسترس نیست.',
-    invalid_credentials:'شماره موبایل/کد ملی یا اطلاعات ورود پزشک درست نیست.',
+    invalid_credentials:'کد ملی یا رمز عبور واردشده صحیح نیست.',
     invalid_registration_data:'اطلاعات واردشده کامل یا معتبر نیست.',
     invalid_clinic_code:'کد کلینیک معتبر نیست.',
     patient_already_registered:'این شماره موبایل یا کد ملی قبلاً ثبت شده است.',
@@ -38,7 +41,14 @@
     password_min_length_12:'رمز جدید باید حداقل ۱۲ نویسه داشته باشد.',
     password_must_not_be_national_id:'رمز عبور نباید برابر کد ملی باشد.',
     current_password_invalid:'رمز عبور فعلی صحیح نیست.',
-    rate_limit_unavailable:'سامانه کنترل تلاش‌های ورود موقتاً در دسترس نیست.'
+    rate_limit_unavailable:'سامانه کنترل تلاش‌های ورود موقتاً در دسترس نیست.',
+    invalid_captcha:'پاسخ کپچا درست نیست یا زمان آن تمام شده؛ سؤال تازه را حل کنید.',
+    invalid_patient_password:'رمز بیمار باید ۸ تا ۱۲ نویسه انگلیسی و شامل حرف، عدد و نماد باشد.',
+    report_notes_too_long:'توضیحات علائم حداکثر ۲۰۰ نویسه می‌تواند باشد.',
+    slot_unavailable:'این زمان همین حالا رزرو شده یا دیگر قابل انتخاب نیست؛ زمان دیگری را انتخاب کنید.',
+    invalid_availability:'روز یا ساعت کاری واردشده معتبر نیست.',
+    availability_not_found:'بازه زمانی موردنظر پیدا نشد.'
+  }
   };
   const h = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const diseaseTitle = (code) => (diseases.find(d => d[0] === code) || ['','تعیین‌نشده'])[1];
@@ -78,6 +88,10 @@
     }
     return data;
   }
+  function setSeoLanding(show) {
+    const section = document.getElementById('seoLanding');
+    if (section) section.hidden = !show;
+  }
   function messageBox(message, type = 'error') {
     return '<div class="message ' + type + '" role="status">' + h(message) + '</div>';
   }
@@ -107,6 +121,7 @@
     if (refreshBtn) refreshBtn.addEventListener('click', () => loadDashboard());
   }
   function showLogin(initialRole = APP_ROLE, initialMode = 'login') {
+    setSeoLanding(true);
     role = APP_ROLE; token = ''; currentPatient = null;
     const mode = initialMode;
     root.innerHTML = `
@@ -131,37 +146,70 @@
       </div>`;
     renderLoginForm(mode);
   }
+  async function loadCaptcha(form) {
+    if (APP_ROLE === 'doctor' || !form) return;
+    const question = form.querySelector('#captchaQuestion');
+    const challengeId = form.querySelector('#captchaId');
+    const answer = form.querySelector('#captchaAnswer');
+    if (!question || !challengeId || !answer) return;
+    question.textContent = 'در حال بارگذاری…';
+    challengeId.value = '';
+    answer.value = '';
+    const refresh = form.querySelector('#refreshCaptcha');
+    if (refresh) refresh.disabled = true;
+    try {
+      const data = await api('/captcha/challenge','POST',{});
+      question.textContent = data.question || '—';
+      challengeId.value = data.challengeId || '';
+    } catch (_) {
+      question.textContent = 'بارگذاری ناموفق بود';
+    } finally {
+      if (refresh) refresh.disabled = false;
+    }
+  }
   function renderLoginForm(mode) {
     const area = document.getElementById('loginFormArea');
     if (!area) return;
     const isDoctor = APP_ROLE === 'doctor';
     const isRegister = !isDoctor && mode === 'register';
-    area.innerHTML = `
-      <h1>${isDoctor ? 'ورود به پنل پزشک' : (isRegister ? 'ساخت حساب بیمار' : 'خوش آمدید')}</h1>
-      <p class="lead">${isDoctor ? 'برای ورود به پنل، مشخصات حساب پزشک را وارد کنید.' : (isRegister ? 'اطلاعات پایه را ثبت کنید تا پزشک بتواند حساب را بررسی و فعال کند.' : 'برای مشاهده نوبت‌ها، گزارش‌ها و برنامه پیگیری وارد حساب خود شوید.')}</p>
+    area.innerHTML = \`
+      <h1>\${isDoctor ? 'ورود به پنل پزشک' : (isRegister ? 'ساخت حساب بیمار' : 'ورود بیمار')}</h1>
+      <p class="lead">\${isDoctor ? 'برای ورود به پنل، مشخصات حساب پزشک را وارد کنید.' : (isRegister ? 'اطلاعات خود را ثبت کنید تا پزشک حساب را بررسی و فعال کند.' : 'برای ورود، کد ملی و رمز عبور خود را وارد کنید.')}</p>
       <form id="authForm" novalidate>
         <div class="form-grid">
-          ${isDoctor ? `
-            <div class="field full"><label for="clinicCode">کد ورود پزشک</label><input id="clinicCode" name="clinicCode" autocomplete="username" value="${h(CLINIC_CODE)}" required></div>
+          \${isDoctor ? \`
+            <div class="field full"><label for="clinicCode">کد ورود پزشک</label><input id="clinicCode" name="clinicCode" autocomplete="username" value="\${h(CLINIC_CODE)}" required></div>
             <div class="field full"><label for="password">رمز عبور پزشک</label><input id="password" type="password" name="password" autocomplete="current-password" required minlength="8"></div>
-          ` : `
-            ${isRegister ? `
+          \` : \`
+            \${isRegister ? \`
               <div class="field"><label for="firstName">نام</label><input id="firstName" name="firstName" autocomplete="given-name" required maxlength="100"></div>
               <div class="field"><label for="lastName">نام خانوادگی</label><input id="lastName" name="lastName" autocomplete="family-name" required maxlength="100"></div>
-              <div class="field full"><label for="diseaseCode">حوزه پیگیری</label><select id="diseaseCode" name="diseaseCode">${diseases.map(d => '<option value="' + h(d[0]) + '">' + h(d[1]) + '</option>').join('')}</select></div>
-              <div class="field full"><label for="clinicCode">کد کلینیک</label><input id="clinicCode" name="clinicCode" value="${h(CLINIC_CODE)}" required></div>
-            ` : ''}
-            <div class="field full"><label for="mobile">شماره موبایل</label><input id="mobile" name="mobile" inputmode="numeric" autocomplete="tel" placeholder="09123456789" pattern="09[0-9]{9}" required maxlength="11"></div>
-            ${isRegister ? '<div class="field full"><label for="nationalId">کد ملی (رمز اولیه)</label><input id="nationalId" name="nationalId" inputmode="numeric" autocomplete="off" placeholder="۱۰ رقم" pattern="[0-9]{10}" required maxlength="10"></div>' : '<div class="field full"><label for="patientPassword">رمز عبور</label><input id="patientPassword" name="password" type="password" autocomplete="current-password" required minlength="10" placeholder="رمز عبور مستقل یا کد ملی اولیه"></div>'}
-          `}
+              <div class="field full"><label for="diseaseCode">حوزه پیگیری</label><select id="diseaseCode" name="diseaseCode">\${diseases.map(d => '<option value="' + h(d[0]) + '">' + h(d[1]) + '</option>').join('')}</select></div>
+              <div class="field full"><div class="fixed-clinic"><span>مرکز پیگیری</span><strong>کلینیک دکتر صفاری</strong><small>کد کلینیک ثابت است و قابل تغییر نیست.</small></div></div>
+              <div class="field full"><label for="mobile">شماره موبایل (الزامی)</label><input id="mobile" name="mobile" inputmode="numeric" autocomplete="tel" placeholder="09123456789" pattern="09[0-9]{9}" required maxlength="11"></div>
+            \` : ''}
+            <div class="field full"><label for="nationalId">کد ملی / نام کاربری</label><input id="nationalId" name="nationalId" inputmode="numeric" autocomplete="username" placeholder="کد ملی ۱۰ رقمی" pattern="[0-9]{10}" required maxlength="10"></div>
+            <div class="field full"><label for="password">\${isRegister ? 'انتخاب رمز عبور امن' : 'رمز عبور'}</label><input id="password" name="password" type="password" autocomplete="\${isRegister ? 'new-password' : 'current-password'}" required minlength="8" maxlength="12" pattern="[!-~]{8,12}" placeholder="\${isRegister ? '۸ تا ۱۲ نویسه انگلیسی' : 'رمز عبور حساب'}"></div>
+            \${isRegister ? '<div class="field full"><label for="confirmPassword">تکرار رمز عبور</label><input id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password" required minlength="8" maxlength="12" pattern="[!-~]{8,12}"></div>' : ''}
+          \`}
         </div>
-        ${!isDoctor ? '<p class="hint">نسخه فعلی برای سازگاری با اپ آزمایشی از کد ملی به‌عنوان اعتبار اولیه ورود استفاده می‌کند. برای استفاده با اطلاعات واقعی بیمار، احراز هویت مستقل و امن باید قبل از انتشار نهایی فعال شود.</p>' : ''}
-        <button class="primary full-button" type="submit">${isDoctor ? 'ورود به پنل پزشک' : (isRegister ? 'ثبت‌نام و ارسال برای بررسی' : 'ورود به حساب')}</button>
+        \${!isDoctor ? \`
+          <div class="captcha-box">
+            <label for="captchaAnswer">کپچای امنیتی: <strong id="captchaQuestion">در حال بارگذاری…</strong></label>
+            <div class="captcha-row">
+              <input id="captchaAnswer" name="captchaAnswer" inputmode="numeric" pattern="[0-9]{1,2}" maxlength="2" placeholder="پاسخ" required>
+              <button class="ghost-button" id="refreshCaptcha" type="button">سؤال تازه</button>
+            </div>
+            <input id="captchaId" name="captchaId" type="hidden" value="">
+          </div>
+          <p class="hint">\${isRegister ? 'نام کاربری شما کد ملی است. رمز باید ۸ تا ۱۲ نویسه انگلیسی و شامل حرف، عدد و نماد باشد.' : 'با کد ملی و رمز عبوری که هنگام ثبت‌نام انتخاب کرده‌اید وارد شوید.'}</p>
+        \` : ''}
+        <button class="primary full-button" type="submit">\${isDoctor ? 'ورود به پنل پزشک' : (isRegister ? 'ثبت‌نام و ارسال برای بررسی' : 'ورود به حساب بیمار')}</button>
         <div class="form-message"></div>
       </form>
       <div class="auth-footer">
-        ${isDoctor ? '<span>دسترسی فقط برای پزشک مجاز است.</span>' : (isRegister ? '<span>قبلاً حساب ساخته‌اید؟</span><button class="link-button" type="button" id="modeLogin">ورود به حساب</button>' : '<span>حساب ندارید؟</span><button class="link-button" type="button" id="modeRegister">ثبت‌نام بیمار</button>')}
-      </div>`;
+        \${isDoctor ? '<span>دسترسی فقط برای پزشک مجاز است.</span>' : (isRegister ? '<span>قبلاً حساب ساخته‌اید؟</span><button class="link-button" type="button" id="modeLogin">ورود به حساب</button>' : '<span>حساب ندارید؟</span><button class="link-button" type="button" id="modeRegister">ثبت‌نام بیمار</button>')}
+      </div>\`;
     const form = document.getElementById('authForm');
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
@@ -173,14 +221,26 @@
         let data;
         if (isDoctor) {
           data = await api('/doctor/login','POST',{clinicCode:fd.get('clinicCode'),password:fd.get('password')});
-        } else if (isRegister) {
-          data = await api('/patients/register','POST',{
-            firstName:fd.get('firstName'),lastName:fd.get('lastName'),
-            mobile:fd.get('mobile'),nationalId:fd.get('nationalId'),
-            diseaseCode:fd.get('diseaseCode'),clinicCode:fd.get('clinicCode')
-          });
         } else {
-          data = await api('/patients/login','POST',{mobile:fd.get('mobile'),password:fd.get('password')});
+          const nationalId = String(fd.get('nationalId') || '').trim();
+          const password = String(fd.get('password') || '');
+          const captchaId = String(fd.get('captchaId') || '');
+          const captchaAnswer = String(fd.get('captchaAnswer') || '').trim();
+          if (!/^\d{10}$/.test(nationalId)) { setMessage(form,'کد ملی باید دقیقاً ۱۰ رقم باشد.','error'); return; }
+          if (!captchaId || !/^\d{1,2}$/.test(captchaAnswer)) { setMessage(form,'پاسخ کپچا را وارد کنید.','error'); return; }
+          if (isRegister) {
+            const mobile = String(fd.get('mobile') || '');
+            const confirmPassword = String(fd.get('confirmPassword') || '');
+            if (!/^09\d{9}$/.test(mobile)) { setMessage(form,'شماره موبایل باید با 09 شروع شود و ۱۱ رقم داشته باشد.','error'); return; }
+            if (!/^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z0-9])[\x21-\x7e]{8,12}$/.test(password)) { setMessage(form,'رمز باید ۸ تا ۱۲ نویسه انگلیسی و شامل حرف، عدد و نماد باشد.','error'); return; }
+            if (password !== confirmPassword) { setMessage(form,'تکرار رمز عبور یکسان نیست.','error'); return; }
+            data = await api('/patients/register','POST',{
+              firstName:fd.get('firstName'),lastName:fd.get('lastName'),mobile:fd.get('mobile'),
+              nationalId,password,diseaseCode:fd.get('diseaseCode'),clinicCode:CLINIC_CODE,captchaId,captchaAnswer
+            });
+          } else {
+            data = await api('/patients/login','POST',{nationalId,password,captchaId,captchaAnswer});
+          }
         }
         token = String(data.token || '');
         role = APP_ROLE;
@@ -190,10 +250,11 @@
         await loadDashboard();
       } catch (error) {
         setMessage(form,errorMessage(error),'error');
+        if (!isDoctor) await loadCaptcha(form);
       } finally {
         if (document.body.contains(submit)) {
           submit.disabled = false;
-          submit.textContent = isDoctor ? 'ورود به پنل پزشک' : (isRegister ? 'ثبت‌نام و ارسال برای بررسی' : 'ورود به حساب');
+          submit.textContent = isDoctor ? 'ورود به پنل پزشک' : (isRegister ? 'ثبت‌نام و ارسال برای بررسی' : 'ورود به حساب بیمار');
         }
       }
     });
@@ -201,6 +262,10 @@
     if (loginBtn) loginBtn.addEventListener('click',() => renderLoginForm('login'));
     const registerBtn = document.getElementById('modeRegister');
     if (registerBtn) registerBtn.addEventListener('click',() => renderLoginForm('register'));
+    if (!isDoctor) {
+      document.getElementById('refreshCaptcha')?.addEventListener('click',() => loadCaptcha(form));
+      loadCaptcha(form);
+    }
   }
   async function loadDashboard() {
     if (!token) return showLogin(APP_ROLE,'login');
