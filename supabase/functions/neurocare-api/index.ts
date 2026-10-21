@@ -283,6 +283,9 @@ Deno.serve(async (req:Request)=>{
    }
    const recordTables:any={"reports":"symptom_reports","notes":"clinical_notes","treatment-plan":"treatment_plans","medications":"medications","appointments":"appointments"};
    if(recordId&&req.method==="DELETE"&&recordTables[sub]){
+    const {data:recordExists,error:lookupError}=await db.from(recordTables[sub]).select("id").eq("id",recordId).eq("patient_id",id).maybeSingle();
+    if(lookupError)throw lookupError;
+    if(!recordExists)return json({error:"record_not_found"},404,origin);
     const {error:auditErr}=await db.from("audit_events").delete().eq("subject_id",recordId);
     if(auditErr)throw auditErr;
     const {data:removed,error:removeError}=await db.from(recordTables[sub]).delete().eq("id",recordId).eq("patient_id",id).select("id").maybeSingle();
