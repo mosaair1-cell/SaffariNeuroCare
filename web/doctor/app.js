@@ -19,6 +19,7 @@
     ['cognition','اختلالات شناختی'],
     ['low_back_pain','کمردرد'],
     ['stroke','سکته مغزی'],
+    ['vertigo','سرگیجه و اختلال تعادل'],
     ['other','سایر'],
     ['unassigned','هنوز مشخص نیست']
   ];
@@ -50,7 +51,9 @@
     slot_unavailable:'این زمان همین حالا رزرو شده یا دیگر قابل انتخاب نیست؛ زمان دیگری را انتخاب کنید.',
     invalid_availability:'روز یا ساعت کاری واردشده معتبر نیست.',
     invalid_leave_range:'بازه مرخصی یا نوع نوبت واردشده معتبر نیست.',
-    availability_not_found:'بازه زمانی موردنظر پیدا نشد.'
+    availability_not_found:'بازه زمانی موردنظر پیدا نشد.',
+    score_not_applicable:'ثبت EDSS فقط برای پرونده بیماران ام‌اس فعال است.',
+    invalid_edss:'نمره EDSS، تاریخ یا توضیحات واردشده معتبر نیست.'
   };
   const h = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const normalizeDigits = (value) => String(value == null ? '' : value)
@@ -936,6 +939,22 @@
     }
   }
 
+  function doctorEdssPanel(scores) {
+    const rows = Array.isArray(scores) ? scores : [];
+    const history = rows.length
+      ? '<div class="row-list">' + rows.map(s => '<div class="row-item edss-history-item"><div><strong>EDSS ' + h(Number(s.score_value).toFixed(1)) + '</strong><p>' + h(s.notes || 'توضیحی ثبت نشده است.') + '</p></div><div class="card-actions"><small class="subline">' + h(fmtDate(s.assessed_on)) + '</small><button type="button" class="danger-button" data-delete-record="clinical-scores" data-record-id="' + h(s.id) + '">حذف ارزیابی</button></div></div>').join('') + '</div>'
+      : '<div class="empty-card">هنوز نمره EDSS برای این بیمار ثبت نشده است.</div>';
+    const options = Array.from({length:21},(_,i)=>(i/2).toFixed(1)).map(v=>'<option value="' + v + '">' + v + '</option>').join('');
+    return '<section class="panel edss-panel"><div class="panel-heading"><h2>ارزیابی بالینی ام‌اس · EDSS</h2><small>' + rows.length + ' ثبت</small></div>' +
+      '<p class="edss-explainer">این مقیاس را فقط بر اساس ارزیابی بالینی انجام‌شده ثبت کنید. نمره باید بین ۰ تا ۱۰ و با فاصله‌های ۰٫۵ باشد.</p>' +
+      history +
+      '<form id="edssForm" class="form-section"><div class="form-grid">' +
+      '<div class="field"><label for="edssValue">نمره EDSS</label><select id="edssValue" name="scoreValue" required><option value="">انتخاب نمره</option>' + options + '</select></div>' +
+      '<div class="field"><label for="edssDate">تاریخ ارزیابی</label><input id="edssDate" name="assessedOn" type="date" required max="' + new Date().toISOString().slice(0,10) + '" value="' + new Date().toISOString().slice(0,10) + '"></div>' +
+      '<div class="field full"><label for="edssNotes">توضیحات ارزیابی (اختیاری، حداکثر ۵۰۰ نویسه)</label><textarea id="edssNotes" name="notes" maxlength="500" placeholder="در صورت نیاز، نکات بالینی مرتبط را بنویسید."></textarea></div>' +
+      '</div><button class="primary full-button" type="submit">ثبت نمره EDSS</button><div class="form-message"></div></form></section>';
+  }
+
   async function loadDoctorPatient(id) {
     root.innerHTML = '<section class="loading-card"><div class="spinner"></div><p>در حال دریافت پرونده و سوابق بیمار…</p></section>';
     try {
@@ -948,6 +967,9 @@
         api('/doctor/patients/' + encodeURIComponent(id) + '/medications')
       ]);
       const p = values[0].patient;
+      const clinicalScores = p.diseaseCode === 'ms'
+        ? ((await api('/doctor/patients/' + encodeURIComponent(id) + '/clinical-scores')).scores || [])
+        : [];
       const reports = values[1].reports || [];
       const notes = values[2].notes || [];
       const appointments = values[3].appointments || [];
@@ -959,6 +981,7 @@
         <div class="metrics">${metric('وضعیت حساب',statusTitle(p.status))}${metric('شماره تماس',p.mobile || '—')}${metric('کد ملی',p.nationalId || '—')}${metric('تاریخ ثبت',fmtDate(p.createdAt))}</div>
         <div class="content-grid">
           <div class="stack">
+            ${p.diseaseCode === 'ms' ? doctorEdssPanel(clinicalScores) : ''}
             <section class="panel"><div class="panel-heading"><h2>گزارش‌های بیمار</h2><small>${reports.length} مورد</small></div>
               <div class="row-list">${reports.length ? reports.map(r => '<div class="row-item"><div><strong>' + h(statusTitle(r.report_type)) + ' · شدت ' + h(r.severity ?? '—') + '</strong><p>' + h([...(Array.isArray(r.symptoms)?r.symptoms:[]),r.notes].filter(Boolean).join('، ')) + '</p></div><div class="card-actions"><small class="subline">' + h(fmtDate(r.submitted_at)) + '</small><button type="button" class="danger-button" data-delete-record="reports" data-record-id="' + h(r.id) + '">حذف سابقه</button></div></div>').join('') : '<div class="empty-card">گزارشی ثبت نشده است.</div>'}</div>
             </section>
@@ -1037,6 +1060,17 @@
         alert('دارو ثبت شد و در پنل بیمار نمایش داده می‌شود.');
         medForm.reset(); btn.disabled = false;
       } catch (error) { setMessage(medForm,errorMessage(error),'error'); btn.disabled = false; }
+    });
+    const edssForm = document.getElementById('edssForm');
+    if (edssForm) edssForm.addEventListener('submit',async e => {
+      e.preventDefault(); const btn = edssForm.querySelector('button[type="submit"]'); btn.disabled = true;
+      const f = new FormData(edssForm);
+      try {
+        await api('/doctor/patients/' + encodeURIComponent(id) + '/clinical-scores','POST',{
+          scoreValue:f.get('scoreValue'),assessedOn:f.get('assessedOn'),notes:f.get('notes')
+        });
+        await loadDoctorPatient(id);
+      } catch (error) { setMessage(edssForm,errorMessage(error),'error'); btn.disabled = false; }
     });
   }
   let deferredInstallPrompt = null;
