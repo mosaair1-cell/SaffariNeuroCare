@@ -121,7 +121,19 @@ Deno.serve(async (req:Request)=>{
  if(req.method==="OPTIONS") return new Response(null,{status:204,headers:headers(origin)});
  if(origin && !origins.has(origin)) return json({error:"origin_not_allowed"},403,origin);
  try {
-  const urlObj=new URL(req.url); let path=urlObj.pathname.replace(/^\/neurocare-api/,"").replace(/\/$/,"");
+  const urlObj=new URL(req.url);
+  let incomingPath=urlObj.pathname;
+  const functionMarker="/functions/v1/neurocare-api";
+  const markerIndex=incomingPath.indexOf(functionMarker);
+  if(markerIndex>=0){
+   incomingPath=incomingPath.slice(markerIndex+functionMarker.length);
+  } else {
+   const shortMarker="/neurocare-api";
+   const shortIndex=incomingPath.indexOf(shortMarker);
+   if(shortIndex>=0) incomingPath=incomingPath.slice(shortIndex+shortMarker.length);
+  }
+  let path=incomingPath.replace(/\/+$/,"") || "/health";
+
   if(path==="/health" && req.method==="GET") return json({status:"ok",service:"saffari-neurocare-supabase",version:"1.0.0"},200,origin);
   const body=req.method==="GET"?{}:await req.json().catch(()=>({}));
   if(path==="/v1/captcha/challenge"&&req.method==="POST"){
