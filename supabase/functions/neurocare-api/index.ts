@@ -51,7 +51,7 @@ async function patientActive(user:any){
  const {data}=await db.from("patients").select("id,status").eq("id",user.sub).maybeSingle();
  return data?.status==="active";
 }
-function safePatient(p:any,doctor=false){const x={id:p.id,firstName:p.first_name,lastName:p.last_name,mobile:p.mobile,diseaseCode:p.disease_code,status:p.status,createdAt:p.created_at};if(doctor)x.nationalId=p.national_id||"";return x;}
+function safePatient(p:any,doctor=false){const x={id:p.id,firstName:p.first_name,lastName:p.last_name,mobile:p.mobile,diseaseCode:p.disease_code,customDiseaseLabel:p.custom_disease_label||"",status:p.status,createdAt:p.created_at};if(doctor)x.nationalId=p.national_id||"";return x;}
 function safeAppointment(a:any){
  const appointmentType = a.appointment_type === "text" ? "text" : "in_person";
  return {id:a.id,patientId:a.patient_id,patientName:a.patient_name,patientMobile:a.patient_mobile,preferredDate:a.preferred_date,preferredTime:a.preferred_time,reason:a.reason,status:a.status,doctorNote:a.doctor_note||"",appointmentType,consultationUrl:appointmentType==="text"&&a.status==="confirmed"?EITAA_URL:null,createdAt:a.created_at};
@@ -151,7 +151,7 @@ Deno.serve(async (req:Request)=>{
   if(path==="/v1/patients/register"&&req.method==="POST"){
    const firstName=clean(body.firstName,100),lastName=clean(body.lastName,100),mobile=normalize(body.mobile),nationalId=normalize(body.nationalId),diseaseCode=clean(body.diseaseCode||"unassigned",30),clinic=clean(body.clinicCode,40).toUpperCase();
    const webClient=origin===patientOrigin, submittedPassword=String(body.password||"");
-   if(!firstName||!lastName||!mobileOk(mobile)||!nidOk(nationalId)||clinic!==clinicCode||!["migraine","ms","epilepsy","parkinson","cognition","low_back_pain","stroke","vertigo","other","unassigned"].includes(diseaseCode))return json({error:"invalid_registration_data"},400,origin);
+   if(!firstName||!lastName||!mobileOk(mobile)||!nidOk(nationalId)||clinic!==clinicCode||!["migraine","ms","epilepsy","parkinson","cognition","low_back_pain","stroke","vertigo","myasthenia_gravis","neuropathy","als","myopathy","other","unassigned"].includes(diseaseCode))return json({error:"invalid_registration_data"},400,origin);
    if(!(await rateAllowed(req,"patient-register",6,3600)))return json({error:"too_many_attempts"},429,origin);
    if(webClient && !(await verifyCaptcha(req,body)))return json({error:"invalid_captcha"},400,origin);
    if(webClient && !patientPasswordOk(submittedPassword))return json({error:"invalid_patient_password"},400,origin);
@@ -194,14 +194,15 @@ Deno.serve(async (req:Request)=>{
   if(path==="/v1/patients/disease"&&req.method==="POST"){
    if(!patient)return json({error:"unauthorized"},401,origin);
    const nextDisease=clean(body.diseaseCode,30);
-   const allowedDiseases=["migraine","ms","epilepsy","parkinson","cognition","low_back_pain","stroke","vertigo","other","unassigned"];
+   const allowedDiseases=["migraine","ms","epilepsy","parkinson","cognition","low_back_pain","stroke","vertigo","myasthenia_gravis","neuropathy","als","myopathy","other","unassigned"];
    if(!allowedDiseases.includes(nextDisease))return json({error:"invalid_disease_code"},400,origin);
    if(body.confirmPurge!==true)return json({error:"confirmation_required"},400,origin);
-   const {data:current,error:currentError}=await db.from("patients").select("disease_code").eq("id",patient.sub).maybeSingle();
+   const {data:current,error:currentError}=await db.from("patients").select("*").eq("id",patient.sub).maybeSingle();
    if(currentError)throw currentError;
    if(!current)return json({error:"patient_not_found"},404,origin);
-   if(current.disease_code===nextDisease)return json({patient:{diseaseCode:current.disease_code},recordsCleared:false},200,origin);
-   const {data:oldDisease,error}=await db.rpc("change_patient_disease",{p_patient_id:patient.sub,p_new_disease_code:nextDisease});
+   // A patient cannot rename an existing physician-defined "other" area themselves.
+   if(current.disease_code===nextDisease)return json({patient:safePatient(current),recordsCleared:false},200,origin);
+   const {data:oldDisease,error}=await db.rpc("change_patient_disease",{p_patient_id:patient.sub,p_new_disease_code:nextDisease,p_new_custom_disease_label:null});
    if(error)throw error;
    if(oldDisease===null)return json({error:"patient_not_found"},404,origin);
    await audit(patient.sub,"patient","patient.disease.change","patient",patient.sub,{from:oldDisease,to:nextDisease,recordsCleared:true});
@@ -296,18 +297,21 @@ Deno.serve(async (req:Request)=>{
   }
   const m=path.match(/^\/v1\/doctor\/patients\/([0-9a-f-]{36})(?:\/(reports|notes|treatment-plan|medications|appointments|clinical-scores|status|disease)(?:\/([0-9a-f-]{36}))?)?$/i);
   if(m&&doctor){
-   const id=m[1],sub=m[2]||"",recordId=m[3]||"", {data:exists}=await db.from("patients").select("id,disease_code").eq("id",id).maybeSingle();if(!exists)return json({error:"patient_not_found"},404,origin);
+   const id=m[1],sub=m[2]||"",recordId=m[3]||"", {data:exists}=await db.from("patients").select("id,disease_code,custom_disease_label").eq("id",id).maybeSingle();if(!exists)return json({error:"patient_not_found"},404,origin);
    if(sub==="clinical-scores"&&exists.disease_code!=="ms")return json({error:"score_not_applicable"},400,origin);
    if(sub==="disease"&&req.method==="PATCH"){
     const nextDisease=clean(body.diseaseCode,30);
-    const allowedDiseases=["migraine","ms","epilepsy","parkinson","cognition","low_back_pain","stroke","vertigo","other","unassigned"];
-    if(!allowedDiseases.includes(nextDisease))return json({error:"invalid_disease_code"},400,origin);
+    const rawCustomLabel=clean(body.customDiseaseLabel,81).trim();
+    if(!["migraine","ms","epilepsy","parkinson","cognition","low_back_pain","stroke","vertigo","myasthenia_gravis","neuropathy","als","myopathy","other","unassigned"].includes(nextDisease))return json({error:"invalid_disease_code"},400,origin);
+    if(nextDisease==="other"&&rawCustomLabel.length>80)return json({error:"invalid_custom_disease_label"},400,origin);
     if(body.confirmPurge!==true)return json({error:"confirmation_required"},400,origin);
-    if(exists.disease_code===nextDisease)return json({patient:{id,diseaseCode:nextDisease},recordsCleared:false},200,origin);
-    const {data:oldDisease,error}=await db.rpc("change_patient_disease",{p_patient_id:id,p_new_disease_code:nextDisease});
+    const nextCustomLabel=nextDisease==="other"?(rawCustomLabel||null):null;
+    const currentCustomLabel=exists.custom_disease_label||null;
+    if(exists.disease_code===nextDisease&&(currentCustomLabel||null)===(nextCustomLabel||null))return json({patient:{id,diseaseCode:nextDisease,customDiseaseLabel:nextCustomLabel||""},recordsCleared:false},200,origin);
+    const {data:oldDisease,error}=await db.rpc("change_patient_disease",{p_patient_id:id,p_new_disease_code:nextDisease,p_new_custom_disease_label:nextCustomLabel});
     if(error)throw error;
     if(oldDisease===null)return json({error:"patient_not_found"},404,origin);
-    await audit(doctor!.sub,"doctor","patient.disease.change","patient",id,{from:oldDisease,to:nextDisease,recordsCleared:true});
+    await audit(doctor!.sub,"doctor","patient.disease.change","patient",id,{from:oldDisease,to:nextDisease,fromCustomDiseaseLabel:currentCustomLabel,toCustomDiseaseLabel:nextCustomLabel,recordsCleared:true});
     const {data:updated,error:updatedError}=await db.from("patients").select("*").eq("id",id).single();
     if(updatedError)throw updatedError;
     return json({patient:safePatient(updated,true),recordsCleared:true},200,origin);
