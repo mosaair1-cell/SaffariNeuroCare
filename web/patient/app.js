@@ -49,7 +49,7 @@
     invalid_patient_password:'رمز بیمار باید ۸ تا ۱۲ نویسه انگلیسی و شامل حرف، عدد و نماد باشد.',
     confirmation_required:'برای تغییر حوزه، باید هشدار حذف سوابق را تأیید کنید.',
     invalid_disease_code:'حوزه پیگیری انتخاب‌شده معتبر نیست.',
-    report_notes_too_long:'شرح حال و توضیحات گزارش حداکثر ۱۲۰۰ نویسه می‌تواند باشد.',
+    report_notes_too_long:'شرح حال و توضیحات گزارش حداکثر ۲۴۰۰ نویسه می‌تواند باشد.',
     slot_unavailable:'این زمان همین حالا رزرو شده یا دیگر قابل انتخاب نیست؛ زمان دیگری را انتخاب کنید.',
     invalid_availability:'روز یا ساعت کاری واردشده معتبر نیست.',
     invalid_leave_range:'بازه مرخصی یا نوع نوبت واردشده معتبر نیست.',
@@ -874,7 +874,7 @@
         const structured=[['مشکل اصلی',complaint],['زمان شروع',String(f.get('initialOnset')||'').trim()],['تشخیص قبلی',String(f.get('initialDiagnosis')||'').trim()],['داروهای فعلی',String(f.get('initialMedications')||'').trim()],['آزمایش و تصویربرداری قبلی',String(f.get('initialTests')||'').trim()],['بیماری زمینه‌ای یا حساسیت',String(f.get('initialHistory')||'').trim()]].filter(item=>item[1]).map(item=>item[0]+': '+item[1]);
         notesParts.unshift(...structured);
       }
-      const notes=notesParts.join('\n');if(notes.length>1200){setMessage(reportForm,'شرح حال و توضیحات بیشتر از ۱۲۰۰ نویسه است؛ لطفاً کوتاه‌تر کنید.','error');return;}
+      const notes=notesParts.join('\n');if(notes.length>2400){setMessage(reportForm,'شرح حال تلفیقی بیشتر از ۲۴۰۰ نویسه است؛ لطفاً کوتاه‌تر کنید.','error');return;}
       if(!symptoms.length&&!notes.trim()){setMessage(reportForm,'لطفاً دست‌کم یک علامت یا توضیح کوتاه وارد کنید.','error');return;}
       submit.disabled=true;
       try{await api('/patients/reports','POST',{reportType,severity:f.get('severity'),occurredOn:f.get('occurredOn'),symptoms,notes});setMessage(reportForm,'گزارش برای بررسی پزشک ثبت شد.','ok');await loadPatientDashboard();}
