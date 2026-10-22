@@ -331,3 +331,54 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
   .patient-search-field{width:100%}
   .leave-panel .form-grid{grid-template-columns:1fr}
 }
+
+
+/* Refined typography, date controls, and clinical follow-up cards */
+html{font-size:17px}
+.site-header{padding-top:20px;padding-bottom:20px}
+.brand b{font-size:18px}
+.brand small{font-size:13px;line-height:1.6}
+.site-link{font-size:14px}
+.panel{padding:24px;border-radius:24px;border:1px solid #e3eeed;background:linear-gradient(145deg,#fff,#fcfefe);box-shadow:0 12px 32px rgba(18,61,65,.055)}
+.panel-heading h2{font-size:19px;line-height:1.8}
+.panel-heading small{font-size:13px}
+.field label{font-size:14px;line-height:1.8}
+.field-help{font-size:12px}
+.subline{font-size:13px;line-height:1.9}
+.metric .label{font-size:13px}
+.metric strong{font-size:23px}
+.metric small{font-size:12px;line-height:1.7}
+.patient-name{font-size:17px}
+.row-item p{font-size:14px;line-height:1.95}
+.study-card strong{font-size:14px}
+.study-card small{font-size:12px}
+.care-card,.appointment-card,.empty-card{padding:18px}
+button{transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease}
+button:not(:disabled):active{transform:translateY(1px)}
+button.primary,.primary{box-shadow:0 7px 16px rgba(13,104,112,.12)}
+.disease-settings-panel{margin:16px 0;background:radial-gradient(circle at 100% 0%,#e4f5ef 0,transparent 20rem),linear-gradient(145deg,#fff,#f8fcfb)}
+.disease-settings-current{margin:0 0 14px;color:#5c7778;font-size:14px;line-height:1.9}
+.disease-settings-current strong{color:var(--teal-dark)}
+.disease-loss-warning{margin:12px 0 15px;padding:14px 16px;border:1px solid #f0d5b4;border-radius:15px;background:#fff8ee;color:#754b20;font-size:13px;line-height:1.95}
+.disease-loss-warning strong{display:block;margin-bottom:4px;font-size:14px}
+.disease-loss-warning p{margin:0}
+.initial-visit-fields{margin:13px 0;padding:16px;border:1px solid #d5e9e3;border-radius:18px;background:linear-gradient(145deg,#f6fbf9,#fff)}
+.initial-visit-fields[hidden],.field[hidden],.jalali-date-popover[hidden]{display:none!important}
+.initial-visit-fields .form-grid{margin-top:12px}
+.jalali-date-control{position:relative;display:flex;align-items:stretch;gap:8px;min-width:0}
+.jalali-date-display{width:100%;min-width:0;cursor:pointer;background:linear-gradient(140deg,#fff,#f7fbfa);padding-inline:13px;border-color:#cfe0de;color:#254b4e;font-variant-numeric:tabular-nums}
+.jalali-date-trigger{display:inline-flex;align-items:center;justify-content:center;gap:6px;flex:0 0 auto;padding:10px 12px;border:1px solid #d6e6e3;border-radius:12px;background:#eaf5f2;color:#0d6870;font-size:12px;font-weight:800;white-space:nowrap}
+.jalali-date-trigger span:first-child{font-size:17px}
+.jalali-date-popover{position:absolute;z-index:80;top:calc(100% + 8px);right:0;width:min(330px,calc(100vw - 42px));padding:14px;border:1px solid #cde0dc;border-radius:19px;background:#fff;box-shadow:0 18px 48px rgba(12,61,62,.2)}
+.jalali-date-popover-head{display:grid;grid-template-columns:38px 1fr 38px;align-items:center;gap:8px;margin-bottom:12px}
+.jalali-date-popover-head strong{text-align:center;color:#124f53;font-size:14px}
+.jalali-date-popover-head button,.jalali-date-popover-foot button{border:1px solid #dbeae7;border-radius:10px;background:#f0f8f6;color:#0d6870;min-height:36px;font-size:19px}
+.jalali-date-weekdays,.jalali-date-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;text-align:center}
+.jalali-date-weekdays{margin-bottom:5px;color:#7a8d8c;font-size:11px;font-weight:800}
+.jalali-date-days button,.jalali-date-blank{display:grid;place-items:center;min-width:0;min-height:35px;padding:0;border:1px solid transparent;border-radius:10px;background:#f6faf9;color:#264c4d;font-size:13px}
+.jalali-date-days button:hover:not(:disabled),.jalali-date-days button.selected{background:#0d6870;color:#fff;border-color:#0d6870}
+.jalali-date-days button:disabled{opacity:.3;cursor:not-allowed}
+.jalali-date-popover-foot{display:flex;justify-content:flex-end;margin-top:10px}
+.jalali-date-popover-foot button{padding:5px 12px;font-size:12px}
+@media(max-width:760px){html{font-size:16.5px}.panel{padding:19px;border-radius:20px}.panel-heading h2{font-size:18px}.jalali-date-control{flex-direction:column}.jalali-date-trigger{width:100%}}
+@media(max-width:550px){html{font-size:16px}.brand b{font-size:16px}.brand small{font-size:12px}.panel{padding:16px}.field label{font-size:13.5px}}
