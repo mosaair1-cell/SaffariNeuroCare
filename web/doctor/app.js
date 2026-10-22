@@ -52,6 +52,7 @@
     invalid_captcha:'پاسخ کپچا درست نیست یا زمان آن تمام شده؛ سؤال تازه را حل کنید.',
     invalid_patient_password:'رمز بیمار باید ۸ تا ۱۲ نویسه انگلیسی و شامل حرف، عدد و نماد باشد.',
     invalid_custom_disease_label:'نام حوزه اختصاصی حداکثر باید ۸۰ نویسه باشد.',
+    disease_change_requires_doctor:'تغییر حوزه پیگیری فقط توسط پزشک انجام می‌شود.',
     report_notes_too_long:'توضیحات علائم حداکثر ۲۰۰ نویسه می‌تواند باشد.',
     slot_unavailable:'این زمان همین حالا رزرو شده یا دیگر قابل انتخاب نیست؛ زمان دیگری را انتخاب کنید.',
     invalid_availability:'روز یا ساعت کاری واردشده معتبر نیست.',
@@ -852,7 +853,10 @@
         <div class="content-grid">
           <section class="panel patient-directory-panel">
             <div class="panel-heading"><h2>بیماران</h2><small id="patientsCount">${patients.length} مورد</small></div>
-            <div class="field patient-search-field"><label for="patientSearchInput">جستجوی بیمار</label><input id="patientSearchInput" type="search" autocomplete="off" placeholder="نام، نام خانوادگی، موبایل یا کد ملی"><small class="hint">برای یافتن بیمار می‌توانید بخشی از هر مشخصه را وارد کنید.</small></div>
+            <div class="patient-directory-filters">
+              <div class="field patient-disease-filter"><label for="patientDiseaseFilter">فیلتر بر اساس بیماری</label><select id="patientDiseaseFilter"><option value="">همه بیماری‌ها</option>${diseases.map(d=>'<option value="'+h(d[0])+'">'+h(d[1])+'</option>').join('')}</select><small class="hint">برای مشاهده گروهی بیماران، مثلاً همه بیماران ام‌اس.</small></div>
+              <div class="field patient-search-field"><label for="patientSearchInput">جستجوی بیمار</label><input id="patientSearchInput" type="search" autocomplete="off" placeholder="نام، نام خانوادگی، موبایل یا کد ملی"><small class="hint">برای یافتن بیمار می‌توانید بخشی از هر مشخصه را وارد کنید.</small></div>
+            </div>
             <div class="list" id="patientsList">${patients.length ? patients.map(renderPatientRow).join('') : '<div class="empty-card">هنوز بیماری در سرور ثبت نشده است. پس از ثبت‌نام بیمار، این فهرست به‌روزرسانی می‌شود.</div>'}</div>
           </section>
           <div class="stack">
@@ -866,8 +870,8 @@
             </section>
           </div>
         </div>
-        <section class="panel availability-panel">
-          <div class="panel-heading"><h2>تعریف زمان‌های نوبت‌گیری</h2><small>برنامه هفتگی برای هر نوع نوبت</small></div>
+        <details class="panel availability-panel collapsible-panel">
+          <summary class="panel-heading"><h2>زمان‌بندی نوبت‌ها</h2><small>برای مشاهده و ویرایش، باز کنید</small></summary>
           <form id="availabilityForm">
             <div class="form-grid">
               <div class="field"><label for="availabilityType">نوع نوبت</label><select id="availabilityType" name="appointmentType"><option value="in_person">حضوری در مطب</option><option value="text">مشاوره متنی</option></select></div>
@@ -879,9 +883,9 @@
             <button class="primary full-button" type="submit">ذخیره زمان‌بندی</button><div class="form-message"></div>
           </form>
           <div class="availability-list" id="availabilityList">${availability.length ? availability.map(renderAvailability).join('') : '<div class="empty-card">هنوز زمان‌بندی‌ای تعریف نشده است.</div>'}</div>
-        </section>
-        <section class="panel leave-panel">
-          <div class="panel-heading"><h2>مرخصی و عدم پذیرش نوبت</h2><small>تعریف بازه‌ای</small></div>
+        </details>
+        <details class="panel leave-panel collapsible-panel">
+          <summary class="panel-heading"><h2>مرخصی و عدم پذیرش نوبت</h2><small>برای ثبت یا ویرایش مرخصی، باز کنید</small></summary>
           <p class="hint leave-hint">در بازه مرخصی، سامانه هیچ زمان جدیدی برای نوع نوبت انتخاب‌شده پیشنهاد نمی‌کند. نوبت‌های قبلی خودکار لغو نمی‌شوند و باید جداگانه بررسی شوند.</p>
           <form id="leaveForm">
             <div class="form-grid">
@@ -893,7 +897,7 @@
             <button class="primary full-button" type="submit">ثبت بازه مرخصی</button><div class="form-message"></div>
           </form>
           <div class="availability-list" id="leaveList">${leaves.length ? leaves.map(renderLeaveRow).join('') : '<div class="empty-card">هنوز بازه مرخصی ثبت نشده است.</div>'}</div>
-        </section>`;
+        </details>`;
       bindCommon();
       const availabilityForm = document.getElementById('availabilityForm');
       availabilityForm?.addEventListener('submit',async e => {
@@ -932,21 +936,44 @@
         }catch(error){setMessage(leaveForm,errorMessage(error),'error');button.disabled=false;}
       });
       let patientSearchTimer;
-      const patientSearchInput=document.getElementById('patientSearchInput');
-      patientSearchInput?.addEventListener('input',()=>{
+      let patientSearchQuery = '';
+      let patientDiseaseFilter = '';
+      let patientDirectoryRequestId = 0;
+      const patientSearchInput = document.getElementById('patientSearchInput');
+      const patientDiseaseSelect = document.getElementById('patientDiseaseFilter');
+      const refreshPatientDirectory = async () => {
+        const list = document.getElementById('patientsList');
+        const count = document.getElementById('patientsCount');
+        if (!list) return;
+        const requestId = ++patientDirectoryRequestId;
+        const params = new URLSearchParams();
+        if (patientSearchQuery) params.set('q', patientSearchQuery);
+        if (patientDiseaseFilter) params.set('diseaseCode', patientDiseaseFilter);
+        const queryString = params.toString();
+        list.innerHTML = '<div class="empty-card">در حال دریافت فهرست بیماران…</div>';
+        try {
+          const result = await api('/doctor/patients' + (queryString ? '?' + queryString : ''));
+          if (requestId !== patientDirectoryRequestId) return;
+          const matches = result.patients || [];
+          list.innerHTML = matches.length
+            ? matches.map(renderPatientRow).join('')
+            : '<div class="empty-card">بیماری با این فیلتر و مشخصات پیدا نشد.</div>';
+          if (count) count.textContent = String(matches.length) + ' مورد';
+        } catch (error) {
+          if (requestId !== patientDirectoryRequestId) return;
+          list.innerHTML = '<div class="empty-card">' + h(errorMessage(error)) + '</div>';
+          if (count) count.textContent = 'خطا در دریافت';
+        }
+      };
+      patientSearchInput?.addEventListener('input', () => {
         clearTimeout(patientSearchTimer);
-        const query=patientSearchInput.value.trim();
-        patientSearchTimer=setTimeout(async()=>{
-          const list=document.getElementById('patientsList'),count=document.getElementById('patientsCount');
-          if(!list)return;
-          list.innerHTML='<div class="empty-card">در حال جستجو…</div>';
-          try{
-            const result=await api('/doctor/patients'+(query?'?q='+encodeURIComponent(query):''));
-            const matches=result.patients||[];
-            list.innerHTML=matches.length?matches.map(renderPatientRow).join(''):'<div class="empty-card">بیماری با این مشخصات پیدا نشد.</div>';
-            if(count)count.textContent=String(matches.length)+' مورد';
-          }catch(error){list.innerHTML='<div class="empty-card">'+h(errorMessage(error))+'</div>';}
-        },250);
+        patientSearchQuery = patientSearchInput.value.trim();
+        patientSearchTimer = setTimeout(refreshPatientDirectory, 250);
+      });
+      patientDiseaseSelect?.addEventListener('change', () => {
+        clearTimeout(patientSearchTimer);
+        patientDiseaseFilter = patientDiseaseSelect.value;
+        refreshPatientDirectory();
       });
       document.getElementById('patientsList')?.addEventListener('click',async event=>{
         const btn=event.target instanceof Element ? event.target.closest('[data-action]') : null;
