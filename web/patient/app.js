@@ -26,7 +26,7 @@
   const statusLabels = {
     pending_review:'در انتظار تأیید پزشک', active:'فعال', rejected:'تأیید نشده',
     requested:'درخواست ثبت شد', confirmed:'نوبت تأیید شد', completed:'ویزیت شد',
-    cancelled:'لغو شد', symptom:'ثبت علائم', pre_visit:'گزارش پیش از ویزیت'
+    cancelled:'لغو شد', symptom:'ثبت علائم', pre_visit:'گزارش پیش از ویزیت', initial_visit:'شرح حال و ویزیت اول'
   };
   const errorLabels = {
     unauthorized:'نشست شما پایان یافته است؛ دوباره وارد شوید.',
@@ -47,7 +47,9 @@
     rate_limit_unavailable:'سامانه کنترل تلاش‌های ورود موقتاً در دسترس نیست.',
     invalid_captcha:'پاسخ کپچا درست نیست یا زمان آن تمام شده؛ سؤال تازه را حل کنید.',
     invalid_patient_password:'رمز بیمار باید ۸ تا ۱۲ نویسه انگلیسی و شامل حرف، عدد و نماد باشد.',
-    report_notes_too_long:'توضیحات علائم حداکثر ۲۰۰ نویسه می‌تواند باشد.',
+    confirmation_required:'برای تغییر حوزه، باید هشدار حذف سوابق را تأیید کنید.',
+    invalid_disease_code:'حوزه پیگیری انتخاب‌شده معتبر نیست.',
+    report_notes_too_long:'شرح حال و توضیحات گزارش حداکثر ۱۲۰۰ نویسه می‌تواند باشد.',
     slot_unavailable:'این زمان همین حالا رزرو شده یا دیگر قابل انتخاب نیست؛ زمان دیگری را انتخاب کنید.',
     invalid_availability:'روز یا ساعت کاری واردشده معتبر نیست.',
     invalid_leave_range:'بازه مرخصی یا نوع نوبت واردشده معتبر نیست.',
@@ -64,7 +66,8 @@
   const fmtDate = (value) => {
     if (!value) return '—';
     const val = String(value).slice(0,10);
-    return val.replace(/-/g,'/');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(val)) return val.replace(/-/g,'/');
+    return jalaliFullDateFormatter.format(dateFromISO(val));
   };
   const jalaliPartsFormatter = new Intl.DateTimeFormat('fa-IR-u-ca-persian', {
     year:'numeric', month:'numeric', day:'numeric'
@@ -100,6 +103,42 @@
     const month = partNumber('month');
     const day = partNumber('day');
     return {year,month,day,key:String(year) + '-' + String(month).padStart(2,'0')};
+  }
+  function jalaliMonthStart(date) {
+    let start=new Date(date.getFullYear(),date.getMonth(),date.getDate(),12,0,0,0),p=jalaliDateParts(start);
+    for(let i=0;i<32;i++){const prev=shiftDate(start,-1),q=jalaliDateParts(prev);if(q.year!==p.year||q.month!==p.month)break;start=prev;}return start;
+  }
+  function attachJalaliDatePickers(scope) {
+    if(!scope||!scope.querySelectorAll)return;
+    scope.querySelectorAll('input[type="date"]').forEach(original=>{
+      if(original.dataset.jalaliPickerReady==='true')return;original.dataset.jalaliPickerReady='true';
+      const oldId=original.id||('jalaliDate'+Math.random().toString(36).slice(2,8)),value=original.value,isRequired=original.required,min=original.min,max=original.max;
+      const label=scope.querySelector('label[for="'+oldId+'"]')?.textContent?.trim()||'انتخاب تاریخ';
+      const display=document.createElement('input');display.type='text';display.id=oldId;display.readOnly=true;display.autocomplete='off';display.className=(original.className+' jalali-date-display').trim();display.placeholder='انتخاب تاریخ هجری شمسی';
+      display.setAttribute('aria-label',label+' به تقویم هجری شمسی');display.setAttribute('aria-haspopup','dialog');display.setAttribute('aria-expanded','false');
+      original.id=oldId+'Iso';original.type='hidden';original.required=false;original.removeAttribute('class');
+      const wrapper=document.createElement('div');wrapper.className='jalali-date-control';original.parentNode.insertBefore(wrapper,original);wrapper.appendChild(display);
+      const trigger=document.createElement('button');trigger.type='button';trigger.className='jalali-date-trigger';trigger.setAttribute('aria-label','باز کردن تقویم شمسی برای '+label);trigger.innerHTML='<span aria-hidden="true">▦</span><span>تقویم شمسی</span>';wrapper.appendChild(trigger);
+      const popover=document.createElement('div');popover.className='jalali-date-popover';popover.hidden=true;popover.setAttribute('role','dialog');popover.setAttribute('aria-label','تقویم هجری شمسی');wrapper.appendChild(popover);wrapper.appendChild(original);
+      let viewISO=/^\d{4}-\d{2}-\d{2}$/.test(value)?value:isoFromDate(new Date());
+      const showDate=iso=>{display.value=/^\d{4}-\d{2}-\d{2}$/.test(iso)?jalaliFullDateFormatter.format(dateFromISO(iso)):'';};showDate(viewISO);
+      const close=()=>{popover.hidden=true;display.setAttribute('aria-expanded','false');trigger.setAttribute('aria-expanded','false');};
+      const render=()=>{
+        let focus=dateFromISO(viewISO);if(Number.isNaN(focus.getTime()))focus=new Date();
+        const start=jalaliMonthStart(focus),mp=jalaliDateParts(start),offset=(start.getDay()+1)%7;let days=0;
+        for(let i=0;i<31;i++){const p=jalaliDateParts(shiftDate(start,i));if(p.year!==mp.year||p.month!==mp.month)break;days++;}
+        let html='<div class="jalali-date-popover-head"><button type="button" data-jalali-month="-1" aria-label="ماه قبل">‹</button><strong>'+h(jalaliMonthFormatter.format(start))+'</strong><button type="button" data-jalali-month="1" aria-label="ماه بعد">›</button></div>';
+        html+='<div class="jalali-date-weekdays"><span>ش</span><span>ی</span><span>د</span><span>س</span><span>چ</span><span>پ</span><span>ج</span></div><div class="jalali-date-days">';
+        for(let i=0;i<offset;i++)html+='<span class="jalali-date-blank" aria-hidden="true"></span>';
+        for(let i=0;i<days;i++){const date=shiftDate(start,i),iso=isoFromDate(date),disabled=(min&&iso<min)||(max&&iso>max),selected=iso===original.value;html+='<button type="button" data-jalali-date="'+iso+'"'+(disabled?' disabled':'')+(selected?' aria-pressed="true" class="selected"':'')+' aria-label="'+h(jalaliFullDateFormatter.format(date))+'">'+h(jalaliDayNumberFormatter.format(date))+'</button>';}
+        popover.innerHTML=html+'</div><div class="jalali-date-popover-foot"><button type="button" data-jalali-close>بستن</button></div>';
+      };
+      const open=()=>{document.querySelectorAll('.jalali-date-popover:not([hidden])').forEach(n=>{if(n!==popover)n.hidden=true;});viewISO=original.value||isoFromDate(new Date());render();popover.hidden=false;display.setAttribute('aria-expanded','true');trigger.setAttribute('aria-expanded','true');};
+      trigger.addEventListener('click',()=>popover.hidden?open():close());display.addEventListener('click',()=>popover.hidden?open():close());
+      popover.addEventListener('click',event=>{const button=event.target.closest('button');if(!button)return;if(button.dataset.jalaliMonth){const start=jalaliMonthStart(dateFromISO(viewISO));viewISO=isoFromDate(shiftDate(start,Number(button.dataset.jalaliMonth)<0?-1:35));render();return;}if(button.dataset.jalaliClose!==undefined){close();return;}if(button.dataset.jalaliDate){original.value=button.dataset.jalaliDate;viewISO=original.value;showDate(original.value);original.dispatchEvent(new Event('input',{bubbles:true}));original.dispatchEvent(new Event('change',{bubbles:true}));close();}});
+      if(isRequired)display.title='انتخاب تاریخ الزامی است';
+    });
+    if(document.documentElement.dataset.jalaliOutsideListener!=='true'){document.documentElement.dataset.jalaliOutsideListener='true';document.addEventListener('click',event=>{if(event.target.closest('.jalali-date-control'))return;document.querySelectorAll('.jalali-date-popover:not([hidden])').forEach(n=>n.hidden=true);document.querySelectorAll('.jalali-date-display[aria-expanded="true"],.jalali-date-trigger[aria-expanded="true"]').forEach(n=>n.setAttribute('aria-expanded','false'));});}
   }
   function attachPasswordToggles(scope) {
     if (!scope) return;
@@ -185,6 +224,7 @@
     return '<div class="head-actions"><button class="ghost-button" id="refreshBtn" type="button">به‌روزرسانی</button><button class="secondary" id="logoutBtn" type="button">خروج امن</button></div>';
   }
   function bindCommon() {
+    attachJalaliDatePickers(root);
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) logoutBtn.addEventListener('click', logout);
     const refreshBtn = document.getElementById('refreshBtn');
@@ -445,6 +485,27 @@
       history + '</section>';
   }
 
+  function patientDiseaseSettings(profile) {
+    const options=diseases.map(d=>'<option value="'+h(d[0])+'"'+(d[0]===profile.diseaseCode?' selected':'')+'>'+h(d[1])+'</option>').join('');
+    return '<section class="panel disease-settings-panel"><div class="panel-heading"><h2>حوزه پیگیری من</h2><small>قابل اصلاح توسط بیمار</small></div>'+
+      '<p class="disease-settings-current">حوزه ثبت‌شده فعلی: <strong>'+h(diseaseTitle(profile.diseaseCode))+'</strong></p>'+
+      '<form id="patientDiseaseForm"><div class="form-grid"><div class="field full"><label for="patientDiseaseSelect">حوزه صحیح بیماری یا پیگیری را انتخاب کنید</label><select id="patientDiseaseSelect" name="diseaseCode" required>'+options+'</select></div></div>'+
+      '<div class="disease-loss-warning"><strong>توجه: تغییر حوزه، پرونده فعلی را پاک می‌کند.</strong><p>در صورت تغییر واقعی، سوابق گزارش علائم، یادداشت‌های پزشک، برنامه‌های پیگیری، داروها، نمره‌های EDSS و همه نوبت‌های قبلی به‌صورت دائمی حذف می‌شوند. حساب کاربری و وضعیت تأیید باقی می‌ماند و این حذف قابل بازگشت نیست.</p></div>'+
+      '<button class="secondary full-button" type="submit">اصلاح حوزه پیگیری</button><div class="form-message"></div></form></section>';
+  }
+  function bindPatientDiseaseForm(profile) {
+    const form=document.getElementById('patientDiseaseForm');if(!form)return;
+    const select=form.querySelector('select[name="diseaseCode"]');
+    form.addEventListener('submit',async event=>{
+      event.preventDefault();const nextDisease=String(select.value||'');
+      if(nextDisease===profile.diseaseCode){setMessage(form,'حوزه پیگیری شما تغییری نکرده است.','ok');return;}
+      const confirmed=window.confirm('هشدار مهم: با تغییر حوزه از «'+diseaseTitle(profile.diseaseCode)+'» به «'+diseaseTitle(nextDisease)+'»، تمام سوابق پزشکی مرتبط با حوزه فعلی، از جمله گزارش‌ها، یادداشت‌ها، برنامه‌های پیگیری، داروها، EDSS و نوبت‌های قبلی، برای همیشه حذف می‌شوند. حساب کاربری و وضعیت تأیید باقی می‌ماند. این کار قابل بازگشت نیست. ادامه می‌دهید؟');
+      if(!confirmed){select.value=profile.diseaseCode;return;}
+      const button=form.querySelector('button[type="submit"]');button.disabled=true;
+      try{await api('/patients/disease','POST',{diseaseCode:nextDisease,confirmPurge:true});alert('حوزه پیگیری به‌روزرسانی شد. پرونده جدید با حوزه انتخاب‌شده باز می‌شود.');await loadDashboard();}
+      catch(error){setMessage(form,errorMessage(error),'error');button.disabled=false;select.value=profile.diseaseCode;}
+    });
+  }
   async function loadPatientDashboard() {
     root.innerHTML = '<section class="loading-card"><div class="spinner"></div><p>در حال دریافت اطلاعات حساب…</p></section>';
     try {
@@ -467,6 +528,7 @@
         medications = values[4].status === 'fulfilled' ? values[4].value.medications || [] : [];
         clinicalScores = profile.diseaseCode === 'ms' && values[5]?.status === 'fulfilled' ? values[5].value.scores || [] : [];
       }
+      const hasCompletedVisit = appointments.some(a => a.status === 'completed');
       root.innerHTML = `
         <div class="dash-head">
           <div><h1>سلام ${h(profile.firstName || 'بیمار')} عزیز</h1><p>پرونده سلامت و پیگیری درمان · ${h(diseaseTitle(profile.diseaseCode))}</p></div>
@@ -480,6 +542,7 @@
           ${metric('گزارش علائم',String(reports.length),'ثبت‌ها و پیش‌ویزیت‌ها')}
         </div>
         ${conditionResourceSection(profile.diseaseCode)}
+        ${patientDiseaseSettings(profile)}
         ${active ? `
         <div class="content-grid">
           <div class="stack">
@@ -503,6 +566,24 @@
             <section class="panel">
                           <div class="panel-heading"><h2>گزارش علائم / پیش از ویزیت</h2><small>گزارش برای بررسی پزشک</small></div>
                           <form id="reportForm">
+                            <div class="field full"><label for="reportType">نوع گزارش</label>
+                              <select id="reportType" name="reportType">
+                                <option value="initial_visit" ${hasCompletedVisit ? '' : 'selected'}>شرح حال و ویزیت اول</option>
+                                <option value="symptom" ${hasCompletedVisit ? 'selected' : ''}>ثبت علامت جدید / پیگیری</option>
+                                <option value="pre_visit">گزارش پیش از ویزیت بعدی</option>
+                              </select>
+                              <small class="field-help">اگر برای نخستین بار مراجعه می‌کنید، «شرح حال و ویزیت اول» را انتخاب کنید.</small>
+                            </div>
+                            <div id="initialVisitFields" class="initial-visit-fields" ${hasCompletedVisit ? 'hidden' : ''}>
+                              <div class="field full"><label for="initialMainConcern">مشکل اصلی و علت مراجعه</label><textarea id="initialMainConcern" name="initialMainConcern" maxlength="220" placeholder="مهم‌ترین مشکلی که می‌خواهید پزشک بررسی کند" rows="2"></textarea></div>
+                              <div class="form-grid">
+                                <div class="field"><label for="initialOnset">از چه زمانی شروع شده؟</label><input id="initialOnset" name="initialOnset" maxlength="100" placeholder="مثلاً سه ماه قبل"></div>
+                                <div class="field"><label for="initialDiagnosis">تشخیص‌های قبلی</label><input id="initialDiagnosis" name="initialDiagnosis" maxlength="160" placeholder="اگر تشخیصی داشته‌اید"></div>
+                                <div class="field"><label for="initialMedications">داروهای فعلی</label><input id="initialMedications" name="initialMedications" maxlength="160" placeholder="نام داروها و دوز در صورت اطلاع"></div>
+                                <div class="field"><label for="initialTests">آزمایش، MRI یا بررسی قبلی</label><input id="initialTests" name="initialTests" maxlength="160" placeholder="بررسی‌های انجام‌شده"></div>
+                                <div class="field full"><label for="initialHistory">بیماری‌های زمینه‌ای یا حساسیت دارویی</label><input id="initialHistory" name="initialHistory" maxlength="160" placeholder="در صورت وجود"></div>
+                              </div>
+                            </div>
                             <div class="field full"><label>علائم اخیر (چند مورد قابل انتخاب است)</label><div class="symptom-options">
                               <label class="symptom-chip"><input type="checkbox" name="symptoms" value="headache"><span>سردرد</span></label>
                               <label class="symptom-chip"><input type="checkbox" name="symptoms" value="fatigue"><span>خستگی</span></label>
@@ -510,14 +591,16 @@
                               <label class="symptom-chip"><input type="checkbox" name="symptoms" value="vision"><span>مشکل بینایی</span></label>
                               <label class="symptom-chip"><input type="checkbox" name="symptoms" value="balance"><span>اختلال تعادل</span></label>
                               <label class="symptom-chip"><input type="checkbox" name="symptoms" value="sleep"><span>اختلال خواب</span></label>
+                              <label class="symptom-chip"><input type="checkbox" name="symptoms" value="other"><span>سایر</span></label>
                             </div></div>
+                            <div id="otherSymptomField" class="field full" hidden><label for="otherSymptom">علامت دیگر خود را وارد کنید (حداکثر ۵۰ نویسه)</label><input id="otherSymptom" name="otherSymptom" maxlength="50" placeholder="علامتی که در فهرست بالا وجود ندارد"></div>
                             <div class="form-grid" style="margin-top:14px">
-                              <div class="field"><label for="severity">شدت کلی (۱ تا ۱۰)</label><input id="severity" type="number" name="severity" min="1" max="10" value="3"></div>
-                              <div class="field"><label for="occurredOn">تاریخ گزارش</label><input id="occurredOn" type="date" name="occurredOn" value="${new Date().toISOString().slice(0,10)}"></div>
-                              <div class="field full"><label for="reportNotes">توضیحات (حداکثر ۲۰۰ نویسه)</label><textarea id="reportNotes" name="notes" maxlength="200" placeholder="زمان شروع، مدت و تغییر علائم را کوتاه بنویسید"></textarea><small class="field-help">برای اطلاعات ضروری؛ حداکثر ۲۰۰ نویسه.</small></div>
+                              <div class="field"><label for="severity">شدت کلی علامت (۱ تا ۱۰)</label><input id="severity" type="number" name="severity" min="1" max="10" value="3" required></div>
+                              <div class="field"><label for="occurredOn">تاریخ شروع / گزارش</label><input id="occurredOn" type="date" name="occurredOn" value="${new Date().toISOString().slice(0,10)}"></div>
+                              <div class="field full"><label for="reportNotes">توضیحات تکمیلی (حداکثر ۱۲۰۰ نویسه)</label><textarea id="reportNotes" name="notes" maxlength="1200" rows="3" placeholder="زمان شروع، مدت، شدت و تغییر علائم یا هر نکته مهم دیگر"></textarea></div>
                             </div>
-                            <button class="primary full-button" type="submit">ثبت گزارش برای پزشک</button><div class="form-message"></div>
-                          </form>
+                            <button class="primary full-button" type="submit">ارسال گزارش به پزشک</button><div class="form-message"></div>
+                          </form>                   </form>
                         </section>
           </div>
           <div class="stack">
@@ -567,6 +650,7 @@
         </div>` : ''}
       `;
       bindCommon();
+      bindPatientDiseaseForm(profile);
       if (active) bindPatientForms();
     } catch (error) {
       root.innerHTML = '<section class="panel"><h2>دریافت اطلاعات ناموفق بود</h2>' + messageBox(errorMessage(error),'error') + '<div class="card-actions"><button class="secondary" id="retryBtn">تلاش دوباره</button><button class="ghost-button" id="logoutBtn">خروج امن</button></div></section>';
@@ -772,19 +856,29 @@
       }
     });
     const reportForm = document.getElementById('reportForm');
-    if (reportForm) reportForm.addEventListener('submit',async (event) => {
-      event.preventDefault();
-      const submit = reportForm.querySelector('button[type="submit"]');
-      submit.disabled = true;
-      const f = new FormData(reportForm);
-      try {
-        await api('/patients/reports','POST',{
-          reportType:'pre_visit',severity:f.get('severity'),occurredOn:f.get('occurredOn'),
-          symptoms:f.getAll('symptoms'),notes:f.get('notes')
-        });
-        setMessage(reportForm,'گزارش برای بررسی پزشک ثبت شد.','ok');
-        await loadPatientDashboard();
-      } catch (e) { setMessage(reportForm,errorMessage(e),'error'); submit.disabled = false; }
+    const reportTypeSelect=document.getElementById('reportType'),initialVisitFields=document.getElementById('initialVisitFields'),chiefComplaint=document.getElementById('initialMainConcern');
+    const otherSymptomField=document.getElementById('otherSymptomField'),otherSymptomInput=document.getElementById('otherSymptom');
+    const otherSymptomCheck=reportForm?.querySelector('input[name="symptoms"][value="other"]');
+    const updateReportMode=()=>{const initial=reportTypeSelect?.value==='initial_visit';if(initialVisitFields)initialVisitFields.hidden=!initial;if(chiefComplaint)chiefComplaint.required=Boolean(initial);if(initialVisitFields)initialVisitFields.querySelectorAll('input,textarea').forEach(input=>{if(input!==chiefComplaint)input.required=false;});};
+    const updateOtherSymptom=()=>{const visible=Boolean(otherSymptomCheck?.checked);if(otherSymptomField)otherSymptomField.hidden=!visible;if(otherSymptomInput){otherSymptomInput.required=visible;if(!visible)otherSymptomInput.value='';}};
+    reportTypeSelect?.addEventListener('change',updateReportMode);otherSymptomCheck?.addEventListener('change',updateOtherSymptom);updateReportMode();updateOtherSymptom();
+    if(reportForm)reportForm.addEventListener('submit',async event=>{
+      event.preventDefault();const submit=reportForm.querySelector('button[type="submit"]');
+      const f=new FormData(reportForm),reportType=String(f.get('reportType')||'symptom');
+      let symptoms=f.getAll('symptoms').filter(value=>value!=='other').map(String);const customSymptom=String(f.get('otherSymptom')||'').trim();
+      if(otherSymptomCheck?.checked&&!customSymptom){setMessage(reportForm,'لطفاً نام علامت دیگر را وارد کنید.','error');return;}
+      if(otherSymptomCheck?.checked&&customSymptom)symptoms.push('سایر: '+customSymptom);
+      const notesParts=[],extraNotes=String(f.get('notes')||'').trim();if(extraNotes)notesParts.push(extraNotes);
+      if(reportType==='initial_visit'){
+        const complaint=String(f.get('initialMainConcern')||'').trim();if(!complaint){setMessage(reportForm,'برای شرح حال اولیه، مشکل اصلی و علت مراجعه را بنویسید.','error');return;}
+        const structured=[['مشکل اصلی',complaint],['زمان شروع',String(f.get('initialOnset')||'').trim()],['تشخیص قبلی',String(f.get('initialDiagnosis')||'').trim()],['داروهای فعلی',String(f.get('initialMedications')||'').trim()],['آزمایش و تصویربرداری قبلی',String(f.get('initialTests')||'').trim()],['بیماری زمینه‌ای یا حساسیت',String(f.get('initialHistory')||'').trim()]].filter(item=>item[1]).map(item=>item[0]+': '+item[1]);
+        notesParts.unshift(...structured);
+      }
+      const notes=notesParts.join('\n');if(notes.length>1200){setMessage(reportForm,'شرح حال و توضیحات بیشتر از ۱۲۰۰ نویسه است؛ لطفاً کوتاه‌تر کنید.','error');return;}
+      if(!symptoms.length&&!notes.trim()){setMessage(reportForm,'لطفاً دست‌کم یک علامت یا توضیح کوتاه وارد کنید.','error');return;}
+      submit.disabled=true;
+      try{await api('/patients/reports','POST',{reportType,severity:f.get('severity'),occurredOn:f.get('occurredOn'),symptoms,notes});setMessage(reportForm,'گزارش برای بررسی پزشک ثبت شد.','ok');await loadPatientDashboard();}
+      catch(error){setMessage(reportForm,errorMessage(error),'error');submit.disabled=false;}
     });
   }
   function renderPatientRow(p) {
