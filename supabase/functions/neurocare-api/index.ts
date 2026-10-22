@@ -64,7 +64,7 @@ const clientIp = (req:Request) => req.headers.get("cf-connecting-ip")?.trim() ||
 async function rateAllowed(req:Request, scope:string, limit:number, windowSeconds:number) {
  const bucketHash = await sha256Hex(scope + ":" + clientIp(req));
  const {data,error}=await db.rpc("consume_neurocare_rate_limit",{p_bucket_hash:bucketHash,p_limit:limit,p_window_seconds:windowSeconds});
- if(error) { console.error("rate limit service failed",error.message); throw error; }
+ if(error) { const code = typeof error.code === "string" ? error.code.slice(0,24) : "unknown"; console.error("rate_limit_service_failed", { code }); throw error; }
  return data === true;
 }
 async function verifyCaptcha(req:Request, body:any) {
@@ -191,29 +191,14 @@ Deno.serve(async (req:Request)=>{
   if(path.startsWith("/v1/patients/")&&!patient) return json({error:"unauthorized"},401,origin);
   if(path.startsWith("/v1/doctor/")&&!doctor) return json({error:"unauthorized"},401,origin);
   if(!user)return json({error:"unauthorized"},401,origin);
-  if(path==="/v1/patients/disease"&&req.method==="POST"){
-   if(!patient)return json({error:"unauthorized"},401,origin);
-   const nextDisease=clean(body.diseaseCode,30);
-   const allowedDiseases=["migraine","ms","epilepsy","parkinson","cognition","low_back_pain","stroke","vertigo","myasthenia_gravis","neuropathy","als","myopathy","other","unassigned"];
-   if(!allowedDiseases.includes(nextDisease))return json({error:"invalid_disease_code"},400,origin);
-   if(body.confirmPurge!==true)return json({error:"confirmation_required"},400,origin);
-   const {data:current,error:currentError}=await db.from("patients").select("*").eq("id",patient.sub).maybeSingle();
-   if(currentError)throw currentError;
-   if(!current)return json({error:"patient_not_found"},404,origin);
-   // A patient cannot rename an existing physician-defined "other" area themselves.
-   if(current.disease_code===nextDisease)return json({patient:safePatient(current),recordsCleared:false},200,origin);
-   const {data:oldDisease,error}=await db.rpc("change_patient_disease",{p_patient_id:patient.sub,p_new_disease_code:nextDisease,p_new_custom_disease_label:null});
-   if(error)throw error;
-   if(oldDisease===null)return json({error:"patient_not_found"},404,origin);
-   await audit(patient.sub,"patient","patient.disease.change","patient",patient.sub,{from:oldDisease,to:nextDisease,recordsCleared:true});
-   const {data:updated,error:updatedError}=await db.from("patients").select("*").eq("id",patient.sub).single();
-   if(updatedError)throw updatedError;
-   return json({patient:safePatient(updated),recordsCleared:true},200,origin);
-  }
-  if(patient && path!=="/v1/patients/me" && path!=="/v1/patients/disease" && !(await patientActive(patient)))return json({error:"awaiting_doctor_approval"},403,origin);
-  if(path==="/v1/doctor/patients"&&req.method==="GET"){
+  if(path==="/v1/patients/disease"&&req.method==="POST") return json({error:"disease_change_requires_doctor"},403,origin);
+  if(patient && path!=="/v1/patients/me" && !(await patientActive(patient)))return json({error:"awaiting_doctor_approval"},403,origin);  if(path==="/v1/doctor/patients"&&req.method==="GET"){
    const search=clean(urlObj.searchParams.get("q"),80).replace(/[۰-۹]/g,c=>String(c.charCodeAt(0)-0x06f0)).replace(/[٠-٩]/g,c=>String(c.charCodeAt(0)-0x0660)).replace(/[^\p{L}\p{N}\s-]/gu," ").trim();
+   const diseaseCode=clean(urlObj.searchParams.get("diseaseCode"),30);
+   const validDiseaseCodes=["migraine","ms","epilepsy","parkinson","cognition","low_back_pain","stroke","vertigo","myasthenia_gravis","neuropathy","als","myopathy","other","unassigned"];
+   if(diseaseCode && !validDiseaseCodes.includes(diseaseCode))return json({error:"invalid_disease_filter"},400,origin);
    let query=db.from("patients").select("*").order("created_at",{ascending:false});
+   if(diseaseCode)query=query.eq("disease_code",diseaseCode);
    if(search){
     const terms=search.split(/\s+/).filter(Boolean).slice(0,5),filters:string[]=[];
     for(const term of terms) filters.push("first_name.ilike.%"+term+"%","last_name.ilike.%"+term+"%","mobile.ilike.%"+term+"%","national_id.ilike.%"+term+"%");
@@ -394,5 +379,12 @@ Deno.serve(async (req:Request)=>{
    await audit(duser.sub,"doctor","medication.status.update","medication",m.id,{active});return json({medication:m},200,origin);
   }
   return json({error:"not_found"},404,origin);
- }catch(e){console.error("neurocare edge error",e);return json({error:"server_error"},500,origin);}
+ }catch(e){
+  // Never log raw database/service errors: PostgREST details can contain patient identifiers and password hashes.
+  const details = typeof e === "object" && e !== null ? e as Record<string, unknown> : {};
+  const errorCode = typeof details.code === "string" ? details.code.slice(0,24) : "unknown";
+  const errorType = e instanceof Error ? e.name : (typeof e === "object" ? "DatabaseOrServiceError" : "UnknownError");
+  console.error("neurocare_request_failed", { method: req.method, errorType, errorCode });
+  return json({error:"server_error"},500,origin);
+}
 });
