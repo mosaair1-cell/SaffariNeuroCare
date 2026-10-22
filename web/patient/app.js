@@ -292,8 +292,8 @@
             <div class="field full"><label for="password">رمز عبور پزشک</label><input id="password" type="password" name="password" autocomplete="current-password" required minlength="8"></div>
           ` : `
             ${isRegister ? `
-              <div class="field"><label for="firstName">نام</label><input id="firstName" name="firstName" autocomplete="given-name" required maxlength="100"></div>
-              <div class="field"><label for="lastName">نام خانوادگی</label><input id="lastName" name="lastName" autocomplete="family-name" required maxlength="100"></div>
+              <div class="field"><label for="firstName">نام</label><input id="firstName" name="firstName" autocomplete="given-name" required maxlength="200"></div>
+              <div class="field"><label for="lastName">نام خانوادگی</label><input id="lastName" name="lastName" autocomplete="family-name" required maxlength="200"></div>
               <div class="field full"><label for="diseaseCode">حوزه پیگیری</label><select id="diseaseCode" name="diseaseCode" required><option value="" disabled selected>حوزه پیگیری را انتخاب کنید</option>${diseases.map(d => '<option value="' + h(d[0]) + '">' + h(d[1]) + '</option>').join('')}</select></div>
               <div class="field full"><div class="fixed-clinic"><span>مرکز پیگیری</span><strong>کلینیک دکتر صفاری</strong><small>کد کلینیک ثابت است و قابل تغییر نیست.</small></div></div>
               <div class="field full"><label for="mobile">شماره موبایل (الزامی)</label><input id="mobile" name="mobile" inputmode="numeric" autocomplete="tel" placeholder="09123456789" pattern="09[0-9]{9}" required maxlength="11"></div>
@@ -566,22 +566,24 @@
             <section class="panel">
                           <div class="panel-heading"><h2>گزارش علائم / پیش از ویزیت</h2><small>گزارش برای بررسی پزشک</small></div>
                           <form id="reportForm">
-                            <div class="field full"><label for="reportType">نوع گزارش</label>
-                              <select id="reportType" name="reportType">
-                                <option value="initial_visit" ${hasCompletedVisit ? '' : 'selected'}>شرح حال و ویزیت اول</option>
-                                <option value="symptom" ${hasCompletedVisit ? 'selected' : ''}>ثبت علامت جدید / پیگیری</option>
-                                <option value="pre_visit">گزارش پیش از ویزیت بعدی</option>
-                              </select>
-                              <small class="field-help">اگر برای نخستین بار مراجعه می‌کنید، «شرح حال و ویزیت اول» را انتخاب کنید.</small>
+                            <div class="field full">
+                              <span class="report-type-label">نوع گزارش را انتخاب کنید</span>
+                              <input type="hidden" id="reportType" name="reportType" value="${hasCompletedVisit ? 'symptom' : 'initial_visit'}">
+                              <div class="report-type-options" role="group" aria-label="نوع گزارش">
+                                <button type="button" class="report-type-btn ${hasCompletedVisit ? '' : 'active'}" data-report-type="initial_visit" aria-pressed="${hasCompletedVisit ? 'false' : 'true'}"><strong>شرح حال اولیه</strong><small>اولین مراجعه</small></button>
+                                <button type="button" class="report-type-btn ${hasCompletedVisit ? 'active' : ''}" data-report-type="symptom" aria-pressed="${hasCompletedVisit ? 'true' : 'false'}"><strong>ثبت علائم</strong><small>علامت تازه یا تغییر</small></button>
+                                <button type="button" class="report-type-btn" data-report-type="pre_visit" aria-pressed="false"><strong>پیش از ویزیت</strong><small>نکته یا پرسش</small></button>
+                              </div>
+                              <small class="field-help">برای اولین مراجعه «شرح حال اولیه» و برای گزارش تغییرات روزانه «ثبت علائم» را انتخاب کنید.</small>
                             </div>
                             <div id="initialVisitFields" class="initial-visit-fields" ${hasCompletedVisit ? 'hidden' : ''}>
-                              <div class="field full"><label for="initialMainConcern">مشکل اصلی و علت مراجعه</label><textarea id="initialMainConcern" name="initialMainConcern" maxlength="220" placeholder="مهم‌ترین مشکلی که می‌خواهید پزشک بررسی کند" rows="2"></textarea></div>
+                              <div class="field full"><label for="initialMainConcern">مشکل اصلی و علت مراجعه</label><textarea id="initialMainConcern" name="initialMainConcern" maxlength="200" placeholder="مهم‌ترین مشکلی که می‌خواهید پزشک بررسی کند" rows="2"></textarea></div>
                               <div class="form-grid">
-                                <div class="field"><label for="initialOnset">از چه زمانی شروع شده؟</label><input id="initialOnset" name="initialOnset" maxlength="100" placeholder="مثلاً سه ماه قبل"></div>
-                                <div class="field"><label for="initialDiagnosis">تشخیص‌های قبلی</label><input id="initialDiagnosis" name="initialDiagnosis" maxlength="160" placeholder="اگر تشخیصی داشته‌اید"></div>
-                                <div class="field"><label for="initialMedications">داروهای فعلی</label><input id="initialMedications" name="initialMedications" maxlength="160" placeholder="نام داروها و دوز در صورت اطلاع"></div>
-                                <div class="field"><label for="initialTests">آزمایش، MRI یا بررسی قبلی</label><input id="initialTests" name="initialTests" maxlength="160" placeholder="بررسی‌های انجام‌شده"></div>
-                                <div class="field full"><label for="initialHistory">بیماری‌های زمینه‌ای یا حساسیت دارویی</label><input id="initialHistory" name="initialHistory" maxlength="160" placeholder="در صورت وجود"></div>
+                                <div class="field"><label for="initialOnset">از چه زمانی شروع شده؟</label><input id="initialOnset" name="initialOnset" maxlength="200" placeholder="مثلاً سه ماه قبل"></div>
+                                <div class="field"><label for="initialDiagnosis">تشخیص‌های قبلی</label><input id="initialDiagnosis" name="initialDiagnosis" maxlength="200" placeholder="اگر تشخیصی داشته‌اید"></div>
+                                <div class="field"><label for="initialMedications">داروهای فعلی</label><input id="initialMedications" name="initialMedications" maxlength="200" placeholder="نام داروها و دوز در صورت اطلاع"></div>
+                                <div class="field"><label for="initialTests">آزمایش، MRI یا بررسی قبلی</label><input id="initialTests" name="initialTests" maxlength="200" placeholder="بررسی‌های انجام‌شده"></div>
+                                <div class="field full"><label for="initialHistory">بیماری‌های زمینه‌ای یا حساسیت دارویی</label><input id="initialHistory" name="initialHistory" maxlength="200" placeholder="در صورت وجود"></div>
                               </div>
                             </div>
                             <div class="field full"><label>علائم اخیر (چند مورد قابل انتخاب است)</label><div class="symptom-options">
@@ -593,11 +595,11 @@
                               <label class="symptom-chip"><input type="checkbox" name="symptoms" value="sleep"><span>اختلال خواب</span></label>
                               <label class="symptom-chip"><input type="checkbox" name="symptoms" value="other"><span>سایر</span></label>
                             </div></div>
-                            <div id="otherSymptomField" class="field full" hidden><label for="otherSymptom">علامت دیگر خود را وارد کنید (حداکثر ۵۰ نویسه)</label><input id="otherSymptom" name="otherSymptom" maxlength="50" placeholder="علامتی که در فهرست بالا وجود ندارد"></div>
+                            <div id="otherSymptomField" class="field full" hidden><label for="otherSymptom">علامت دیگر خود را وارد کنید (حداکثر ۲۰۰ نویسه)</label><input id="otherSymptom" name="otherSymptom" maxlength="200" placeholder="علامتی که در فهرست بالا وجود ندارد"></div>
                             <div class="form-grid" style="margin-top:14px">
                               <div class="field"><label for="severity">شدت کلی علامت (۱ تا ۱۰)</label><input id="severity" type="number" name="severity" min="1" max="10" required></div>
                               <div class="field"><label for="occurredOn">تاریخ شروع / گزارش</label><input id="occurredOn" type="date" name="occurredOn" value="${new Date().toISOString().slice(0,10)}"></div>
-                              <div class="field full"><label for="reportNotes">توضیحات تکمیلی (حداکثر ۱۲۰۰ نویسه)</label><textarea id="reportNotes" name="notes" maxlength="1200" rows="3" placeholder="زمان شروع، مدت، شدت و تغییر علائم یا هر نکته مهم دیگر"></textarea></div>
+                              <div class="field full"><label for="reportNotes">توضیحات تکمیلی (حداکثر ۲۰۰ نویسه)</label><textarea id="reportNotes" name="notes" maxlength="200" rows="3" placeholder="زمان شروع، مدت، شدت و تغییر علائم یا هر نکته مهم دیگر"></textarea></div>
                             </div>
                             <button class="primary full-button" type="submit">ارسال گزارش به پزشک</button><div class="form-message"></div>
                           </form>                   </form>
@@ -856,12 +858,14 @@
       }
     });
     const reportForm = document.getElementById('reportForm');
-    const reportTypeSelect=document.getElementById('reportType'),initialVisitFields=document.getElementById('initialVisitFields'),chiefComplaint=document.getElementById('initialMainConcern');
+    const reportTypeSelect=document.getElementById('reportType'),reportTypeButtons=Array.from(reportForm?.querySelectorAll('[data-report-type]')||[]),initialVisitFields=document.getElementById('initialVisitFields'),chiefComplaint=document.getElementById('initialMainConcern');
     const otherSymptomField=document.getElementById('otherSymptomField'),otherSymptomInput=document.getElementById('otherSymptom');
     const otherSymptomCheck=reportForm?.querySelector('input[name="symptoms"][value="other"]');
-    const updateReportMode=()=>{const initial=reportTypeSelect?.value==='initial_visit';if(initialVisitFields)initialVisitFields.hidden=!initial;if(chiefComplaint)chiefComplaint.required=Boolean(initial);if(initialVisitFields)initialVisitFields.querySelectorAll('input,textarea').forEach(input=>{if(input!==chiefComplaint)input.required=false;});};
+    reportForm?.querySelectorAll('input:not([type]),input[type="text"],textarea').forEach(input=>{input.maxLength=200;});
+    const updateReportMode=()=>{const current=reportTypeSelect?.value||'symptom',initial=current==='initial_visit';if(initialVisitFields)initialVisitFields.hidden=!initial;if(chiefComplaint)chiefComplaint.required=Boolean(initial);if(initialVisitFields)initialVisitFields.querySelectorAll('input,textarea').forEach(input=>{if(input!==chiefComplaint)input.required=false;});reportTypeButtons.forEach(button=>{const selected=button.dataset.reportType===current;button.classList.toggle('active',selected);button.setAttribute('aria-pressed',selected?'true':'false');});};
     const updateOtherSymptom=()=>{const visible=Boolean(otherSymptomCheck?.checked);if(otherSymptomField)otherSymptomField.hidden=!visible;if(otherSymptomInput){otherSymptomInput.required=visible;if(!visible)otherSymptomInput.value='';}};
-    reportTypeSelect?.addEventListener('change',updateReportMode);otherSymptomCheck?.addEventListener('change',updateOtherSymptom);updateReportMode();updateOtherSymptom();
+    reportTypeButtons.forEach(button=>button.addEventListener('click',()=>{if(reportTypeSelect)reportTypeSelect.value=button.dataset.reportType||'symptom';updateReportMode();}));
+    otherSymptomCheck?.addEventListener('change',updateOtherSymptom);updateReportMode();updateOtherSymptom();
     if(reportForm)reportForm.addEventListener('submit',async event=>{
       event.preventDefault();const submit=reportForm.querySelector('button[type="submit"]');
       const f=new FormData(reportForm),reportType=String(f.get('reportType')||'symptom');
