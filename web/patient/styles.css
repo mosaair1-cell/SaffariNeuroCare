@@ -186,6 +186,15 @@ button:disabled{cursor:not-allowed;opacity:.55}
 .symptom-chip:has(input:checked){background:#e6f4f1;border-color:#79b9b0;color:var(--teal-dark);box-shadow:inset 0 0 0 1px #b8ddd6}
 .symptom-chip:has(input:focus-visible){outline:2px solid #16858a;outline-offset:2px}
 .field-help{display:block;margin-top:6px;color:var(--muted);font-size:11px;line-height:1.8}
+.report-type-label{display:block;font-size:13px;font-weight:800;color:#345559;margin-bottom:2px}
+.report-type-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:2px}
+.report-type-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-width:0;min-height:72px;padding:10px 6px;border:1px solid var(--line);border-radius:14px;background:#fbfdfd;color:#486367;text-align:center;cursor:pointer;transition:background .15s,border-color .15s,box-shadow .15s}
+.report-type-btn strong{font-size:12px;line-height:1.5;font-weight:900}
+.report-type-btn small{font-size:10px;line-height:1.5;color:var(--muted);font-weight:600}
+.report-type-btn.active{background:linear-gradient(135deg,#e4f4f0,#f1faf8);border-color:#6ab4aa;color:var(--teal-dark);box-shadow:inset 0 0 0 1px #b8ddd6,0 3px 10px #0d68700b}
+.report-type-btn.active small{color:var(--teal-dark)}
+.report-type-btn:focus-visible{outline:2px solid #16858a;outline-offset:2px}
+@media(max-width:420px){.report-type-options{gap:6px}.report-type-btn{min-height:70px;padding:8px 3px}.report-type-btn strong{font-size:11px}.report-type-btn small{font-size:9px}}
 .study-grid{display:grid;gap:11px;margin-top:4px}
 .study-card{display:grid;grid-template-columns:46px minmax(0,1fr) 20px;gap:12px;align-items:center;padding:14px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(100deg,#fff,#f8fbfb);transition:transform .18s,border-color .18s,box-shadow .18s}
 .study-card:hover{border-color:#b7d9d4;box-shadow:0 7px 18px rgba(13,104,112,.06)}
