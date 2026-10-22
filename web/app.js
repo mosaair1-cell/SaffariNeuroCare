@@ -26,7 +26,7 @@
   const statusLabels = {
     pending_review:'در انتظار تأیید پزشک', active:'فعال', rejected:'تأیید نشده',
     requested:'درخواست ثبت شد', confirmed:'نوبت تأیید شد', completed:'ویزیت شد',
-    cancelled:'لغو شد', symptom:'ثبت علائم', pre_visit:'گزارش پیش از ویزیت'
+    cancelled:'لغو شد', symptom:'ثبت علائم', pre_visit:'گزارش پیش از ویزیت', initial_visit:'شرح حال و ویزیت اول'
   };
   const errorLabels = {
     unauthorized:'نشست شما پایان یافته است؛ دوباره وارد شوید.',
