@@ -284,8 +284,8 @@ Deno.serve(async (req:Request)=>{
   const reportPath="/v1/patients/reports";
   if(reportPath===path&&req.method==="GET"){const {data,error}=await db.from("symptom_reports").select("*").eq("patient_id",patient!.sub).order("submitted_at",{ascending:false}).limit(100);if(error)throw error;return json({reports:data||[]},200,origin);}
   if(reportPath===path&&req.method==="POST"){
-   const reportType=clean(body.reportType||"pre_visit",20),severity=body.severity==null||body.severity===""?null:Number(body.severity),rawNotes=String(body.notes||""),notes=clean(rawNotes,1200),symptoms=Array.isArray(body.symptoms)?body.symptoms.map((x:any)=>clean(x,60)).filter(Boolean).slice(0,30):[],occurredOn=clean(body.occurredOn,10);
-   if(rawNotes.length>1200)return json({error:"report_notes_too_long"},400,origin);
+   const reportType=clean(body.reportType||"pre_visit",20),severity=body.severity==null||body.severity===""?null:Number(body.severity),rawNotes=String(body.notes||""),notes=clean(rawNotes,2400),symptoms=Array.isArray(body.symptoms)?body.symptoms.map((x:any)=>clean(x,60)).filter(Boolean).slice(0,30):[],occurredOn=clean(body.occurredOn,10);
+   if(rawNotes.length>2400)return json({error:"report_notes_too_long"},400,origin);
    if(!["symptom","pre_visit","initial_visit"].includes(reportType)||(severity!==null&&(!Number.isInteger(severity)||severity<1||severity>10))||(!notes&&!symptoms.length))return json({error:"invalid_report"},400,origin);
    const {data:r,error}=await db.from("symptom_reports").insert({patient_id:patient!.sub,report_type:reportType,severity,symptoms,notes,occurred_on:occurredOn||null}).select("*").single();if(error)throw error;await audit(patient!.sub,"patient","patient.report.create","symptom_report",r.id);return json({report:r},201,origin);
   }
