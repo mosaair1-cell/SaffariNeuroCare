@@ -595,7 +595,7 @@
                             </div></div>
                             <div id="otherSymptomField" class="field full" hidden><label for="otherSymptom">علامت دیگر خود را وارد کنید (حداکثر ۵۰ نویسه)</label><input id="otherSymptom" name="otherSymptom" maxlength="50" placeholder="علامتی که در فهرست بالا وجود ندارد"></div>
                             <div class="form-grid" style="margin-top:14px">
-                              <div class="field"><label for="severity">شدت کلی علامت (۱ تا ۱۰)</label><input id="severity" type="number" name="severity" min="1" max="10" value="3" required></div>
+                              <div class="field"><label for="severity">شدت کلی علامت (۱ تا ۱۰)</label><input id="severity" type="number" name="severity" min="1" max="10" required></div>
                               <div class="field"><label for="occurredOn">تاریخ شروع / گزارش</label><input id="occurredOn" type="date" name="occurredOn" value="${new Date().toISOString().slice(0,10)}"></div>
                               <div class="field full"><label for="reportNotes">توضیحات تکمیلی (حداکثر ۱۲۰۰ نویسه)</label><textarea id="reportNotes" name="notes" maxlength="1200" rows="3" placeholder="زمان شروع، مدت، شدت و تغییر علائم یا هر نکته مهم دیگر"></textarea></div>
                             </div>
