@@ -494,7 +494,7 @@
   }
 
   function patientDiseaseSettings(profile) {
-    const options=diseases.map(d=>'<option value="'+h(d[0])+'"'+(d[0]===profile.diseaseCode?' selected':'')+'>'+h(d[1])+'</option>').join('');
+    const options=diseases.map(d=>'<option value="'+h(d[0])+'"'+(d[0]===profile.diseaseCode?' selected':'')+'>'+h(d[0]==='other'&&d[0]===profile.diseaseCode&&profile.customDiseaseLabel?profile.customDiseaseLabel:d[1])+'</option>').join('');
     return '<section class="panel disease-settings-panel"><div class="panel-heading"><h2>حوزه پیگیری من</h2><small>قابل اصلاح توسط بیمار</small></div>'+
       '<p class="disease-settings-current">حوزه ثبت‌شده فعلی: <strong>'+h(diseaseTitle(profile.diseaseCode,profile.customDiseaseLabel))+'</strong></p>'+
       '<form id="patientDiseaseForm"><div class="form-grid"><div class="field full"><label for="patientDiseaseSelect">حوزه صحیح بیماری یا پیگیری را انتخاب کنید</label><select id="patientDiseaseSelect" name="diseaseCode" required>'+options+'</select></div></div>'+
