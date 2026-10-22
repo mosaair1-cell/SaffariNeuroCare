@@ -382,3 +382,20 @@ button.primary,.primary{box-shadow:0 7px 16px rgba(13,104,112,.12)}
 .jalali-date-popover-foot button{padding:5px 12px;font-size:12px}
 @media(max-width:760px){html{font-size:16.5px}.panel{padding:19px;border-radius:20px}.panel-heading h2{font-size:18px}.jalali-date-control{flex-direction:column}.jalali-date-trigger{width:100%}}
 @media(max-width:550px){html{font-size:16px}.brand b{font-size:16px}.brand small{font-size:12px}.panel{padding:16px}.field label{font-size:13.5px}}
+
+/* Patient directory disease filter and compact collapsible scheduling */
+.patient-directory-filters{display:grid;grid-template-columns:minmax(210px,.9fr) minmax(260px,1.4fr);gap:12px;align-items:end;margin-bottom:14px}
+.patient-directory-filters .field{margin:0;min-width:0}
+.patient-disease-filter select{width:100%;min-height:48px;padding:11px 13px;border:1px solid var(--line);border-radius:14px;background:#fbfcff;color:var(--ink)}
+.patient-disease-filter .hint{margin:4px 0 0;line-height:1.7}
+.collapsible-panel{padding:0;overflow:hidden}
+.collapsible-panel>.panel-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0;padding:17px 22px;cursor:pointer;list-style:none;user-select:none}
+.collapsible-panel>.panel-heading::-webkit-details-marker{display:none}
+.collapsible-panel>.panel-heading::after{content:"+";display:inline-grid;place-items:center;flex:0 0 30px;width:30px;height:30px;border:1px solid #d9d1ef;border-radius:10px;background:#f7f4ff;color:#5b21b6;font-size:22px;font-weight:600;line-height:1}
+.collapsible-panel[open]>.panel-heading{border-bottom:1px solid var(--line)}
+.collapsible-panel[open]>.panel-heading::after{content:"−"}
+.collapsible-panel:not([open])>.panel-heading{margin-bottom:0}
+.collapsible-panel form,.collapsible-panel>.availability-list{margin-inline:22px}
+.collapsible-panel form{padding-top:14px}
+.collapsible-panel>.availability-list{margin-bottom:20px}
+@media(max-width:620px){.patient-directory-filters{grid-template-columns:1fr}.collapsible-panel>.panel-heading{padding:15px 16px;gap:8px}.collapsible-panel>.panel-heading small{max-width:44%;text-align:left}.collapsible-panel form,.collapsible-panel>.availability-list{margin-inline:16px}}
