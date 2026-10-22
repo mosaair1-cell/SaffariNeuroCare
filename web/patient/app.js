@@ -292,8 +292,8 @@
             <div class="field full"><label for="password">رمز عبور پزشک</label><input id="password" type="password" name="password" autocomplete="current-password" required minlength="8"></div>
           ` : `
             ${isRegister ? `
-              <div class="field"><label for="firstName">نام</label><input id="firstName" name="firstName" autocomplete="given-name" required maxlength="200"></div>
-              <div class="field"><label for="lastName">نام خانوادگی</label><input id="lastName" name="lastName" autocomplete="family-name" required maxlength="200"></div>
+              <div class="field"><label for="firstName">نام</label><input id="firstName" name="firstName" autocomplete="given-name" required maxlength="100"></div>
+              <div class="field"><label for="lastName">نام خانوادگی</label><input id="lastName" name="lastName" autocomplete="family-name" required maxlength="100"></div>
               <div class="field full"><label for="diseaseCode">حوزه پیگیری</label><select id="diseaseCode" name="diseaseCode" required><option value="" disabled selected>حوزه پیگیری را انتخاب کنید</option>${diseases.map(d => '<option value="' + h(d[0]) + '">' + h(d[1]) + '</option>').join('')}</select></div>
               <div class="field full"><div class="fixed-clinic"><span>مرکز پیگیری</span><strong>کلینیک دکتر صفاری</strong><small>کد کلینیک ثابت است و قابل تغییر نیست.</small></div></div>
               <div class="field full"><label for="mobile">شماره موبایل (الزامی)</label><input id="mobile" name="mobile" inputmode="numeric" autocomplete="tel" placeholder="09123456789" pattern="09[0-9]{9}" required maxlength="11"></div>
