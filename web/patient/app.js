@@ -54,6 +54,7 @@
     confirmation_required:'برای تغییر حوزه، باید هشدار حذف سوابق را تأیید کنید.',
     invalid_disease_code:'حوزه پیگیری انتخاب‌شده معتبر نیست.',
     invalid_custom_disease_label:'نام حوزه اختصاصی حداکثر باید ۸۰ نویسه باشد.',
+    disease_change_requires_doctor:'تغییر حوزه پیگیری فقط توسط پزشک انجام می‌شود.',
     report_notes_too_long:'شرح حال و توضیحات گزارش حداکثر ۲۴۰۰ نویسه می‌تواند باشد.',
     slot_unavailable:'این زمان همین حالا رزرو شده یا دیگر قابل انتخاب نیست؛ زمان دیگری را انتخاب کنید.',
     invalid_availability:'روز یا ساعت کاری واردشده معتبر نیست.',
@@ -494,27 +495,6 @@
       history + '</section>';
   }
 
-  function patientDiseaseSettings(profile) {
-    const options=diseases.map(d=>'<option value="'+h(d[0])+'"'+(d[0]===profile.diseaseCode?' selected':'')+'>'+h(d[0]==='other'&&d[0]===profile.diseaseCode&&profile.customDiseaseLabel?profile.customDiseaseLabel:d[1])+'</option>').join('');
-    return '<section class="panel disease-settings-panel"><div class="panel-heading"><h2>حوزه پیگیری من</h2><small>قابل اصلاح توسط بیمار</small></div>'+
-      '<p class="disease-settings-current">حوزه ثبت‌شده فعلی: <strong>'+h(diseaseTitle(profile.diseaseCode,profile.customDiseaseLabel))+'</strong></p>'+
-      '<form id="patientDiseaseForm"><div class="form-grid"><div class="field full"><label for="patientDiseaseSelect">حوزه صحیح بیماری یا پیگیری را انتخاب کنید</label><select id="patientDiseaseSelect" name="diseaseCode" required>'+options+'</select></div></div>'+
-      '<div class="disease-loss-warning"><strong>توجه: تغییر حوزه، پرونده فعلی را پاک می‌کند.</strong><p>در صورت تغییر واقعی، سوابق گزارش علائم، یادداشت‌های پزشک، برنامه‌های پیگیری، داروها، نمره‌های EDSS و همه نوبت‌های قبلی به‌صورت دائمی حذف می‌شوند. حساب کاربری و وضعیت تأیید باقی می‌ماند و این حذف قابل بازگشت نیست.</p></div>'+
-      '<button class="secondary full-button" type="submit">اصلاح حوزه پیگیری</button><div class="form-message"></div></form></section>';
-  }
-  function bindPatientDiseaseForm(profile) {
-    const form=document.getElementById('patientDiseaseForm');if(!form)return;
-    const select=form.querySelector('select[name="diseaseCode"]');
-    form.addEventListener('submit',async event=>{
-      event.preventDefault();const nextDisease=String(select.value||'');
-      if(nextDisease===profile.diseaseCode){setMessage(form,'حوزه پیگیری شما تغییری نکرده است.','ok');return;}
-      const confirmed=window.confirm('هشدار مهم: با تغییر حوزه از «'+diseaseTitle(profile.diseaseCode,profile.customDiseaseLabel)+'» به «'+diseaseTitle(nextDisease)+'»، تمام سوابق پزشکی مرتبط با حوزه فعلی، از جمله گزارش‌ها، یادداشت‌ها، برنامه‌های پیگیری، داروها، EDSS و نوبت‌های قبلی، برای همیشه حذف می‌شوند. حساب کاربری و وضعیت تأیید باقی می‌ماند. این کار قابل بازگشت نیست. ادامه می‌دهید؟');
-      if(!confirmed){select.value=profile.diseaseCode;return;}
-      const button=form.querySelector('button[type="submit"]');button.disabled=true;
-      try{await api('/patients/disease','POST',{diseaseCode:nextDisease,confirmPurge:true});alert('حوزه پیگیری به‌روزرسانی شد. پرونده جدید با حوزه انتخاب‌شده باز می‌شود.');await loadDashboard();}
-      catch(error){setMessage(form,errorMessage(error),'error');button.disabled=false;select.value=profile.diseaseCode;}
-    });
-  }
   async function loadPatientDashboard() {
     root.innerHTML = '<section class="loading-card"><div class="spinner"></div><p>در حال دریافت اطلاعات حساب…</p></section>';
     try {
@@ -551,7 +531,6 @@
           ${metric('گزارش علائم',String(reports.length),'ثبت‌ها و پیش‌ویزیت‌ها')}
         </div>
         ${conditionResourceSection(profile.diseaseCode)}
-        ${patientDiseaseSettings(profile)}
         ${active ? `
         <div class="content-grid">
           <div class="stack">
@@ -661,7 +640,6 @@
         </div>` : ''}
       `;
       bindCommon();
-      bindPatientDiseaseForm(profile);
       if (active) bindPatientForms();
     } catch (error) {
       root.innerHTML = '<section class="panel"><h2>دریافت اطلاعات ناموفق بود</h2>' + messageBox(errorMessage(error),'error') + '<div class="card-actions"><button class="secondary" id="retryBtn">تلاش دوباره</button><button class="ghost-button" id="logoutBtn">خروج امن</button></div></section>';
