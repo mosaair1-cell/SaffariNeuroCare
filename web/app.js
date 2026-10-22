@@ -64,7 +64,8 @@
   const fmtDate = (value) => {
     if (!value) return '—';
     const val = String(value).slice(0,10);
-    return val.replace(/-/g,'/');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(val)) return val.replace(/-/g,'/');
+    return jalaliFullDateFormatter.format(dateFromISO(val));
   };
   const jalaliPartsFormatter = new Intl.DateTimeFormat('fa-IR-u-ca-persian', {
     year:'numeric', month:'numeric', day:'numeric'
@@ -100,6 +101,42 @@
     const month = partNumber('month');
     const day = partNumber('day');
     return {year,month,day,key:String(year) + '-' + String(month).padStart(2,'0')};
+  }
+  function jalaliMonthStart(date) {
+    let start=new Date(date.getFullYear(),date.getMonth(),date.getDate(),12,0,0,0),p=jalaliDateParts(start);
+    for(let i=0;i<32;i++){const prev=shiftDate(start,-1),q=jalaliDateParts(prev);if(q.year!==p.year||q.month!==p.month)break;start=prev;}return start;
+  }
+  function attachJalaliDatePickers(scope) {
+    if(!scope||!scope.querySelectorAll)return;
+    scope.querySelectorAll('input[type="date"]').forEach(original=>{
+      if(original.dataset.jalaliPickerReady==='true')return;original.dataset.jalaliPickerReady='true';
+      const oldId=original.id||('jalaliDate'+Math.random().toString(36).slice(2,8)),value=original.value,isRequired=original.required,min=original.min,max=original.max;
+      const label=scope.querySelector('label[for="'+oldId+'"]')?.textContent?.trim()||'انتخاب تاریخ';
+      const display=document.createElement('input');display.type='text';display.id=oldId;display.readOnly=true;display.autocomplete='off';display.className=(original.className+' jalali-date-display').trim();display.placeholder='انتخاب تاریخ هجری شمسی';
+      display.setAttribute('aria-label',label+' به تقویم هجری شمسی');display.setAttribute('aria-haspopup','dialog');display.setAttribute('aria-expanded','false');
+      original.id=oldId+'Iso';original.type='hidden';original.required=false;original.removeAttribute('class');
+      const wrapper=document.createElement('div');wrapper.className='jalali-date-control';original.parentNode.insertBefore(wrapper,original);wrapper.appendChild(display);
+      const trigger=document.createElement('button');trigger.type='button';trigger.className='jalali-date-trigger';trigger.setAttribute('aria-label','باز کردن تقویم شمسی برای '+label);trigger.innerHTML='<span aria-hidden="true">▦</span><span>تقویم شمسی</span>';wrapper.appendChild(trigger);
+      const popover=document.createElement('div');popover.className='jalali-date-popover';popover.hidden=true;popover.setAttribute('role','dialog');popover.setAttribute('aria-label','تقویم هجری شمسی');wrapper.appendChild(popover);wrapper.appendChild(original);
+      let viewISO=/^\d{4}-\d{2}-\d{2}$/.test(value)?value:isoFromDate(new Date());
+      const showDate=iso=>{display.value=/^\d{4}-\d{2}-\d{2}$/.test(iso)?jalaliFullDateFormatter.format(dateFromISO(iso)):'';};showDate(viewISO);
+      const close=()=>{popover.hidden=true;display.setAttribute('aria-expanded','false');trigger.setAttribute('aria-expanded','false');};
+      const render=()=>{
+        let focus=dateFromISO(viewISO);if(Number.isNaN(focus.getTime()))focus=new Date();
+        const start=jalaliMonthStart(focus),mp=jalaliDateParts(start),offset=(start.getDay()+1)%7;let days=0;
+        for(let i=0;i<31;i++){const p=jalaliDateParts(shiftDate(start,i));if(p.year!==mp.year||p.month!==mp.month)break;days++;}
+        let html='<div class="jalali-date-popover-head"><button type="button" data-jalali-month="-1" aria-label="ماه قبل">‹</button><strong>'+h(jalaliMonthFormatter.format(start))+'</strong><button type="button" data-jalali-month="1" aria-label="ماه بعد">›</button></div>';
+        html+='<div class="jalali-date-weekdays"><span>ش</span><span>ی</span><span>د</span><span>س</span><span>چ</span><span>پ</span><span>ج</span></div><div class="jalali-date-days">';
+        for(let i=0;i<offset;i++)html+='<span class="jalali-date-blank" aria-hidden="true"></span>';
+        for(let i=0;i<days;i++){const date=shiftDate(start,i),iso=isoFromDate(date),disabled=(min&&iso<min)||(max&&iso>max),selected=iso===original.value;html+='<button type="button" data-jalali-date="'+iso+'"'+(disabled?' disabled':'')+(selected?' aria-pressed="true" class="selected"':'')+' aria-label="'+h(jalaliFullDateFormatter.format(date))+'">'+h(jalaliDayNumberFormatter.format(date))+'</button>';}
+        popover.innerHTML=html+'</div><div class="jalali-date-popover-foot"><button type="button" data-jalali-close>بستن</button></div>';
+      };
+      const open=()=>{document.querySelectorAll('.jalali-date-popover:not([hidden])').forEach(n=>{if(n!==popover)n.hidden=true;});viewISO=original.value||isoFromDate(new Date());render();popover.hidden=false;display.setAttribute('aria-expanded','true');trigger.setAttribute('aria-expanded','true');};
+      trigger.addEventListener('click',()=>popover.hidden?open():close());display.addEventListener('click',()=>popover.hidden?open():close());
+      popover.addEventListener('click',event=>{const button=event.target.closest('button');if(!button)return;if(button.dataset.jalaliMonth){const start=jalaliMonthStart(dateFromISO(viewISO));viewISO=isoFromDate(shiftDate(start,Number(button.dataset.jalaliMonth)<0?-1:35));render();return;}if(button.dataset.jalaliClose!==undefined){close();return;}if(button.dataset.jalaliDate){original.value=button.dataset.jalaliDate;viewISO=original.value;showDate(original.value);original.dispatchEvent(new Event('input',{bubbles:true}));original.dispatchEvent(new Event('change',{bubbles:true}));close();}});
+      if(isRequired)display.title='انتخاب تاریخ الزامی است';
+    });
+    if(document.documentElement.dataset.jalaliOutsideListener!=='true'){document.documentElement.dataset.jalaliOutsideListener='true';document.addEventListener('click',event=>{if(event.target.closest('.jalali-date-control'))return;document.querySelectorAll('.jalali-date-popover:not([hidden])').forEach(n=>n.hidden=true);document.querySelectorAll('.jalali-date-display[aria-expanded="true"],.jalali-date-trigger[aria-expanded="true"]').forEach(n=>n.setAttribute('aria-expanded','false'));});}
   }
   function attachPasswordToggles(scope) {
     if (!scope) return;
@@ -185,6 +222,7 @@
     return '<div class="head-actions"><button class="ghost-button" id="refreshBtn" type="button">به‌روزرسانی</button><button class="secondary" id="logoutBtn" type="button">خروج امن</button></div>';
   }
   function bindCommon() {
+    attachJalaliDatePickers(root);
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) logoutBtn.addEventListener('click', logout);
     const refreshBtn = document.getElementById('refreshBtn');
@@ -955,6 +993,14 @@
       '</div><button class="primary full-button" type="submit">ثبت نمره EDSS</button><div class="form-message"></div></form></section>';
   }
 
+  function doctorDiseasePanel(p) {
+    const options=diseases.map(d=>'<option value="'+h(d[0])+'"'+(d[0]===p.diseaseCode?' selected':'')+'>'+h(d[1])+'</option>').join('');
+    return '<section class="panel disease-settings-panel doctor-disease-panel"><div class="panel-heading"><h2>اصلاح حوزه پیگیری</h2><small>قابل ویرایش توسط پزشک</small></div>'+
+      '<p class="disease-settings-current">حوزه فعلی: <strong>'+h(diseaseTitle(p.diseaseCode))+'</strong></p>'+
+      '<form id="doctorDiseaseForm"><div class="form-grid"><div class="field full"><label for="doctorDiseaseSelect">حوزه صحیح بیماری را انتخاب کنید</label><select id="doctorDiseaseSelect" name="diseaseCode" required>'+options+'</select></div></div>'+
+      '<div class="disease-loss-warning"><strong>توجه: تغییر حوزه، پرونده قبلی را پاک می‌کند.</strong><p>در صورت تغییر واقعی، گزارش‌ها، یادداشت‌ها، برنامه‌های پیگیری، داروها، ارزیابی‌های EDSS و تمام نوبت‌های قبلی بیمار به‌صورت دائمی حذف می‌شوند. حساب بیمار و وضعیت تأیید حفظ می‌شود. اگر اطلاعات باید در پرونده دیگری ثبت شود، پیش از تغییر در صورت نیاز آن‌ها را منتقل کنید؛ حذف قابل بازگشت نیست.</p></div>'+
+      '<button class="secondary full-button" type="submit">ذخیره حوزه صحیح</button><div class="form-message"></div></form></section>';
+  }
   async function loadDoctorPatient(id) {
     root.innerHTML = '<section class="loading-card"><div class="spinner"></div><p>در حال دریافت پرونده و سوابق بیمار…</p></section>';
     try {
@@ -979,6 +1025,7 @@
       root.innerHTML = `
         <div class="dash-head"><div><h1>پرونده بیمار</h1><p>${h((p.firstName || '') + ' ' + (p.lastName || ''))} · ${h(diseaseTitle(p.diseaseCode))}</p></div><div class="head-actions"><button class="ghost-button" id="backBtn">بازگشت</button><button class="secondary" id="logoutBtn">خروج امن</button></div></div>
         <div class="metrics">${metric('وضعیت حساب',statusTitle(p.status))}${metric('شماره تماس',p.mobile || '—')}${metric('کد ملی',p.nationalId || '—')}${metric('تاریخ ثبت',fmtDate(p.createdAt))}</div>
+        ${doctorDiseasePanel(p)}
         <div class="content-grid">
           <div class="stack">
             ${p.diseaseCode === 'ms' ? doctorEdssPanel(clinicalScores) : ''}
@@ -995,7 +1042,7 @@
           </div>
           <div class="stack">
             <section class="panel"><div class="panel-heading"><h2>سوابق برنامه‌های پیگیری</h2><small>${plans.length} مورد</small></div>
-              <div class="row-list">${plans.length ? plans.map(pn => '<div class="row-item"><div><strong>' + h(pn.title) + ' · ' + h(pn.active ? 'فعال' : 'غیرفعال') + '</strong><p>' + h(pn.instructions) + '</p><small class="subline">تاریخ پیگیری: ' + h(pn.follow_up_date || '—') + ' · ' + h(fmtDate(pn.created_at)) + '</small></div><div class="card-actions"><button type="button" class="danger-button" data-delete-record="treatment-plan" data-record-id="' + h(pn.id) + '">حذف سابقه</button></div></div>').join('') : '<div class="empty-card">برنامه‌ای ثبت نشده است.</div>'}</div>
+              <div class="row-list">${plans.length ? plans.map(pn => '<div class="row-item"><div><strong>' + h(pn.title) + ' · ' + h(pn.active ? 'فعال' : 'غیرفعال') + '</strong><p>' + h(pn.instructions) + '</p><small class="subline">تاریخ پیگیری: ' + h(fmtDate(pn.follow_up_date)) + ' · ' + h(fmtDate(pn.created_at)) + '</small></div><div class="card-actions"><button type="button" class="danger-button" data-delete-record="treatment-plan" data-record-id="' + h(pn.id) + '">حذف سابقه</button></div></div>').join('') : '<div class="empty-card">برنامه‌ای ثبت نشده است.</div>'}</div>
             </section>
             <section class="panel"><div class="panel-heading"><h2>ثبت برنامه پیگیری</h2></div>
               <form id="planForm"><div class="field"><label for="planTitle">عنوان</label><input id="planTitle" name="title" required maxlength="200"></div><div class="field" style="margin-top:12px"><label for="planInstructions">توصیه و برنامه ثبت‌شده توسط پزشک</label><textarea id="planInstructions" name="instructions" required maxlength="4000"></textarea></div><div class="field" style="margin-top:12px"><label for="followUpDate">تاریخ پیگیری (اختیاری)</label><input id="followUpDate" name="followUpDate" type="date"></div><button class="primary full-button" type="submit">ذخیره برنامه پیگیری</button><div class="form-message"></div></form>
@@ -1008,8 +1055,20 @@
             </section>
           </div>
         </div>`;
+      attachJalaliDatePickers(root);
       document.getElementById('backBtn')?.addEventListener('click',loadDoctorDashboard);
       document.getElementById('logoutBtn')?.addEventListener('click',logout);
+      const diseaseForm=document.getElementById('doctorDiseaseForm');
+      diseaseForm?.addEventListener('submit',async event=>{
+        event.preventDefault();
+        const select=diseaseForm.querySelector('select[name="diseaseCode"]'),nextDisease=String(select.value||'');
+        if(nextDisease===p.diseaseCode){setMessage(diseaseForm,'حوزه بیمار تغییری نکرده است.','ok');return;}
+        const confirmed=window.confirm('تغییر حوزه بیمار از «'+diseaseTitle(p.diseaseCode)+'» به «'+diseaseTitle(nextDisease)+'» باعث حذف دائمی تمام گزارش‌ها، یادداشت‌ها، برنامه‌های پیگیری، داروها، نمره‌های EDSS و نوبت‌های قبلی او می‌شود. حساب بیمار و وضعیت تأیید باقی می‌ماند. این عمل قابل بازگشت نیست. آیا ادامه می‌دهید؟');
+        if(!confirmed){select.value=p.diseaseCode;return;}
+        const button=diseaseForm.querySelector('button[type="submit"]');button.disabled=true;
+        try{await api('/doctor/patients/'+encodeURIComponent(id)+'/disease','PATCH',{diseaseCode:nextDisease,confirmPurge:true});alert('حوزه پیگیری بیمار اصلاح شد.');await loadDoctorPatient(id);}
+        catch(error){setMessage(diseaseForm,errorMessage(error),'error');button.disabled=false;select.value=p.diseaseCode;}
+      });
       bindDoctorPatientForms(id);
       root.querySelectorAll('[data-delete-record]').forEach(btn => btn.addEventListener('click', async () => {
         const type = btn.dataset.deleteRecord;
