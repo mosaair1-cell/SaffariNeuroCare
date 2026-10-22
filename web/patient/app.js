@@ -20,6 +20,10 @@
     ['low_back_pain','کمردرد'],
     ['stroke','سکته مغزی'],
     ['vertigo','سرگیجه و اختلال تعادل'],
+    ['myasthenia_gravis','میاستنی گراویس'],
+    ['neuropathy','نوروپاتی'],
+    ['als','ALS (اسکلروز جانبی آمیوتروفیک)'],
+    ['myopathy','میوپاتی'],
     ['other','سایر'],
     ['unassigned','هنوز مشخص نیست']
   ];
@@ -61,7 +65,7 @@
   const normalizeDigits = (value) => String(value == null ? '' : value)
     .replace(/[۰-۹]/g, c => String(c.charCodeAt(0) - 0x06f0))
     .replace(/[٠-٩]/g, c => String(c.charCodeAt(0) - 0x0660));
-  const diseaseTitle = (code) => (diseases.find(d => d[0] === code) || ['','تعیین‌نشده'])[1];
+  const diseaseTitle = (code, customLabel) => code === 'other' && String(customLabel || '').trim() ? String(customLabel).trim() : (diseases.find(d => d[0] === code) || ['','تعیین‌نشده'])[1];
   const statusTitle = (s) => statusLabels[s] || s || 'نامشخص';
   const fmtDate = (value) => {
     if (!value) return '—';
@@ -461,6 +465,10 @@
       migraine: {icon:'✦',title:'راهنمای میگرن و سردرد',description:'مقالات آموزشی درباره سردرد، محرک‌ها، تشخیص و مسیرهای درمان را مطالعه کنید.',button:'مطالعه مقالات میگرن و سردرد',href:'https://mhsaffari.ir/articles-migraine-headache.html',hint:'وب‌سایت رسمی دکتر صفاری'},
       stroke: {icon:'＋',title:'راهنمای سکته مغزی',description:'با علائم هشدار، انواع سکته، عوامل خطر، درمان و راه‌های پیشگیری آشنا شوید.',button:'مطالعه راهنمای سکته مغزی',href:'https://mhsaffari.ir/articles/neurology/stroke-cva-symptoms-types-causes-treatment-prevention.html',hint:'اطلاعات آموزشی معتبر'},
       vertigo: {icon:'◉',title:'راهنمای سرگیجه و اختلال تعادل',description:'علل شایع سرگیجه، روش‌های بررسی و گزینه‌های درمانی را مرور کنید.',button:'مطالعه مقاله سرگیجه',href:'https://mhsaffari.ir/articles/neurology/vertigo-causes-symptoms-diagnosis-treatment.html',hint:'راهنمای آموزشی نورولوژی'},
+      myasthenia_gravis: {icon:'↯',title:'راهنمای میاستنی گراویس',description:'با علائم، علت‌ها، روش‌های تشخیص و مسیرهای درمان میاستنی گراویس آشنا شوید.',button:'مطالعه مقاله میاستنی گراویس',href:'https://mhsaffari.ir/articles/neurology/myasthenia-gravis-symptoms-causes-diagnosis-treatment.html',hint:'راهنمای آموزشی نورولوژی'},
+      neuropathy: {icon:'⌁',title:'راهنمای بیماری‌های عصب و عضله',description:'مقاله آموزشی نوروپاتی، میوپاتی و ALS را برای آشنایی با علائم و روش‌های بررسی بخوانید.',button:'مطالعه مقاله بیماری‌های عصب و عضله',href:'https://mhsaffari.ir/articles/neurology/neuropathy-myopathy-als-neuromuscular-disorders-symptoms-diagnosis-treatment.html',hint:'راهنمای آموزشی نورولوژی'},
+      myopathy: {icon:'⌁',title:'راهنمای بیماری‌های عصب و عضله',description:'مقاله آموزشی نوروپاتی، میوپاتی و ALS را برای آشنایی با علائم و روش‌های بررسی بخوانید.',button:'مطالعه مقاله بیماری‌های عصب و عضله',href:'https://mhsaffari.ir/articles/neurology/neuropathy-myopathy-als-neuromuscular-disorders-symptoms-diagnosis-treatment.html',hint:'راهنمای آموزشی نورولوژی'},
+      als: {icon:'⌁',title:'راهنمای بیماری‌های عصب و عضله',description:'مقاله آموزشی نوروپاتی، میوپاتی و ALS را برای آشنایی با علائم و روش‌های بررسی بخوانید.',button:'مطالعه مقاله بیماری‌های عصب و عضله',href:'https://mhsaffari.ir/articles/neurology/neuropathy-myopathy-als-neuromuscular-disorders-symptoms-diagnosis-treatment.html',hint:'راهنمای آموزشی نورولوژی'},
       parkinson: {icon:'✧',title:'راهنمای بیماری پارکینسون',description:'اطلاعاتی درباره علائم، تشخیص و درمان پارکینسون در وب‌سایت رسمی.',button:'مطالعه مقاله پارکینسون',href:'https://mhsaffari.ir/articles/neurology/parkinson.html',hint:'راهنمای آموزشی نورولوژی'},
       cognition: {icon:'◌',title:'راهنمای اختلالات شناختی و حافظه',description:'فراموشی، اختلال شناختی و بیماری‌های مرتبط با حافظه را بهتر بشناسید.',button:'مطالعه مقاله حافظه و اختلال شناختی',href:'https://mhsaffari.ir/articles/neurology/forgetfulness-alzheimer-dementia-parkinson-transient-global-amnesia.html',hint:'راهنمای آموزشی نورولوژی'},
       epilepsy: {icon:'⚡',title:'راهنمای تشنج و صرع',description:'با تفاوت تشنج و صرع، علائم، ارزیابی و زمان‌های نیازمند اقدام فوری آشنا شوید.',button:'مطالعه مقاله تشنج و صرع',href:'https://mhsaffari.ir/articles/neurology/seizure-what-is-difference-epilepsy-symptoms-causes-diagnosis-emergency.html',hint:'راهنمای آموزشی نورولوژی'},
@@ -488,7 +496,7 @@
   function patientDiseaseSettings(profile) {
     const options=diseases.map(d=>'<option value="'+h(d[0])+'"'+(d[0]===profile.diseaseCode?' selected':'')+'>'+h(d[1])+'</option>').join('');
     return '<section class="panel disease-settings-panel"><div class="panel-heading"><h2>حوزه پیگیری من</h2><small>قابل اصلاح توسط بیمار</small></div>'+
-      '<p class="disease-settings-current">حوزه ثبت‌شده فعلی: <strong>'+h(diseaseTitle(profile.diseaseCode))+'</strong></p>'+
+      '<p class="disease-settings-current">حوزه ثبت‌شده فعلی: <strong>'+h(diseaseTitle(profile.diseaseCode,profile.customDiseaseLabel))+'</strong></p>'+
       '<form id="patientDiseaseForm"><div class="form-grid"><div class="field full"><label for="patientDiseaseSelect">حوزه صحیح بیماری یا پیگیری را انتخاب کنید</label><select id="patientDiseaseSelect" name="diseaseCode" required>'+options+'</select></div></div>'+
       '<div class="disease-loss-warning"><strong>توجه: تغییر حوزه، پرونده فعلی را پاک می‌کند.</strong><p>در صورت تغییر واقعی، سوابق گزارش علائم، یادداشت‌های پزشک، برنامه‌های پیگیری، داروها، نمره‌های EDSS و همه نوبت‌های قبلی به‌صورت دائمی حذف می‌شوند. حساب کاربری و وضعیت تأیید باقی می‌ماند و این حذف قابل بازگشت نیست.</p></div>'+
       '<button class="secondary full-button" type="submit">اصلاح حوزه پیگیری</button><div class="form-message"></div></form></section>';
@@ -499,7 +507,7 @@
     form.addEventListener('submit',async event=>{
       event.preventDefault();const nextDisease=String(select.value||'');
       if(nextDisease===profile.diseaseCode){setMessage(form,'حوزه پیگیری شما تغییری نکرده است.','ok');return;}
-      const confirmed=window.confirm('هشدار مهم: با تغییر حوزه از «'+diseaseTitle(profile.diseaseCode)+'» به «'+diseaseTitle(nextDisease)+'»، تمام سوابق پزشکی مرتبط با حوزه فعلی، از جمله گزارش‌ها، یادداشت‌ها، برنامه‌های پیگیری، داروها، EDSS و نوبت‌های قبلی، برای همیشه حذف می‌شوند. حساب کاربری و وضعیت تأیید باقی می‌ماند. این کار قابل بازگشت نیست. ادامه می‌دهید؟');
+      const confirmed=window.confirm('هشدار مهم: با تغییر حوزه از «'+diseaseTitle(profile.diseaseCode,profile.customDiseaseLabel)+'» به «'+diseaseTitle(nextDisease)+'»، تمام سوابق پزشکی مرتبط با حوزه فعلی، از جمله گزارش‌ها، یادداشت‌ها، برنامه‌های پیگیری، داروها، EDSS و نوبت‌های قبلی، برای همیشه حذف می‌شوند. حساب کاربری و وضعیت تأیید باقی می‌ماند. این کار قابل بازگشت نیست. ادامه می‌دهید؟');
       if(!confirmed){select.value=profile.diseaseCode;return;}
       const button=form.querySelector('button[type="submit"]');button.disabled=true;
       try{await api('/patients/disease','POST',{diseaseCode:nextDisease,confirmPurge:true});alert('حوزه پیگیری به‌روزرسانی شد. پرونده جدید با حوزه انتخاب‌شده باز می‌شود.');await loadDashboard();}
@@ -531,7 +539,7 @@
       const hasCompletedVisit = appointments.some(a => a.status === 'completed');
       root.innerHTML = `
         <div class="dash-head">
-          <div><h1>سلام ${h(profile.firstName || 'بیمار')} عزیز</h1><p>پرونده سلامت و پیگیری درمان · ${h(diseaseTitle(profile.diseaseCode))}</p></div>
+          <div><h1>سلام ${h(profile.firstName || 'بیمار')} عزیز</h1><p>پرونده سلامت و پیگیری درمان · ${h(diseaseTitle(profile.diseaseCode,profile.customDiseaseLabel))}</p></div>
           ${headerActions()}
         </div>
         ${!active ? '<div class="notice-card warning"><strong>' + h(statusTitle(profile.status)) + '</strong><br>پس از بررسی حساب توسط پزشک، امکانات ثبت نوبت و پیگیری فعال می‌شود. تا آن زمان اطلاعات پزشکی دیگری وارد نکنید.</div>' : ''}
@@ -888,7 +896,7 @@
   function renderPatientRow(p) {
     const status = p.status || 'pending_review';
     return `<div class="patient-card">
-      <div class="patient-top"><div><div class="patient-name">${h((p.firstName || '') + ' ' + (p.lastName || ''))}</div><div class="subline">${h(p.mobile || '')} · ${h(p.nationalId || '')}<br>${h(diseaseTitle(p.diseaseCode))}</div></div><span class="badge ${status === 'active' ? 'active' : (status === 'rejected' ? 'rejected' : 'pending')}">${h(statusTitle(status))}</span></div>
+      <div class="patient-top"><div><div class="patient-name">${h((p.firstName || '') + ' ' + (p.lastName || ''))}</div><div class="subline">${h(p.mobile || '')} · ${h(p.nationalId || '')}<br>${h(diseaseTitle(p.diseaseCode,p.customDiseaseLabel))}</div></div><span class="badge ${status === 'active' ? 'active' : (status === 'rejected' ? 'rejected' : 'pending')}">${h(statusTitle(status))}</span></div>
       <div class="card-actions">
         <button class="secondary" data-action="detail" data-id="${h(p.id)}">پرونده</button>
         ${status !== 'active' ? '<button class="primary" data-action="approve" data-id="' + h(p.id) + '">تأیید حساب</button>' : ''}
@@ -1091,7 +1099,7 @@
       const medications = values[5].medications || [];
       currentPatient = p;
       root.innerHTML = `
-        <div class="dash-head"><div><h1>پرونده بیمار</h1><p>${h((p.firstName || '') + ' ' + (p.lastName || ''))} · ${h(diseaseTitle(p.diseaseCode))}</p></div><div class="head-actions"><button class="ghost-button" id="backBtn">بازگشت</button><button class="secondary" id="logoutBtn">خروج امن</button></div></div>
+        <div class="dash-head"><div><h1>پرونده بیمار</h1><p>${h((p.firstName || '') + ' ' + (p.lastName || ''))} · ${h(diseaseTitle(p.diseaseCode,p.customDiseaseLabel))}</p></div><div class="head-actions"><button class="ghost-button" id="backBtn">بازگشت</button><button class="secondary" id="logoutBtn">خروج امن</button></div></div>
         <div class="metrics">${metric('وضعیت حساب',statusTitle(p.status))}${metric('شماره تماس',p.mobile || '—')}${metric('کد ملی',p.nationalId || '—')}${metric('تاریخ ثبت',fmtDate(p.createdAt))}</div>
         <div class="content-grid">
           <div class="stack">
