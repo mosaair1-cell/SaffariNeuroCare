@@ -191,7 +191,25 @@ Deno.serve(async (req:Request)=>{
   if(path.startsWith("/v1/patients/")&&!patient) return json({error:"unauthorized"},401,origin);
   if(path.startsWith("/v1/doctor/")&&!doctor) return json({error:"unauthorized"},401,origin);
   if(!user)return json({error:"unauthorized"},401,origin);
-  if(patient && path!=="/v1/patients/me" && !(await patientActive(patient)))return json({error:"awaiting_doctor_approval"},403,origin);
+  if(path==="/v1/patients/disease"&&req.method==="POST"){
+   if(!patient)return json({error:"unauthorized"},401,origin);
+   const nextDisease=clean(body.diseaseCode,30);
+   const allowedDiseases=["migraine","ms","epilepsy","parkinson","cognition","low_back_pain","stroke","vertigo","other","unassigned"];
+   if(!allowedDiseases.includes(nextDisease))return json({error:"invalid_disease_code"},400,origin);
+   if(body.confirmPurge!==true)return json({error:"confirmation_required"},400,origin);
+   const {data:current,error:currentError}=await db.from("patients").select("disease_code").eq("id",patient.sub).maybeSingle();
+   if(currentError)throw currentError;
+   if(!current)return json({error:"patient_not_found"},404,origin);
+   if(current.disease_code===nextDisease)return json({patient:{diseaseCode:current.disease_code},recordsCleared:false},200,origin);
+   const {data:oldDisease,error}=await db.rpc("change_patient_disease",{p_patient_id:patient.sub,p_new_disease_code:nextDisease});
+   if(error)throw error;
+   if(oldDisease===null)return json({error:"patient_not_found"},404,origin);
+   await audit(patient.sub,"patient","patient.disease.change","patient",patient.sub,{from:oldDisease,to:nextDisease,recordsCleared:true});
+   const {data:updated,error:updatedError}=await db.from("patients").select("*").eq("id",patient.sub).single();
+   if(updatedError)throw updatedError;
+   return json({patient:safePatient(updated),recordsCleared:true},200,origin);
+  }
+  if(patient && path!=="/v1/patients/me" && path!=="/v1/patients/disease" && !(await patientActive(patient)))return json({error:"awaiting_doctor_approval"},403,origin);
   if(path==="/v1/doctor/patients"&&req.method==="GET"){
    const search=clean(urlObj.searchParams.get("q"),80).replace(/[۰-۹]/g,c=>String(c.charCodeAt(0)-0x06f0)).replace(/[٠-٩]/g,c=>String(c.charCodeAt(0)-0x0660)).replace(/[^\p{L}\p{N}\s-]/gu," ").trim();
    let query=db.from("patients").select("*").order("created_at",{ascending:false});
@@ -266,9 +284,9 @@ Deno.serve(async (req:Request)=>{
   const reportPath="/v1/patients/reports";
   if(reportPath===path&&req.method==="GET"){const {data,error}=await db.from("symptom_reports").select("*").eq("patient_id",patient!.sub).order("submitted_at",{ascending:false}).limit(100);if(error)throw error;return json({reports:data||[]},200,origin);}
   if(reportPath===path&&req.method==="POST"){
-   const reportType=clean(body.reportType||"pre_visit",20),severity=body.severity==null||body.severity===""?null:Number(body.severity),rawNotes=String(body.notes||""),notes=clean(rawNotes,200),symptoms=Array.isArray(body.symptoms)?body.symptoms.map((x:any)=>clean(x,60)).filter(Boolean).slice(0,30):[],occurredOn=clean(body.occurredOn,10);
-   if(rawNotes.length>200)return json({error:"report_notes_too_long"},400,origin);
-   if(!["symptom","pre_visit"].includes(reportType)||(severity!==null&&(!Number.isInteger(severity)||severity<1||severity>10))||(!notes&&!symptoms.length))return json({error:"invalid_report"},400,origin);
+   const reportType=clean(body.reportType||"pre_visit",20),severity=body.severity==null||body.severity===""?null:Number(body.severity),rawNotes=String(body.notes||""),notes=clean(rawNotes,1200),symptoms=Array.isArray(body.symptoms)?body.symptoms.map((x:any)=>clean(x,60)).filter(Boolean).slice(0,30):[],occurredOn=clean(body.occurredOn,10);
+   if(rawNotes.length>1200)return json({error:"report_notes_too_long"},400,origin);
+   if(!["symptom","pre_visit","initial_visit"].includes(reportType)||(severity!==null&&(!Number.isInteger(severity)||severity<1||severity>10))||(!notes&&!symptoms.length))return json({error:"invalid_report"},400,origin);
    const {data:r,error}=await db.from("symptom_reports").insert({patient_id:patient!.sub,report_type:reportType,severity,symptoms,notes,occurred_on:occurredOn||null}).select("*").single();if(error)throw error;await audit(patient!.sub,"patient","patient.report.create","symptom_report",r.id);return json({report:r},201,origin);
   }
   if(path==="/v1/patients/clinical-scores"&&req.method==="GET"){
@@ -276,10 +294,24 @@ Deno.serve(async (req:Request)=>{
    if(error)throw error;
    return json({scores:data||[]},200,origin);
   }
-  const m=path.match(/^\/v1\/doctor\/patients\/([0-9a-f-]{36})(?:\/(reports|notes|treatment-plan|medications|appointments|clinical-scores|status)(?:\/([0-9a-f-]{36}))?)?$/i);
+  const m=path.match(/^\/v1\/doctor\/patients\/([0-9a-f-]{36})(?:\/(reports|notes|treatment-plan|medications|appointments|clinical-scores|status|disease)(?:\/([0-9a-f-]{36}))?)?$/i);
   if(m&&doctor){
    const id=m[1],sub=m[2]||"",recordId=m[3]||"", {data:exists}=await db.from("patients").select("id,disease_code").eq("id",id).maybeSingle();if(!exists)return json({error:"patient_not_found"},404,origin);
    if(sub==="clinical-scores"&&exists.disease_code!=="ms")return json({error:"score_not_applicable"},400,origin);
+   if(sub==="disease"&&req.method==="PATCH"){
+    const nextDisease=clean(body.diseaseCode,30);
+    const allowedDiseases=["migraine","ms","epilepsy","parkinson","cognition","low_back_pain","stroke","vertigo","other","unassigned"];
+    if(!allowedDiseases.includes(nextDisease))return json({error:"invalid_disease_code"},400,origin);
+    if(body.confirmPurge!==true)return json({error:"confirmation_required"},400,origin);
+    if(exists.disease_code===nextDisease)return json({patient:{id,diseaseCode:nextDisease},recordsCleared:false},200,origin);
+    const {data:oldDisease,error}=await db.rpc("change_patient_disease",{p_patient_id:id,p_new_disease_code:nextDisease});
+    if(error)throw error;
+    if(oldDisease===null)return json({error:"patient_not_found"},404,origin);
+    await audit(doctor!.sub,"doctor","patient.disease.change","patient",id,{from:oldDisease,to:nextDisease,recordsCleared:true});
+    const {data:updated,error:updatedError}=await db.from("patients").select("*").eq("id",id).single();
+    if(updatedError)throw updatedError;
+    return json({patient:safePatient(updated,true),recordsCleared:true},200,origin);
+   }
    if(!sub&&req.method==="DELETE"){
     const {data:purged,error:purgeError}=await db.rpc("purge_patient_data",{p_patient_id:id});
     if(purgeError)throw purgeError;
