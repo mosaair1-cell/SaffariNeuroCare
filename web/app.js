@@ -918,9 +918,11 @@
         e.preventDefault();
         const button=leaveForm.querySelector('button[type="submit"]');button.disabled=true;
         const f=new FormData(leaveForm);
-        if(String(f.get('endDate')||'')<String(f.get('startDate')||'')){setMessage(leaveForm,'تاریخ پایان باید هم‌روز یا بعد از تاریخ شروع باشد.','error');button.disabled=false;return;}
+        const startDate=String(f.get('startDate')||''),endDate=String(f.get('endDate')||'');
+        if(!startDate||!endDate){setMessage(leaveForm,'تاریخ شروع و پایان را با تقویم شمسی انتخاب کنید.','error');button.disabled=false;return;}
+        if(endDate<startDate){setMessage(leaveForm,'تاریخ پایان باید هم‌روز یا بعد از تاریخ شروع باشد.','error');button.disabled=false;return;}
         try{
-          await api('/doctor/leaves','POST',{startDate:f.get('startDate'),endDate:f.get('endDate'),appointmentType:f.get('appointmentType'),reason:f.get('reason')});
+          await api('/doctor/leaves','POST',{startDate,endDate,appointmentType:f.get('appointmentType'),reason:f.get('reason')});
           await loadDoctorDashboard();
         }catch(error){setMessage(leaveForm,errorMessage(error),'error');button.disabled=false;}
       });
