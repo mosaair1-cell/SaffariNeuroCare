@@ -20,6 +20,10 @@
     ['low_back_pain','کمردرد'],
     ['stroke','سکته مغزی'],
     ['vertigo','سرگیجه و اختلال تعادل'],
+    ['myasthenia_gravis','میاستنی گراویس'],
+    ['neuropathy','نوروپاتی'],
+    ['als','ALS (اسکلروز جانبی آمیوتروفیک)'],
+    ['myopathy','میوپاتی'],
     ['other','سایر'],
     ['unassigned','هنوز مشخص نیست']
   ];
@@ -59,7 +63,7 @@
   const normalizeDigits = (value) => String(value == null ? '' : value)
     .replace(/[۰-۹]/g, c => String(c.charCodeAt(0) - 0x06f0))
     .replace(/[٠-٩]/g, c => String(c.charCodeAt(0) - 0x0660));
-  const diseaseTitle = (code) => (diseases.find(d => d[0] === code) || ['','تعیین‌نشده'])[1];
+  const diseaseTitle = (code, customLabel) => code === 'other' && String(customLabel || '').trim() ? String(customLabel).trim() : (diseases.find(d => d[0] === code) || ['','تعیین‌نشده'])[1];
   const statusTitle = (s) => statusLabels[s] || s || 'نامشخص';
   const fmtDate = (value) => {
     if (!value) return '—';
@@ -474,7 +478,7 @@
       }
       root.innerHTML = `
         <div class="dash-head">
-          <div><h1>سلام ${h(profile.firstName || 'بیمار')} عزیز</h1><p>پنل اختصاصی بیمار · ${h(diseaseTitle(profile.diseaseCode))}</p></div>
+          <div><h1>سلام ${h(profile.firstName || 'بیمار')} عزیز</h1><p>پنل اختصاصی بیمار · ${h(diseaseTitle(profile.diseaseCode,profile.customDiseaseLabel))}</p></div>
           ${headerActions()}
         </div>
         ${!active ? '<div class="notice-card warning"><strong>' + h(statusTitle(profile.status)) + '</strong><br>پس از بررسی حساب توسط پزشک، امکانات ثبت نوبت و پیگیری فعال می‌شود. تا آن زمان اطلاعات پزشکی دیگری وارد نکنید.</div>' : ''}
@@ -793,7 +797,7 @@
   function renderPatientRow(p) {
     const status = p.status || 'pending_review';
     return `<div class="patient-card">
-      <div class="patient-top"><div><div class="patient-name">${h((p.firstName || '') + ' ' + (p.lastName || ''))}</div><div class="subline">${h(p.mobile || '')} · ${h(p.nationalId || '')}<br>${h(diseaseTitle(p.diseaseCode))}</div></div><span class="badge ${status === 'active' ? 'active' : (status === 'rejected' ? 'rejected' : 'pending')}">${h(statusTitle(status))}</span></div>
+      <div class="patient-top"><div><div class="patient-name">${h((p.firstName || '') + ' ' + (p.lastName || ''))}</div><div class="subline">${h(p.mobile || '')} · ${h(p.nationalId || '')}<br>${h(diseaseTitle(p.diseaseCode,p.customDiseaseLabel))}</div></div><span class="badge ${status === 'active' ? 'active' : (status === 'rejected' ? 'rejected' : 'pending')}">${h(statusTitle(status))}</span></div>
       <div class="card-actions">
         <button class="secondary" data-action="detail" data-id="${h(p.id)}">پرونده</button>
         ${status !== 'active' ? '<button class="primary" data-action="approve" data-id="' + h(p.id) + '">تأیید حساب</button>' : ''}
@@ -998,9 +1002,10 @@
   function doctorDiseasePanel(p) {
     const options=diseases.map(d=>'<option value="'+h(d[0])+'"'+(d[0]===p.diseaseCode?' selected':'')+'>'+h(d[1])+'</option>').join('');
     return '<section class="panel disease-settings-panel doctor-disease-panel"><div class="panel-heading"><h2>اصلاح حوزه پیگیری</h2><small>قابل ویرایش توسط پزشک</small></div>'+
-      '<p class="disease-settings-current">حوزه فعلی: <strong>'+h(diseaseTitle(p.diseaseCode))+'</strong></p>'+
-      '<form id="doctorDiseaseForm"><div class="form-grid"><div class="field full"><label for="doctorDiseaseSelect">حوزه صحیح بیماری را انتخاب کنید</label><select id="doctorDiseaseSelect" name="diseaseCode" required>'+options+'</select></div></div>'+
-      '<div class="disease-loss-warning"><strong>توجه: تغییر حوزه، پرونده قبلی را پاک می‌کند.</strong><p>در صورت تغییر واقعی، گزارش‌ها، یادداشت‌ها، برنامه‌های پیگیری، داروها، ارزیابی‌های EDSS و تمام نوبت‌های قبلی بیمار به‌صورت دائمی حذف می‌شوند. حساب بیمار و وضعیت تأیید حفظ می‌شود. اگر اطلاعات باید در پرونده دیگری ثبت شود، پیش از تغییر در صورت نیاز آن‌ها را منتقل کنید؛ حذف قابل بازگشت نیست.</p></div>'+
+      '<p class="disease-settings-current">حوزه فعلی: <strong>'+h(diseaseTitle(p.diseaseCode,p.customDiseaseLabel))+'</strong></p>'+
+      '<form id="doctorDiseaseForm"><div class="form-grid"><div class="field full"><label for="doctorDiseaseSelect">حوزه صحیح بیماری را انتخاب کنید</label><select id="doctorDiseaseSelect" name="diseaseCode" required>'+options+'</select></div>'+
+      '<div id="doctorCustomDiseaseField" class="field full" '+(p.diseaseCode==='other'?'':'hidden')+'><label for="doctorCustomDiseaseLabel">نام اختصاصی حوزه پیگیری</label><input id="doctorCustomDiseaseLabel" name="customDiseaseLabel" maxlength="80" value="'+h(p.customDiseaseLabel||'')+'" placeholder="مثلاً بیماری یا اختلالی خارج از فهرست بالا"><small class="field-help">این نام در پنل بیمار به‌جای «سایر» نمایش داده می‌شود. اگر خالی بماند، عنوان «سایر» نمایش داده خواهد شد.</small></div></div>'+
+      '<div class="disease-loss-warning"><strong>توجه: تغییر حوزه یا نام اختصاصی، پرونده قبلی را پاک می‌کند.</strong><p>در صورت تغییر واقعی، گزارش‌ها، یادداشت‌ها، برنامه‌های پیگیری، داروها، ارزیابی‌های EDSS و تمام نوبت‌های قبلی بیمار به‌صورت دائمی حذف می‌شوند. حساب بیمار و وضعیت تأیید حفظ می‌شود. اگر اطلاعات باید در پرونده دیگری ثبت شود، پیش از تغییر در صورت نیاز آن‌ها را منتقل کنید؛ حذف قابل بازگشت نیست.</p></div>'+
       '<button class="secondary full-button" type="submit">ذخیره حوزه صحیح</button><div class="form-message"></div></form></section>';
   }
   async function loadDoctorPatient(id) {
@@ -1025,7 +1030,7 @@
       const medications = values[5].medications || [];
       currentPatient = p;
       root.innerHTML = `
-        <div class="dash-head"><div><h1>پرونده بیمار</h1><p>${h((p.firstName || '') + ' ' + (p.lastName || ''))} · ${h(diseaseTitle(p.diseaseCode))}</p></div><div class="head-actions"><button class="ghost-button" id="backBtn">بازگشت</button><button class="secondary" id="logoutBtn">خروج امن</button></div></div>
+        <div class="dash-head"><div><h1>پرونده بیمار</h1><p>${h((p.firstName || '') + ' ' + (p.lastName || ''))} · ${h(diseaseTitle(p.diseaseCode,p.customDiseaseLabel))}</p></div><div class="head-actions"><button class="ghost-button" id="backBtn">بازگشت</button><button class="secondary" id="logoutBtn">خروج امن</button></div></div>
         <div class="metrics">${metric('وضعیت حساب',statusTitle(p.status))}${metric('شماره تماس',p.mobile || '—')}${metric('کد ملی',p.nationalId || '—')}${metric('تاریخ ثبت',fmtDate(p.createdAt))}</div>
         ${doctorDiseasePanel(p)}
         <div class="content-grid">
@@ -1061,16 +1066,28 @@
       document.getElementById('backBtn')?.addEventListener('click',loadDoctorDashboard);
       document.getElementById('logoutBtn')?.addEventListener('click',logout);
       const diseaseForm=document.getElementById('doctorDiseaseForm');
-      diseaseForm?.addEventListener('submit',async event=>{
-        event.preventDefault();
-        const select=diseaseForm.querySelector('select[name="diseaseCode"]'),nextDisease=String(select.value||'');
-        if(nextDisease===p.diseaseCode){setMessage(diseaseForm,'حوزه بیمار تغییری نکرده است.','ok');return;}
-        const confirmed=window.confirm('تغییر حوزه بیمار از «'+diseaseTitle(p.diseaseCode)+'» به «'+diseaseTitle(nextDisease)+'» باعث حذف دائمی تمام گزارش‌ها، یادداشت‌ها، برنامه‌های پیگیری، داروها، نمره‌های EDSS و نوبت‌های قبلی او می‌شود. حساب بیمار و وضعیت تأیید باقی می‌ماند. این عمل قابل بازگشت نیست. آیا ادامه می‌دهید؟');
-        if(!confirmed){select.value=p.diseaseCode;return;}
-        const button=diseaseForm.querySelector('button[type="submit"]');button.disabled=true;
-        try{await api('/doctor/patients/'+encodeURIComponent(id)+'/disease','PATCH',{diseaseCode:nextDisease,confirmPurge:true});alert('حوزه پیگیری بیمار اصلاح شد.');await loadDoctorPatient(id);}
-        catch(error){setMessage(diseaseForm,errorMessage(error),'error');button.disabled=false;select.value=p.diseaseCode;}
-      });
+      if(diseaseForm){
+        const select=diseaseForm.querySelector('select[name="diseaseCode"]');
+        const customField=document.getElementById('doctorCustomDiseaseField');
+        const customInput=diseaseForm.querySelector('input[name="customDiseaseLabel"]');
+        const updateCustomField=()=>{if(customField)customField.hidden=select.value!=='other';if(select.value!=='other'&&customInput)customInput.value='';};
+        select.addEventListener('change',updateCustomField);
+        updateCustomField();
+        diseaseForm.addEventListener('submit',async event=>{
+          event.preventDefault();
+          const nextDisease=String(select.value||'');
+          const nextCustomLabel=nextDisease==='other'?String(customInput?.value||'').trim().slice(0,80):'';
+          const oldCustomLabel=String(p.customDiseaseLabel||'');
+          if(nextDisease===p.diseaseCode&&nextCustomLabel===oldCustomLabel){setMessage(diseaseForm,'حوزه پیگیری بیمار تغییری نکرده است.','ok');return;}
+          const nextTitle=diseaseTitle(nextDisease,nextCustomLabel);
+          const currentTitle=diseaseTitle(p.diseaseCode,p.customDiseaseLabel);
+          const confirmed=window.confirm('تغییر حوزه پیگیری بیمار از «'+currentTitle+'» به «'+nextTitle+'» باعث حذف دائمی تمام گزارش‌ها، یادداشت‌ها، برنامه‌های پیگیری، داروها، نمره‌های EDSS و نوبت‌های قبلی او می‌شود. حساب بیمار و وضعیت تأیید باقی می‌ماند. این عمل قابل بازگشت نیست. آیا ادامه می‌دهید؟');
+          if(!confirmed){select.value=p.diseaseCode;if(customInput)customInput.value=p.customDiseaseLabel||'';updateCustomField();return;}
+          const button=diseaseForm.querySelector('button[type="submit"]');button.disabled=true;
+          try{await api('/doctor/patients/'+encodeURIComponent(id)+'/disease','PATCH',{diseaseCode:nextDisease,customDiseaseLabel:nextCustomLabel,confirmPurge:true});alert('حوزه پیگیری بیمار اصلاح شد.');await loadDoctorPatient(id);}
+          catch(error){setMessage(diseaseForm,errorMessage(error),'error');button.disabled=false;select.value=p.diseaseCode;if(customInput)customInput.value=p.customDiseaseLabel||'';updateCustomField();}
+        });
+      }
       bindDoctorPatientForms(id);
       root.querySelectorAll('[data-delete-record]').forEach(btn => btn.addEventListener('click', async () => {
         const type = btn.dataset.deleteRecord;
