@@ -10,6 +10,8 @@
   let token = sessionStorage.getItem('snc_token') || '';
   let role = APP_ROLE;
   let currentPatient = null;
+  let patientActiveView = 'home';
+  let patientAppointmentTypePreference = 'in_person';
 
   const diseases = [
     ['migraine','میگرن و سردرد'],
@@ -599,10 +601,11 @@
       const button = event.target.closest('[data-patient-view]');
       if (!button || !root.contains(button)) return;
       event.preventDefault();
-      activate(button.dataset.patientView, true);
+      patientActiveView = button.dataset.patientView;
+      activate(patientActiveView, true);
     };
     document.documentElement.classList.add('patient-dashboard-mode');
-    activate('home', false);
+    activate(panes[patientActiveView] ? patientActiveView : 'home', false);
   }
 
   async function loadPatientDashboard() {
@@ -710,7 +713,7 @@
                             <div class="form-grid">
                               <div class="field full booking-type-field">
                                 <span class="booking-type-label">نوع نوبت را انتخاب کنید</span>
-                                <input id="appointmentType" name="appointmentType" type="hidden" value="in_person">
+                                <input id="appointmentType" name="appointmentType" type="hidden" value="${patientAppointmentTypePreference === 'text' ? 'text' : 'in_person'}">
                                 <div class="booking-type-options" role="group" aria-label="انتخاب نوع نوبت">
                                   <button type="button" class="booking-type-option active" data-appointment-type-choice="in_person" aria-pressed="true">
                                     <span class="booking-type-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20.5h16M6.5 20V5.5A1.5 1.5 0 0 1 8 4h8a1.5 1.5 0 0 1 1.5 1.5V20M9 8h2M13 8h2M9 11.5h2M13 11.5h2M10 20v-4h4v4"/></svg></span>
@@ -890,17 +893,21 @@
     if (selectedLabel) selectedLabel.textContent = 'فقط روزهای قابل رزرو نمایش داده می‌شوند.';
     bookingCalendar = {slotsByDate:Object.create(null),months:[],monthIndex:0,selectedDate:''};
     if (reason) reason.required = type === 'in_person';
-    if (phoneLink) phoneLink.hidden = type !== 'text';
+    if (phoneLink) phoneLink.hidden = true;
     if (reasonLabel) reasonLabel.textContent = type === 'text' ? 'موضوع مشاوره (اختیاری)' : 'علت مراجعه';
-    if (hint) hint.textContent = type === 'text'
-      ? 'پس از ثبت درخواست، برای تأیید مشاوره با شماره مطب 09961364434 تماس بگیرید. پس از تأیید پزشک، پیوند شروع گفت‌وگو در ایتا در همین صفحه نمایش داده می‌شود.'
-      : 'فقط زمان‌هایی نمایش داده می‌شوند که مطب برای نوبت حضوری باز کرده است. نوبت پس از تأیید مطب قطعی می‌شود.';
+    if (hint) {
+      if (type === 'text') {
+        hint.innerHTML = 'برای نهایی‌شدن درخواست مشاوره متنی، پس از ثبت درخواست با مطب تماس بگیرید:<br><a class="booking-phone-inline" href="tel:09961364434" aria-label="تماس با مطب دکتر صفاری با شماره 09961364434">۰۹۹۶۱۳۶۴۴۳۴ <span aria-hidden="true">↗</span></a><br><span class="booking-hint-detail">پس از تأیید پزشک، پیوند شروع گفت‌وگو در ایتا در همین صفحه نمایش داده می‌شود.</span>';
+      } else {
+        hint.textContent = 'فقط زمان‌هایی نمایش داده می‌شوند که مطب برای نوبت حضوری باز کرده است. نوبت پس از تأیید مطب قطعی می‌شود.';
+      }
+    }
     try {
       const result = await api('/patients/availability?type=' + encodeURIComponent(type));
       if (requestSequence !== availabilityRequestSequence) return;
       const slots = result.slots || [];
       setupJalaliCalendar(slots);
-      if (!slots.length && hint) hint.textContent += ' برای اطلاع از زمان‌های جدید با مطب تماس بگیرید.';
+      if (!slots.length && hint) hint.insertAdjacentText('beforeend',' برای اطلاع از زمان‌های جدید با مطب تماس بگیرید.');
     } catch (error) {
       if (requestSequence !== availabilityRequestSequence) return;
       setupJalaliCalendar([]);
@@ -956,11 +963,13 @@
     appointmentTypeButtons.forEach(button => button.addEventListener('click',() => {
       if (!appointmentType) return;
       appointmentType.value = button.dataset.appointmentTypeChoice || 'in_person';
+      patientAppointmentTypePreference = appointmentType.value;
       syncAppointmentTypeButtons(appointmentType.value);
       appointmentType.dispatchEvent(new Event('change',{bubbles:true}));
     }));
     if (appointmentType) {
       appointmentType.addEventListener('change',() => {
+        patientAppointmentTypePreference = appointmentType.value === 'text' ? 'text' : 'in_person';
         syncAppointmentTypeButtons(appointmentType.value);
         refreshAvailableSlots(appointmentType.value);
       });
@@ -985,11 +994,16 @@
         await api('/patients/appointments','POST',{
           appointmentType:type,preferredDate:slot[0],preferredTime:slot[1],reason
         });
+        patientActiveView = 'appointments';
+        patientAppointmentTypePreference = type === 'text' ? 'text' : 'in_person';
         await loadPatientDashboard();
         const updatedForm = document.getElementById('appointmentForm');
-        if (updatedForm) setMessage(updatedForm,type === 'text'
-          ? 'درخواست مشاوره متنی ثبت شد. لطفاً برای تأیید با شماره مطب 09961364434 تماس بگیرید. پس از تأیید پزشک، لینک گفت‌وگو در ایتا در همین صفحه ظاهر می‌شود.'
-          : 'درخواست نوبت حضوری ثبت شد؛ تا تأیید مطب، نوبت قطعی نیست.','ok');
+        if (updatedForm) {
+          setMessage(updatedForm,type === 'text'
+            ? 'درخواست مشاوره متنی ثبت شد. برای تأیید، با شماره قابل لمس در راهنمای بالا تماس بگیرید. پس از تأیید پزشک، پیوند گفت‌وگو در ایتا در همین صفحه نمایش داده می‌شود.'
+            : 'درخواست نوبت حضوری ثبت شد؛ تا تأیید مطب، نوبت قطعی نیست.','ok');
+          requestAnimationFrame(() => updatedForm.querySelector('.form-message')?.scrollIntoView({behavior:'smooth',block:'center'}));
+        }
       } catch (e) {
         setMessage(appointmentForm,errorMessage(e),'error');
         submit.disabled = false;
