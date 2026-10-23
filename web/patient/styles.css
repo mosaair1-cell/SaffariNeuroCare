@@ -626,3 +626,137 @@ html.role-patient .report-type-btn:focus-visible{
 @media(max-width:550px){
   html.mobile-auth-mode body{padding-bottom:calc(100px + env(safe-area-inset-bottom))}
 }
+
+
+/* Premium appointment booking: elegant type selector and Jalali calendar */
+.booking-type-label{
+  display:block;color:#344c66;font-size:13px;font-weight:900;line-height:1.8;margin-bottom:2px
+}
+.booking-type-options{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;direction:rtl
+}
+.booking-type-option{
+  position:relative;display:flex;align-items:center;gap:11px;min-width:0;min-height:86px;padding:13px;
+  border:1px solid #d7c28f;border-radius:18px;
+  background:linear-gradient(145deg,#fff 0%,#f7fafc 100%);color:#29445f;text-align:right;
+  box-shadow:inset 0 1px 0 #fff,0 6px 16px rgba(25,52,86,.045);
+  transition:transform .18s,border-color .18s,background .18s,box-shadow .18s
+}
+.booking-type-option:hover{transform:translateY(-2px);border-color:#b89549;box-shadow:0 10px 22px rgba(154,118,44,.11),inset 0 1px 0 #fff}
+.booking-type-option:focus-visible{outline:3px solid #c2a05a;outline-offset:3px}
+.booking-type-option.active{
+  border:1.5px solid #b89549;background:linear-gradient(135deg,#f0f8f7 0%,#edf3ff 100%);
+  box-shadow:inset 0 0 0 1px rgba(194,160,90,.28),0 8px 18px rgba(24,74,130,.08)
+}
+.booking-type-icon{
+  display:grid;place-items:center;flex:0 0 42px;width:42px;height:42px;border:1px solid #d8c58f;
+  border-radius:14px;background:linear-gradient(145deg,#fffdf7,#f3e8ca);color:#8d6b2c
+}
+.booking-type-icon svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round}
+.booking-type-copy{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.booking-type-copy strong{display:block;color:#1c3a5c;font-size:13px;line-height:1.7;font-weight:900}
+.booking-type-copy small{display:block;color:#718196;font-size:10px;line-height:1.8;font-weight:600}
+.booking-type-check{
+  display:grid;place-items:center;flex:0 0 21px;width:21px;height:21px;border:1px solid #d6dfe9;
+  border-radius:50%;background:#fff;color:transparent;align-self:flex-start;margin-top:2px
+}
+.booking-type-check svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.booking-type-option.active .booking-type-check{border-color:#ae8d45;background:linear-gradient(145deg,#fff9e8,#e7d29b);color:#644d1b}
+.booking-type-option.active .booking-type-icon{border-color:#c8ae68;background:linear-gradient(145deg,#fffdf7,#eee0b6);box-shadow:0 4px 10px rgba(154,118,44,.09)}
+.jalali-calendar{
+  position:relative;overflow:hidden;padding:17px;border:1px solid #ddcea6;border-radius:24px;
+  background:radial-gradient(circle at 100% 0%,rgba(245,236,213,.75),transparent 18rem),linear-gradient(145deg,#fff 0%,#f6f9fd 100%);
+  box-shadow:0 13px 30px rgba(25,52,86,.07),inset 0 1px 0 #fff
+}
+.jalali-calendar:before{
+  content:"";position:absolute;inset:0 0 auto;height:3px;
+  background:linear-gradient(90deg,#0f766e 0%,#c2a05a 50%,#244e91 100%)
+}
+.calendar-topline{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:3px 0 8px}
+.calendar-caption{display:inline-flex;align-items:center;gap:8px;color:#173a5d;font-size:13px;font-weight:900}
+.calendar-caption-icon{display:grid;place-items:center;width:31px;height:31px;border:1px solid #d8c58f;border-radius:11px;background:linear-gradient(145deg,#fffdf8,#f3e7c8);color:#8c6b2b}
+.calendar-caption-icon svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.55;stroke-linecap:round;stroke-linejoin:round}
+.calendar-legend{display:inline-flex;align-items:center;gap:6px;color:#6d7e8e;font-size:10px;font-weight:700;white-space:nowrap}
+.calendar-legend i{display:inline-block;width:8px;height:8px;border:1px solid #b89549;border-radius:50%;background:#e4f3ed;box-shadow:0 0 0 3px #c2a05a18}
+.calendar-instruction{margin:0 0 14px;color:#718196;font-size:11px;line-height:1.9}
+.jalali-calendar-head{gap:12px;padding:10px;border:1px solid #e5dcc2;border-radius:17px;background:rgba(255,255,255,.76);box-shadow:inset 0 1px 0 #fff;margin-bottom:15px}
+.calendar-month-title{display:flex;flex:1;min-width:0;align-items:center;flex-direction:column;gap:3px}
+.calendar-month-title small{color:#8793a2;font-size:9px;font-weight:800;letter-spacing:.2px}
+.jalali-calendar-head .calendar-month-title strong{flex:none;color:#163959;font-size:15px;line-height:1.7}
+.calendar-nav{
+  flex:0 0 38px;width:38px;height:38px;min-height:38px;border:1px solid #d9c58e;border-radius:13px;
+  background:linear-gradient(145deg,#fffdf8,#f6ecd1);color:#806129;box-shadow:0 3px 9px rgba(154,118,44,.08)
+}
+.calendar-nav svg{display:block;width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.calendar-nav:hover:not(:disabled){border-color:#b89549;background:linear-gradient(145deg,#fff9e8,#eee0b7);transform:translateY(-1px)}
+.calendar-nav:disabled{opacity:.32}
+.calendar-weekdays,.calendar-grid{gap:6px}
+.calendar-weekdays{margin-bottom:8px}
+.calendar-weekdays span{min-height:30px;border-radius:9px;color:#657a8f;font-size:10px}
+.calendar-weekdays span:last-child{color:#b17761}
+.calendar-day,.calendar-day-empty{min-height:54px}
+button.calendar-day.available{
+  position:relative;overflow:hidden;border:1px solid #d6c18a;border-radius:14px;
+  background:linear-gradient(145deg,#fff 0%,#f0f7f5 100%);color:#173b5e;
+  box-shadow:inset 0 1px 0 #fff,0 4px 10px rgba(25,52,86,.045)
+}
+button.calendar-day.available:after{
+  content:"";position:absolute;inset:3px auto 3px 3px;width:2px;border-radius:5px;
+  background:linear-gradient(180deg,#c2a05a,#0f766e);opacity:.7
+}
+button.calendar-day.available:hover{border-color:#ad8d45;box-shadow:0 7px 15px rgba(154,118,44,.12);transform:translateY(-2px)}
+button.calendar-day.available>span{font-size:15px;line-height:1.25;font-weight:900}
+button.calendar-day.available>small{
+  display:inline-flex;align-items:center;justify-content:center;max-width:100%;padding:2px 5px;
+  border:1px solid #e0d0a5;border-radius:6px;background:#fbf5e5;color:#85652a;
+  font-size:8px;line-height:1.3;font-weight:900;white-space:nowrap
+}
+button.calendar-day.available.selected{
+  border:1.5px solid #bd9b50;background:linear-gradient(145deg,#176e75 0%,#173f67 100%);
+  color:#fff;box-shadow:0 0 0 2px rgba(194,160,90,.22),0 8px 16px rgba(20,61,89,.2),inset 0 1px 0 #ffffff35
+}
+button.calendar-day.available.selected:after{background:linear-gradient(180deg,#f6df9c,#c2a05a);opacity:1}
+button.calendar-day.available.selected>small{border-color:#d2bb7d;background:#f4e4b5;color:#53401d}
+button.calendar-day.unavailable{
+  display:flex;align-items:center;justify-content:center;min-width:0;min-height:54px;padding:4px 1px;
+  border:1px solid #edf0f3;border-radius:14px;background:rgba(247,249,251,.82);
+  color:#a7b1bc;font-size:12px;font-weight:600;box-shadow:inset 0 1px 0 #fff;opacity:1
+}
+button.calendar-day.unavailable.today{border-color:#d6c18a;color:#7f6d4b;background:#fbf7ee}
+button.calendar-day.available.today:not(.selected){outline:1px dashed #b89549;outline-offset:1px}
+.calendar-empty-note{border-color:#ddcea6;background:rgba(255,255,255,.78);color:#728295;border-radius:16px}
+.calendar-selected-date{
+  margin-top:14px;padding:12px 14px;border:1px solid #dfcea2;border-radius:15px;
+  background:linear-gradient(120deg,#fffaf0 0%,#f0f7f6 100%);color:#264861;
+  font-size:12px;line-height:1.9;text-align:center;box-shadow:inset 0 1px 0 #fff
+}
+#availableTime{border-color:#d7c38d;background:linear-gradient(145deg,#fff,#f9fafc)}
+#availableTime:focus{border-color:#b89549;box-shadow:0 0 0 3px rgba(194,160,90,.17)}
+@media(max-width:550px){
+  .booking-type-options{gap:8px}
+  .booking-type-option{gap:7px;min-height:82px;padding:10px 8px;border-radius:16px}
+  .booking-type-icon{flex-basis:35px;width:35px;height:35px;border-radius:12px}
+  .booking-type-icon svg{width:20px;height:20px}
+  .booking-type-copy strong{font-size:11px}
+  .booking-type-copy small{font-size:9px}
+  .booking-type-check{flex-basis:18px;width:18px;height:18px}
+  .jalali-calendar{padding:12px;border-radius:21px}
+  .calendar-instruction{font-size:10px}
+  .jalali-calendar-head{gap:8px;padding:8px}
+  .calendar-weekdays,.calendar-grid{gap:4px}
+  .calendar-weekdays span{font-size:9px}
+  .calendar-day,.calendar-day-empty,button.calendar-day.unavailable{min-height:46px}
+  button.calendar-day.available{border-radius:11px;gap:3px}
+  button.calendar-day.available>span{font-size:13px}
+  button.calendar-day.available>small{font-size:7.5px;padding:2px 3px}
+  button.calendar-day.unavailable{border-radius:11px;font-size:11px}
+}
+@media(max-width:370px){
+  .booking-type-option{gap:5px;padding:9px 6px}
+  .booking-type-icon{flex-basis:31px;width:31px;height:31px}
+  .booking-type-copy small{font-size:8px}
+  .booking-type-check{display:none}
+  .calendar-topline{align-items:flex-start}
+  .calendar-legend{font-size:9px}
+  .jalali-calendar-head .calendar-month-title strong{font-size:13px}
+}
