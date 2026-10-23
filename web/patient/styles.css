@@ -490,3 +490,114 @@ html.patient-dashboard-mode .site-footer{padding-bottom:35px}
 @media(prefers-reduced-motion:reduce){
   .patient-workspace-nav button,.patient-home-shortcuts button,.mobile-auth-action{transition:none}
 }
+
+
+/* Saffari NeuroCare — restrained champagne-gold luxury finish */
+html.role-patient{
+  --luxury-gold:#c2a05a;
+  --luxury-gold-deep:#9b762c;
+  --luxury-gold-pale:#f5ecd5;
+  --luxury-navy:#172d46;
+}
+html.landing-auth-mode .app-main{scroll-margin-top:14px}
+#app .auth-card{scroll-margin-top:18px}
+html.role-patient .panel{
+  border-color:#e6ddc7;
+  box-shadow:0 12px 32px rgba(23,45,70,.055),inset 0 1px 0 #fff;
+}
+html.role-patient .panel-heading h2{color:var(--luxury-navy)}
+html.role-patient .patient-workspace-nav{
+  border-color:#e4d7b7;
+  box-shadow:0 12px 30px rgba(25,52,86,.09),inset 0 1px 0 #fff;
+}
+html.role-patient .patient-workspace-nav button.active{
+  border-color:#cdb576;
+  background:linear-gradient(135deg,#fbf5e7 0%,#edf7f5 100%);
+  color:var(--luxury-navy);
+  box-shadow:inset 0 0 0 1px rgba(194,160,90,.12),0 5px 14px rgba(134,102,39,.09);
+}
+html.role-patient .patient-workspace-nav button.active .patient-nav-icon{
+  border-color:#cfb776;
+  background:linear-gradient(145deg,#fffdf8,#f2e5c4);
+  color:#896a2b;
+  box-shadow:0 4px 10px rgba(154,118,44,.11);
+}
+html.role-patient .patient-home-welcome{
+  border-color:#e3d5b2;
+  border-top:3px solid var(--luxury-gold);
+  background:radial-gradient(circle at 100% 0%,rgba(245,236,213,.85),transparent 18rem),linear-gradient(125deg,#fff 0%,#f5f9fc 100%);
+}
+html.role-patient .patient-home-emblem{
+  border-color:#d8c38f;
+  background:linear-gradient(145deg,#fffdf7,#f1e3bd);
+  color:#8e6c26;
+  box-shadow:inset 0 1px 0 #fff,0 7px 16px rgba(154,118,44,.10);
+}
+html.role-patient .patient-home-shortcuts button{
+  border-color:#e1d3b0;
+}
+html.role-patient .patient-home-shortcuts button:first-child{
+  border-color:#a98437;
+  background:linear-gradient(135deg,#f3e4bd,#c3a15b);
+  color:#172d46;
+  box-shadow:0 7px 16px rgba(154,118,44,.20),inset 0 1px 0 rgba(255,255,255,.65);
+}
+html.role-patient .mobile-auth-dock:not([hidden]){
+  border-color:rgba(211,190,142,.95);
+  box-shadow:0 13px 36px rgba(18,45,79,.18),0 0 0 1px rgba(255,255,255,.65),inset 0 1px 0 #fff;
+}
+html.role-patient .mobile-auth-login{
+  border-color:#d4c08f;
+  background:linear-gradient(145deg,#fff,#fbf7ed);
+  color:#172d46;
+}
+html.role-patient .mobile-auth-login .mobile-auth-icon{
+  border-color:#dbc990;
+  background:linear-gradient(145deg,#fffdf8,#f4e7c4);
+  color:#8d6b27;
+}
+html.role-patient .mobile-auth-register{
+  border-color:#b2934e;
+  background:linear-gradient(135deg,#f3e4bd 0%,#c6a45f 100%);
+  color:#172d46;
+  box-shadow:0 7px 17px rgba(154,118,44,.22),inset 0 1px 0 rgba(255,255,255,.65);
+}
+html.role-patient .mobile-auth-register .mobile-auth-icon{
+  border-color:rgba(137,103,35,.34);
+  background:rgba(255,255,255,.38);
+  color:#795b1f;
+}
+html.role-patient .mobile-auth-register small{color:#4f4124}
+html.role-patient .seo-cta{
+  border:1px solid #b69752;
+  background:linear-gradient(135deg,#f3e4bd 0%,#c5a15b 100%);
+  color:#172d46;
+  box-shadow:0 9px 20px rgba(154,118,44,.17),inset 0 1px 0 rgba(255,255,255,.6);
+}
+html.role-patient .seo-secondary-cta{border-color:#dfd1ad}
+html.role-patient .seo-secondary-cta:hover{border-color:#c5a15b;box-shadow:0 7px 18px rgba(154,118,44,.09)}
+html.role-patient .condition-resource-button{
+  border-color:#b99854;
+  box-shadow:0 10px 22px rgba(8,72,79,.17),inset 0 0 0 1px rgba(255,255,255,.10);
+}
+html.role-patient .metric{
+  border-color:#c6a45f;
+}
+html.role-patient button.primary,
+html.role-patient .primary{
+  border-color:#b2934e;
+  box-shadow:0 7px 16px rgba(13,104,112,.14),inset 0 1px 0 rgba(255,255,255,.22);
+}
+html.role-patient .primary:focus-visible,
+html.role-patient .mobile-auth-action:focus-visible,
+html.role-patient .patient-workspace-nav button:focus-visible{
+  outline:3px solid #c6a45f;
+  outline-offset:3px;
+}
+html.role-patient .study-card:hover,
+html.role-patient .panel:focus-within{
+  border-color:#d2bd85;
+}
+@media(max-width:550px){
+  #app .auth-card{scroll-margin-top:10px}
+}
