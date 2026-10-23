@@ -760,3 +760,116 @@ button.calendar-day.available.today:not(.selected){outline:1px dashed #b89549;ou
   .calendar-legend{font-size:9px}
   .jalali-calendar-head .calendar-month-title strong{font-size:13px}
 }
+
+
+/* Appointment guidance: clearer call-to-action for text consultations */
+.booking-hint{
+  border-color:#ccdae8;
+  background:linear-gradient(125deg,#f1f8fc 0%,#eef8f5 100%);
+  color:#2b4a64;
+  font-size:13px;
+  line-height:2.05;
+  padding:15px 16px;
+}
+.booking-hint-detail{display:inline-block;margin-top:4px;color:#49657d;font-size:13px;line-height:2}
+.booking-phone-inline{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  margin:9px 0 4px;padding:8px 13px;border:1px solid #c2a05a;border-radius:12px;
+  background:linear-gradient(135deg,#eaf5f6 0%,#eaf0fb 100%);
+  color:#174d6b;font-size:16px;line-height:1.6;font-weight:900;letter-spacing:.2px;
+  box-shadow:0 4px 12px rgba(28,74,105,.07),inset 0 1px 0 #fff;
+}
+.booking-phone-inline span{font-size:13px;color:#9b762c}
+.booking-phone-inline:focus-visible{outline:3px solid #c2a05a;outline-offset:3px}
+@media(max-width:550px){
+  .booking-hint{font-size:13px;padding:13px 14px}
+  .booking-hint-detail{font-size:12.5px}
+  .booking-phone-inline{font-size:16px}
+}
+
+/* Cool-toned luxury calendar: champagne is an accent, not the dominant surface */
+.jalali-calendar{
+  border-color:#cddce9;
+  background:
+    radial-gradient(circle at 100% 0%,rgba(199,221,246,.65),transparent 17rem),
+    radial-gradient(circle at 0% 100%,rgba(205,238,230,.48),transparent 15rem),
+    linear-gradient(145deg,#fbfdff 0%,#eef5fa 52%,#f3f8f7 100%);
+  box-shadow:0 13px 30px rgba(25,52,86,.075),inset 0 1px 0 #fff;
+}
+.jalali-calendar:before{background:linear-gradient(90deg,#0f766e 0%,#5d8fb2 48%,#c2a05a 100%)}
+.calendar-caption{color:#173a5d}
+.calendar-caption-icon{
+  border-color:#c7d9e8;
+  background:linear-gradient(145deg,#fff,#e7f0f8);
+  color:#376f91;
+}
+.calendar-legend{color:#60778e}
+.calendar-legend i{
+  border-color:#64a79b;background:#d8f0e8;
+  box-shadow:0 0 0 3px rgba(15,118,110,.10)
+}
+.calendar-instruction{color:#61768c}
+.jalali-calendar-head{
+  border-color:#d4e0ec;
+  background:rgba(255,255,255,.82);
+  box-shadow:0 4px 12px rgba(30,68,101,.035),inset 0 1px 0 #fff;
+}
+.calendar-month-title small{color:#8192a4}
+.jalali-calendar-head .calendar-month-title strong{color:#183b5d}
+.calendar-nav{
+  border-color:#bfd2e4;
+  background:linear-gradient(145deg,#fff,#eaf2f9);
+  color:#356a8b;
+  box-shadow:0 3px 9px rgba(30,75,108,.07)
+}
+.calendar-nav:hover:not(:disabled){
+  border-color:#c2a05a;
+  background:linear-gradient(145deg,#fff,#f1f6fb)
+}
+.calendar-weekdays span{color:#627c95}
+.calendar-weekdays span:last-child{color:#a76f68}
+button.calendar-day.available{
+  border-color:#b9d9d5;
+  background:linear-gradient(145deg,#fff 0%,#e9f5f3 100%);
+  color:#173f60;
+  box-shadow:inset 0 1px 0 #fff,0 4px 10px rgba(25,68,100,.045)
+}
+button.calendar-day.available:after{
+  background:linear-gradient(180deg,#0f766e,#6d9ec4);opacity:.8
+}
+button.calendar-day.available:hover{
+  border-color:#6caba2;
+  box-shadow:0 7px 15px rgba(15,118,110,.13)
+}
+button.calendar-day.available>small{
+  border-color:#c7e2dc;border-radius:6px;
+  background:#dff1ed;color:#226d67
+}
+button.calendar-day.available.selected{
+  border:1.5px solid #c2a05a;
+  background:linear-gradient(145deg,#126f76 0%,#203e68 100%);
+  color:#fff;
+  box-shadow:0 0 0 2px rgba(194,160,90,.17),0 8px 16px rgba(20,61,89,.2),inset 0 1px 0 #ffffff35
+}
+button.calendar-day.available.selected:after{background:linear-gradient(180deg,#bce6db,#c2a05a)}
+button.calendar-day.available.selected>small{
+  border-color:#9bcfc4;background:#d8eee8;color:#1d5d5c
+}
+button.calendar-day.unavailable{
+  border-color:#e0e8ef;background:rgba(244,248,251,.9);color:#9aaab9;
+}
+button.calendar-day.unavailable.today{
+  border-color:#bed1e1;color:#526d83;background:#edf3f8
+}
+button.calendar-day.available.today:not(.selected){outline-color:#5b94ac}
+.calendar-empty-note{
+  border-color:#ccdae6;background:rgba(255,255,255,.83);color:#637d92
+}
+.calendar-selected-date{
+  border-color:#bfdcd7;
+  background:linear-gradient(120deg,#eaf5f4 0%,#edf3fb 100%);
+  color:#224863;
+  box-shadow:inset 0 1px 0 #fff;
+}
+#availableTime{border-color:#bed5e3;background:linear-gradient(145deg,#fff,#f0f6fb)}
+#availableTime:focus{border-color:#69a79d;box-shadow:0 0 0 3px rgba(15,118,110,.13)}
