@@ -203,12 +203,13 @@
     }
     return data;
   }
-  function setSeoLanding(show) {
+  function setSeoLanding(show, authDockVisible = show) {
     const section = document.getElementById('seoLanding');
     if (section) section.hidden = !show;
     const mobileAuthDock = document.getElementById('mobileAuthDock');
-    if (mobileAuthDock) mobileAuthDock.hidden = !show;
+    if (mobileAuthDock) mobileAuthDock.hidden = !authDockVisible;
     document.documentElement.classList.toggle('landing-auth-mode', !!show);
+    document.documentElement.classList.toggle('mobile-auth-mode', !!authDockVisible);
     if (show) document.documentElement.classList.remove('patient-dashboard-mode');
   }
   function messageBox(message, type = 'error') {
@@ -1300,7 +1301,7 @@
     showLogin(APP_ROLE,mode);
     // Once the user chooses login/register, remove the public landing content from view.
     // This preserves SEO content in the initial HTML while sending the user straight to the form.
-    setSeoLanding(false);
+    setSeoLanding(false, true);
     requestAnimationFrame(() => {
       const card = document.querySelector('#app .auth-card');
       if (card) card.scrollIntoView({behavior:'smooth',block:'center'});
