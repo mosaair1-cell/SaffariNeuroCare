@@ -206,6 +206,10 @@
   function setSeoLanding(show) {
     const section = document.getElementById('seoLanding');
     if (section) section.hidden = !show;
+    const mobileAuthDock = document.getElementById('mobileAuthDock');
+    if (mobileAuthDock) mobileAuthDock.hidden = !show;
+    document.documentElement.classList.toggle('landing-auth-mode', !!show);
+    if (show) document.documentElement.classList.remove('patient-dashboard-mode');
   }
   function messageBox(message, type = 'error') {
     return '<div class="message ' + type + '" role="status">' + h(message) + '</div>';
@@ -495,6 +499,111 @@
       history + '</section>';
   }
 
+
+  function patientWorkspaceNavHtml() {
+    return '<nav class="patient-workspace-nav" id="patientWorkspaceNav" role="tablist" aria-label="بخش‌های همراه سلامت">' +
+      '<button type="button" class="active" role="tab" id="patientTabHome" aria-controls="patientPaneHome" aria-selected="true" data-patient-view="home"><span class="patient-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m3 10 9-7 9 7"/><path d="M5.5 9.5V21h13V9.5M9 21v-7h6v7"/></svg></span><span class="patient-nav-label">خانه</span></button>' +
+      '<button type="button" role="tab" id="patientTabAppointments" aria-controls="patientPaneAppointments" aria-selected="false" data-patient-view="appointments"><span class="patient-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="16" rx="3"/><path d="M8 3v4M16 3v4M3.5 10h17M8 14h2M14 14h2M8 17h2"/></svg></span><span class="patient-nav-label">نوبت ویزیت</span></button>' +
+      '<button type="button" role="tab" id="patientTabRecord" aria-controls="patientPaneRecord" aria-selected="false" data-patient-view="record"><span class="patient-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3.5h8l4 4V21H6a2 2 0 0 1-2-2V5.5a2 2 0 0 1 2-2Z"/><path d="M14 3.5v5h4M8 12h7M8 15.5h7M8 19h4"/></svg></span><span class="patient-nav-label">پرونده من</span></button>' +
+      '<button type="button" role="tab" id="patientTabEducation" aria-controls="patientPaneEducation" aria-selected="false" data-patient-view="education"><span class="patient-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3.5 5.5c3.4-1.2 6.3-.5 8.5 1.4v14c-2.2-1.9-5.1-2.6-8.5-1.4Z"/><path d="M20.5 5.5c-3.4-1.2-6.3-.5-8.5 1.4v14c2.2-1.9 5.1-2.6 8.5-1.4Z"/><path d="M6.5 9h2M6.5 12h2M15.5 9h2M15.5 12h2"/></svg></span><span class="patient-nav-label">آموزش</span></button>' +
+      '</nav>';
+  }
+
+  function arrangePatientDashboard() {
+    const contentGrid = root.querySelector('.content-grid');
+    const dashHead = root.querySelector('.dash-head');
+    if (!contentGrid || !dashHead) return;
+
+    const byHeading = (title) => {
+      const heading = Array.from(root.querySelectorAll('.panel-heading h2')).find(node => node.textContent.trim() === title);
+      return heading ? heading.closest('.panel') : null;
+    };
+    const metrics = root.querySelector('.metrics');
+    const resourcePanel = root.querySelector('.condition-resource-panel');
+    const studyPanel = root.querySelector('.study-panel');
+    const bookingPanel = root.querySelector('#appointmentForm')?.closest('.panel');
+    const appointmentsPanel = byHeading('نوبت‌های من');
+    const edssPanel = root.querySelector('.edss-panel');
+    const planPanel = byHeading('برنامه پیگیری پزشک');
+    const medicationPanel = byHeading('داروهای ثبت‌شده');
+    const notesPanel = byHeading('پیام‌ها و یادداشت‌های پزشک');
+    const historyPanel = byHeading('گزارش‌های قبلی');
+    const reportPanel = root.querySelector('#reportForm')?.closest('.panel');
+
+    // Fail safely without rearranging the working dashboard if expected panels are absent.
+    if (!bookingPanel || !appointmentsPanel || !reportPanel || !studyPanel || !resourcePanel) return;
+
+    const template = document.createElement('template');
+    template.innerHTML = patientWorkspaceNavHtml();
+    const workspaceNav = template.content.firstElementChild;
+    const viewsHost = document.createElement('div');
+    viewsHost.className = 'patient-workspace-views';
+
+    const pane = (key, label, selected) => {
+      const section = document.createElement('section');
+      section.className = 'patient-tab-pane';
+      section.dataset.patientPane = key;
+      section.id = 'patientPane' + key.charAt(0).toUpperCase() + key.slice(1);
+      section.setAttribute('role', 'tabpanel');
+      section.setAttribute('aria-labelledby', 'patientTab' + key.charAt(0).toUpperCase() + key.slice(1));
+      section.setAttribute('aria-label', label);
+      section.hidden = !selected;
+      return section;
+    };
+    const panes = {
+      home: pane('home', 'خلاصه و میانبرها', true),
+      appointments: pane('appointments', 'درخواست و سوابق نوبت', false),
+      record: pane('record', 'پرونده پزشکی و گزارش‌ها', false),
+      education: pane('education', 'آموزش و مطالعه بیشتر', false)
+    };
+
+    panes.home.innerHTML = '<section class="patient-home-welcome">' +
+      '<span class="patient-home-emblem" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s-8-4.5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6.5-8 11-8 11Z"/><path d="M8 12h2.2l1.2-2.5 1.7 5 1.1-2.5H17"/></svg></span>' +
+      '<div class="patient-home-copy"><strong>مراقبت شما، منظم‌تر و در دسترس‌تر</strong><p>برای پیدا کردن هر بخش، از منوی چهارگانه استفاده کنید. پرونده و پیگیری‌های ثبت‌شده در حساب اختصاصی شما نمایش داده می‌شوند.</p>' +
+      '<div class="patient-home-shortcuts"><button type="button" data-patient-view="appointments"><span aria-hidden="true">＋</span> درخواست نوبت</button><button type="button" data-patient-view="record"><span aria-hidden="true">▤</span> مشاهده پرونده</button></div></div></section>';
+    if (metrics) panes.home.appendChild(metrics);
+
+    panes.appointments.appendChild(bookingPanel);
+    panes.appointments.appendChild(appointmentsPanel);
+
+    [edssPanel, planPanel, medicationPanel, notesPanel, historyPanel, reportPanel].filter(Boolean)
+      .forEach(panel => panes.record.appendChild(panel));
+
+    panes.education.appendChild(resourcePanel);
+    panes.education.appendChild(studyPanel);
+
+    Object.values(panes).forEach(section => viewsHost.appendChild(section));
+    dashHead.insertAdjacentElement('afterend', workspaceNav);
+    workspaceNav.insertAdjacentElement('afterend', viewsHost);
+    contentGrid.remove();
+
+    const activate = (key, scrollToTop) => {
+      if (!panes[key]) return;
+      Object.entries(panes).forEach(([name, section]) => {
+        const selected = name === key;
+        section.hidden = !selected;
+        section.classList.toggle('active', selected);
+        const button = workspaceNav.querySelector('[data-patient-view="' + name + '"]');
+        if (button) {
+          button.classList.toggle('active', selected);
+          button.setAttribute('aria-selected', String(selected));
+        }
+      });
+      if (scrollToTop) {
+        const top = dashHead.getBoundingClientRect().top + window.scrollY - 8;
+        window.scrollTo({top:Math.max(0, top), behavior:'smooth'});
+      }
+    };
+    root.addEventListener('click', event => {
+      const button = event.target.closest('[data-patient-view]');
+      if (!button || !root.contains(button)) return;
+      event.preventDefault();
+      activate(button.dataset.patientView, true);
+    });
+    document.documentElement.classList.add('patient-dashboard-mode');
+    activate('home', false);
+  }
+
   async function loadPatientDashboard() {
     root.innerHTML = '<section class="loading-card"><div class="spinner"></div><p>در حال دریافت اطلاعات حساب…</p></section>';
     try {
@@ -639,6 +748,7 @@
           </div>
         </div>` : ''}
       `;
+      if (active) arrangePatientDashboard();
       bindCommon();
       if (active) bindPatientForms();
     } catch (error) {
@@ -1199,5 +1309,5 @@
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
     window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
   }
-  if (token && role) loadDashboard(); else showLogin('patient','login');  if (token && role) loadDashboard(); else showLogin('patient','login');
+  if (token && role) loadDashboard(); else showLogin('patient','login');
 })();
