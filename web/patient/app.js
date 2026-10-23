@@ -594,12 +594,12 @@
         window.scrollTo({top:Math.max(0, top), behavior:'smooth'});
       }
     };
-    root.addEventListener('click', event => {
+    root.onclick = event => {
       const button = event.target.closest('[data-patient-view]');
       if (!button || !root.contains(button)) return;
       event.preventDefault();
       activate(button.dataset.patientView, true);
-    });
+    };
     document.documentElement.classList.add('patient-dashboard-mode');
     activate('home', false);
   }
