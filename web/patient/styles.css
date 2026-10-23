@@ -537,10 +537,10 @@ html.role-patient .patient-home-shortcuts button{
   border-color:#e1d3b0;
 }
 html.role-patient .patient-home-shortcuts button:first-child{
-  border-color:#a98437;
-  background:linear-gradient(135deg,#f3e4bd,#c3a15b);
-  color:#172d46;
-  box-shadow:0 7px 16px rgba(154,118,44,.20),inset 0 1px 0 rgba(255,255,255,.65);
+  border-color:#c2a05a;
+  background:linear-gradient(135deg,#0f766e 0%,#1d4ed8 100%);
+  color:#fff;
+  box-shadow:0 7px 16px rgba(15,91,133,.18),inset 0 1px 0 rgba(255,255,255,.18);
 }
 html.role-patient .mobile-auth-dock:not([hidden]){
   border-color:rgba(211,190,142,.95);
@@ -557,22 +557,22 @@ html.role-patient .mobile-auth-login .mobile-auth-icon{
   color:#8d6b27;
 }
 html.role-patient .mobile-auth-register{
-  border-color:#b2934e;
-  background:linear-gradient(135deg,#f3e4bd 0%,#c6a45f 100%);
-  color:#172d46;
-  box-shadow:0 7px 17px rgba(154,118,44,.22),inset 0 1px 0 rgba(255,255,255,.65);
+  border-color:#c2a05a;
+  background:linear-gradient(135deg,#176b78 0%,#244e91 100%);
+  color:#fff;
+  box-shadow:0 7px 17px rgba(24,74,130,.22),inset 0 1px 0 rgba(255,255,255,.18);
 }
 html.role-patient .mobile-auth-register .mobile-auth-icon{
-  border-color:rgba(137,103,35,.34);
-  background:rgba(255,255,255,.38);
-  color:#795b1f;
+  border-color:rgba(255,255,255,.42);
+  background:rgba(255,255,255,.14);
+  color:#fff;
 }
-html.role-patient .mobile-auth-register small{color:#4f4124}
+html.role-patient .mobile-auth-register small{color:#e1efff}
 html.role-patient .seo-cta{
-  border:1px solid #b69752;
-  background:linear-gradient(135deg,#f3e4bd 0%,#c5a15b 100%);
-  color:#172d46;
-  box-shadow:0 9px 20px rgba(154,118,44,.17),inset 0 1px 0 rgba(255,255,255,.6);
+  border:1px solid #c2a05a;
+  background:linear-gradient(135deg,#176b78 0%,#244e91 100%);
+  color:#fff;
+  box-shadow:0 9px 20px rgba(24,74,130,.17),inset 0 1px 0 rgba(255,255,255,.18);
 }
 html.role-patient .seo-secondary-cta{border-color:#dfd1ad}
 html.role-patient .seo-secondary-cta:hover{border-color:#c5a15b;box-shadow:0 7px 18px rgba(154,118,44,.09)}
@@ -600,4 +600,29 @@ html.role-patient .panel:focus-within{
 }
 @media(max-width:550px){
   #app .auth-card{scroll-margin-top:10px}
+}
+
+
+/* Champagne-gold detailing for report-type choices; keep button fills in the clinical palette */
+html.role-patient .report-type-btn{
+  border-color:#d6c18c;
+  box-shadow:inset 0 1px 0 #fff,0 3px 10px rgba(134,102,39,.045);
+}
+html.role-patient .report-type-btn:hover{
+  border-color:#b9964b;
+  box-shadow:0 5px 14px rgba(154,118,44,.10);
+}
+html.role-patient .report-type-btn.active{
+  border-color:#b9964b;
+  background:linear-gradient(135deg,#e5f5f1 0%,#f2f6ff 100%);
+  color:#12345b;
+  box-shadow:inset 0 0 0 1px rgba(194,160,90,.36),0 5px 14px rgba(154,118,44,.09);
+}
+html.role-patient .report-type-btn.active small{color:#385b70}
+html.role-patient .report-type-btn:focus-visible{
+  outline:3px solid #c2a05a;
+  outline-offset:2px;
+}
+@media(max-width:550px){
+  html.mobile-auth-mode body{padding-bottom:calc(100px + env(safe-area-inset-bottom))}
 }
