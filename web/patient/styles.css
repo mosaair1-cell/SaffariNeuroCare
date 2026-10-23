@@ -873,3 +873,47 @@ button.calendar-day.available.today:not(.selected){outline-color:#5b94ac}
 }
 #availableTime{border-color:#bed5e3;background:linear-gradient(145deg,#fff,#f0f6fb)}
 #availableTime:focus{border-color:#69a79d;box-shadow:0 0 0 3px rgba(15,118,110,.13)}
+
+
+/* Footer ergonomics: keep it close to short desktop dashboards and clear of the fixed mobile tab bar */
+html.patient-dashboard-mode .app-main{
+  min-height:0;
+}
+html.patient-dashboard-mode .site-footer{
+  margin-top:0;
+  padding-top:15px;
+  border-top-color:#d8e4ed;
+}
+@media(min-width:551px){
+  html.patient-dashboard-mode .site-footer{
+    padding-bottom:22px;
+  }
+}
+@media(max-width:550px){
+  /* The extra scroll runway moves the footer content above the fixed bottom navigation. */
+  html.patient-dashboard-mode .site-footer{
+    position:relative;
+    z-index:1;
+    align-items:flex-start;
+    gap:8px;
+    padding:15px 14px calc(112px + env(safe-area-inset-bottom));
+    margin:0;
+    line-height:1.9;
+  }
+  html.patient-dashboard-mode .site-footer p{
+    max-width:100%;
+    font-size:11px;
+    line-height:1.9;
+  }
+  html.patient-dashboard-mode .site-footer>a{
+    display:inline-flex;
+    align-items:center;
+    min-height:32px;
+    padding:5px 10px;
+    border:1px solid #d7c28f;
+    border-radius:10px;
+    background:linear-gradient(135deg,#f3f8fb,#edf7f5);
+    color:#1a536d;
+    font-weight:800;
+  }
+}
