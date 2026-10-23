@@ -1296,15 +1296,23 @@
     });
   }
   window.addEventListener('appinstalled',() => { if (installAppBtn) { installAppBtn.textContent = 'نصب شده'; installAppBtn.disabled = true; } });
+  function openAuthCard(mode) {
+    showLogin(APP_ROLE,mode);
+    // Once the user chooses login/register, remove the public landing content from view.
+    // This preserves SEO content in the initial HTML while sending the user straight to the form.
+    setSeoLanding(false);
+    requestAnimationFrame(() => {
+      const card = document.querySelector('#app .auth-card');
+      if (card) card.scrollIntoView({behavior:'smooth',block:'center'});
+    });
+  }
   document.querySelectorAll('[data-open-register]').forEach(link => link.addEventListener('click',event => {
     event.preventDefault();
-    showLogin(APP_ROLE,'register');
-    requestAnimationFrame(() => document.querySelector('#app .auth-card')?.scrollIntoView({behavior:'smooth',block:'center'}));
+    openAuthCard('register');
   }));
   document.querySelectorAll('[data-open-login]').forEach(link => link.addEventListener('click',event => {
     event.preventDefault();
-    showLogin(APP_ROLE,'login');
-    document.getElementById('app')?.scrollIntoView({behavior:'smooth',block:'start'});
+    openAuthCard('login');
   }));
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
     window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
