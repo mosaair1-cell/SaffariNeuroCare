@@ -391,3 +391,102 @@ button.primary,.primary{box-shadow:0 7px 16px rgba(13,104,112,.12)}
 .jalali-date-popover-foot button{padding:5px 12px;font-size:12px}
 @media(max-width:760px){html{font-size:16.5px}.panel{padding:19px;border-radius:20px}.panel-heading h2{font-size:18px}.jalali-date-control{flex-direction:column}.jalali-date-trigger{width:100%}}
 @media(max-width:550px){html{font-size:16px}.brand b{font-size:16px}.brand small{font-size:12px}.panel{padding:16px}.field label{font-size:13.5px}}
+
+
+/* Patient mobile-first workspace navigation and persistent authentication actions */
+.mobile-auth-dock[hidden]{display:none!important}
+.mobile-auth-dock{display:none}
+html.landing-auth-mode .app-main{padding-bottom:24px}
+.patient-workspace-nav{
+  position:sticky;top:8px;z-index:40;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;
+  margin:17px 0 16px;padding:8px;border:1px solid #dce7f2;border-radius:23px;
+  background:rgba(255,255,255,.9);box-shadow:0 12px 30px rgba(25,52,86,.09),inset 0 1px 0 #fff;
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)
+}
+.patient-workspace-nav button{
+  display:flex;align-items:center;justify-content:center;gap:10px;min-width:0;min-height:62px;padding:10px 12px;
+  border:1px solid transparent;border-radius:16px;background:transparent;color:#60718a;
+  font-size:13px;font-weight:850;transition:background .18s,border-color .18s,color .18s,box-shadow .18s
+}
+.patient-workspace-nav button:hover{background:#f3f7fc;border-color:#e2eaf4;color:#18345b}
+.patient-workspace-nav button.active{
+  border-color:#d5e8ee;background:linear-gradient(135deg,#eaf8f5 0%,#eff5ff 100%);color:#103c61;
+  box-shadow:inset 0 1px 0 #fff,0 5px 14px rgba(22,78,105,.08)
+}
+.patient-nav-icon{display:grid;place-items:center;flex:0 0 36px;width:36px;height:36px;border:1px solid #d9e6f1;border-radius:12px;background:linear-gradient(145deg,#fff,#eef5fa);color:#436482}
+.patient-nav-icon svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round}
+.patient-workspace-nav button.active .patient-nav-icon{border-color:#b5ded5;background:linear-gradient(145deg,#fff,#d9f1e9);color:#08766f;box-shadow:0 4px 10px rgba(15,118,110,.1)}
+.patient-nav-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.patient-workspace-views{min-width:0}
+.patient-tab-pane[hidden]{display:none!important}
+.patient-home-welcome{
+  display:flex;align-items:flex-start;gap:17px;margin:2px 0 17px;padding:22px;
+  border:1px solid #cfe4e5;border-radius:24px;
+  background:radial-gradient(circle at 100% 0%,rgba(191,231,224,.65),transparent 18rem),linear-gradient(125deg,#fff 0%,#f4f9ff 100%);
+  box-shadow:0 12px 30px rgba(26,66,98,.07)
+}
+.patient-home-emblem{display:grid;place-items:center;flex:0 0 55px;width:55px;height:55px;border:1px solid #b9dfd6;border-radius:19px;background:linear-gradient(145deg,#fff,#ddf4ec);color:#0f766e;box-shadow:inset 0 1px 0 #fff,0 7px 16px rgba(15,118,110,.1)}
+.patient-home-emblem svg{width:29px;height:29px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.patient-home-copy{flex:1;min-width:0}
+.patient-home-copy>strong{display:block;margin:1px 0 5px;color:#163b60;font-size:17px;line-height:1.8}
+.patient-home-copy>p{margin:0;color:#5a6f85;font-size:13px;line-height:2}
+.patient-home-shortcuts{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px}
+.patient-home-shortcuts button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:42px;padding:10px 14px;border:1px solid #d8e5ee;border-radius:13px;background:#fff;color:#214963;font-size:12px;font-weight:850;box-shadow:0 5px 12px rgba(26,66,98,.05)}
+.patient-home-shortcuts button:first-child{border-color:#0f766e;background:linear-gradient(135deg,#0f766e,#1763a7);color:#fff;box-shadow:0 7px 16px rgba(15,118,110,.17)}
+.patient-home-shortcuts button span{font-size:17px;line-height:1}
+.patient-tab-pane>.panel{margin-bottom:16px}
+.patient-tab-pane .metrics{margin:0}
+html.patient-dashboard-mode .site-footer{padding-bottom:35px}
+@media(max-width:760px){
+  .patient-workspace-nav{grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:13px 0 14px;padding:6px}
+  .patient-workspace-nav button{gap:4px;flex-direction:column;min-height:60px;padding:6px 2px;font-size:11px}
+  .patient-nav-icon{flex-basis:31px;width:31px;height:31px;border-radius:11px}
+  .patient-nav-icon svg{width:20px;height:20px}
+  .patient-nav-label{max-width:100%;font-size:10px;letter-spacing:-.15px}
+  .patient-home-welcome{padding:17px;gap:12px;border-radius:20px}
+  .patient-home-emblem{flex-basis:44px;width:44px;height:44px;border-radius:15px}
+  .patient-home-emblem svg{width:24px;height:24px}
+  .patient-home-copy>strong{font-size:15px}
+}
+@media(max-width:550px){
+  .mobile-auth-dock:not([hidden]){
+    position:fixed;left:50%;bottom:calc(8px + env(safe-area-inset-bottom));transform:translateX(-50%);
+    z-index:120;display:grid;grid-template-columns:1fr 1fr;gap:8px;width:calc(100% - 20px);max-width:540px;
+    padding:8px;border:1px solid rgba(210,226,239,.95);border-radius:22px;
+    background:rgba(255,255,255,.94);box-shadow:0 13px 36px rgba(18,45,79,.2),inset 0 1px 0 #fff;
+    backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)
+  }
+  html.landing-auth-mode body{padding-bottom:calc(94px + env(safe-area-inset-bottom))}
+  html.landing-auth-mode .site-footer{padding-bottom:24px}
+  .mobile-auth-action{display:flex;align-items:center;justify-content:center;gap:8px;min-width:0;min-height:56px;padding:8px 7px;border:1px solid #d9e6f0;border-radius:15px;background:linear-gradient(145deg,#fff,#f3f7fb);color:#193e60;text-align:right;box-shadow:inset 0 1px 0 #fff}
+  .mobile-auth-action>span:last-child{display:flex;flex-direction:column;gap:2px;min-width:0}
+  .mobile-auth-action strong{font-size:11px;line-height:1.6;white-space:nowrap}
+  .mobile-auth-action small{font-size:9px;line-height:1.4;color:#6c7e92;white-space:nowrap}
+  .mobile-auth-icon{display:grid;place-items:center;flex:0 0 32px;width:32px;height:32px;border:1px solid #d9e9ed;border-radius:11px;background:#fff;color:#0f766e}
+  .mobile-auth-icon svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+  .mobile-auth-register{border-color:#0f766e;background:linear-gradient(135deg,#0f766e,#1d4ed8);color:#fff;box-shadow:0 7px 17px rgba(29,78,216,.2),inset 0 1px 0 #ffffff3b}
+  .mobile-auth-register .mobile-auth-icon{border-color:#ffffff50;background:#ffffff18;color:#fff}
+  .mobile-auth-register small{color:#d9f0ff}
+  html.patient-dashboard-mode .app-main{padding-bottom:calc(94px + env(safe-area-inset-bottom))}
+  .patient-workspace-nav{
+    position:fixed;left:50%;top:auto;bottom:calc(8px + env(safe-area-inset-bottom));transform:translateX(-50%);
+    display:flex;gap:3px;width:calc(100% - 16px);max-width:540px;margin:0;padding:7px;
+    border:1px solid rgba(208,224,239,.96);border-radius:23px;background:rgba(255,255,255,.94);
+    box-shadow:0 13px 36px rgba(18,45,79,.2),inset 0 1px 0 #fff;
+    backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)
+  }
+  .patient-workspace-nav button{flex:1 1 0;min-width:0;min-height:54px;padding:5px 1px;border-radius:15px}
+  .patient-nav-icon{flex-basis:29px;width:29px;height:29px}
+  .patient-nav-icon svg{width:19px;height:19px}
+  .patient-nav-label{font-size:9.5px;letter-spacing:-.25px}
+  .patient-home-welcome{display:block;padding:16px}
+  .patient-home-emblem{margin-bottom:10px}
+  .patient-home-copy>strong{font-size:15px}
+  .patient-home-copy>p{font-size:12px}
+  .patient-home-shortcuts{gap:7px}
+  .patient-home-shortcuts button{flex:1 1 auto;padding:9px 10px;font-size:11px}
+  .patient-tab-pane>.panel{margin-bottom:12px}
+}
+@media(prefers-reduced-motion:reduce){
+  .patient-workspace-nav button,.patient-home-shortcuts button,.mobile-auth-action{transition:none}
+}
