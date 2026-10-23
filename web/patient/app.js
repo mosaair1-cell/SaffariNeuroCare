@@ -1352,10 +1352,8 @@
   }
   window.addEventListener('appinstalled',() => { if (installAppBtn) { installAppBtn.textContent = 'نصب شده'; installAppBtn.disabled = true; } });
   function openAuthCard(mode) {
+    // Keep the introduction visible in the document; only scroll the user to the auth card.
     showLogin(APP_ROLE,mode);
-    // Once the user chooses login/register, remove the public landing content from view.
-    // This preserves SEO content in the initial HTML while sending the user straight to the form.
-    setSeoLanding(false, true);
     requestAnimationFrame(() => {
       const card = document.querySelector('#app .auth-card');
       if (card) card.scrollIntoView({behavior:'smooth',block:'center'});
