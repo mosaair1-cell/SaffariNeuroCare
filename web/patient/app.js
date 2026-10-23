@@ -616,6 +616,7 @@
       if (profile.requiresPasswordChange) { renderPasswordChange(); return; }
       const active = profile.status === 'active';
       let appointments = [], reports = [], notes = [], plans = [], medications = [], clinicalScores = [];
+      const dataErrors = { appointments:false, reports:false, notes:false, plans:false, medications:false, clinicalScores:false };
       if (active) {
         const requests = [
           api('/patients/appointments'), api('/patients/reports'), api('/patients/notes'),
@@ -623,6 +624,12 @@
         ];
         if (profile.diseaseCode === 'ms') requests.push(api('/patients/clinical-scores'));
         const values = await Promise.allSettled(requests);
+        dataErrors.appointments = values[0].status === 'rejected';
+        dataErrors.reports = values[1].status === 'rejected';
+        dataErrors.notes = values[2].status === 'rejected';
+        dataErrors.plans = values[3].status === 'rejected';
+        dataErrors.medications = values[4].status === 'rejected';
+        dataErrors.clinicalScores = profile.diseaseCode === 'ms' && values[5]?.status === 'rejected';
         appointments = values[0].status === 'fulfilled' ? values[0].value.appointments || [] : [];
         reports = values[1].status === 'fulfilled' ? values[1].value.reports || [] : [];
         notes = values[2].status === 'fulfilled' ? values[2].value.notes || [] : [];
@@ -630,7 +637,8 @@
         medications = values[4].status === 'fulfilled' ? values[4].value.medications || [] : [];
         clinicalScores = profile.diseaseCode === 'ms' && values[5]?.status === 'fulfilled' ? values[5].value.scores || [] : [];
       }
-      const hasCompletedVisit = appointments.some(a => a.status === 'completed');
+      const hasCompletedVisit = !dataErrors.appointments && appointments.some(a => a.status === 'completed');
+      const dataLoadFailure = (label) => '<div class="notice-card warning" role="status"><strong>دریافت اطلاعات «' + h(label) + '» ناموفق بود.</strong><p>این خطا به معنی خالی بودن پرونده نیست. لطفاً دوباره تلاش کنید.</p><button type="button" class="secondary" data-retry-patient-data>تلاش دوباره</button></div>';
       root.innerHTML = `
         <div class="dash-head">
           <div><h1>سلام ${h(profile.firstName || 'بیمار')} عزیز</h1><p>پرونده سلامت و پیگیری درمان · ${h(diseaseTitle(profile.diseaseCode,profile.customDiseaseLabel))}</p></div>
@@ -638,31 +646,31 @@
         </div>
         ${!active ? '<div class="notice-card warning"><strong>' + h(statusTitle(profile.status)) + '</strong><br>پس از بررسی حساب توسط پزشک، امکانات ثبت نوبت و پیگیری فعال می‌شود. تا آن زمان اطلاعات پزشکی دیگری وارد نکنید.</div>' : ''}
         <div class="metrics">
-          ${metric('برنامه پیگیری',String(plans.length),'برنامه‌های ثبت‌شده پزشک')}
-          ${metric('یادداشت‌های پزشک',String(notes.length),'سوابق قابل مشاهده')}
-          ${metric('داروهای ثبت‌شده',String(medications.length),'طبق دستور پزشک')}
-          ${metric('گزارش علائم',String(reports.length),'ثبت‌ها و پیش‌ویزیت‌ها')}
+          ${metric('برنامه پیگیری',dataErrors.plans ? 'نامشخص' : String(plans.length),dataErrors.plans ? 'خطا در دریافت اطلاعات' : 'برنامه‌های ثبت‌شده پزشک')}
+          ${metric('یادداشت‌های پزشک',dataErrors.notes ? 'نامشخص' : String(notes.length),dataErrors.notes ? 'خطا در دریافت اطلاعات' : 'سوابق قابل مشاهده')}
+          ${metric('داروهای ثبت‌شده',dataErrors.medications ? 'نامشخص' : String(medications.length),dataErrors.medications ? 'خطا در دریافت اطلاعات' : 'طبق دستور پزشک')}
+          ${metric('گزارش علائم',dataErrors.reports ? 'نامشخص' : String(reports.length),dataErrors.reports ? 'خطا در دریافت اطلاعات' : 'ثبت‌ها و پیش‌ویزیت‌ها')}
         </div>
         ${conditionResourceSection(profile.diseaseCode)}
         ${active ? `
         <div class="content-grid">
           <div class="stack">
-            ${profile.diseaseCode === 'ms' ? patientEdssPanel(clinicalScores) : ''}
+            ${profile.diseaseCode === 'ms' ? (dataErrors.clinicalScores ? '<section class="panel"><div class="panel-heading"><h2>روند ارزیابی EDSS</h2></div>' + dataLoadFailure('ارزیابی EDSS') + '</section>' : patientEdssPanel(clinicalScores)) : ''}
             <section class="panel">
                           <div class="panel-heading"><h2>برنامه پیگیری پزشک</h2><small>اطلاعات ثبت‌شده</small></div>
-                          <div class="list">${plans.length ? plans.map(p => simpleCard(p.title,p.instructions,p.follow_up_date)).join('') : '<div class="empty-card">هنوز برنامه پیگیری‌ای ثبت نشده است.</div>'}</div>
+                          <div class="list">${dataErrors.plans ? dataLoadFailure('برنامه پیگیری') : (plans.length ? plans.map(p => simpleCard(p.title,p.instructions,p.follow_up_date)).join('') : '<div class="empty-card">هنوز برنامه پیگیری‌ای ثبت نشده است.</div>')}</div>
                         </section>
             <section class="panel">
                           <div class="panel-heading"><h2>داروهای ثبت‌شده</h2><small>طبق دستور پزشک</small></div>
-                          <div class="list">${medications.length ? medications.map(m => simpleCard(m.name, (m.dose || '') + (m.instructions ? ' · ' + m.instructions : ''),m.created_at)).join('') : '<div class="empty-card">دارویی برای نمایش ثبت نشده است.</div>'}</div>
+                          <div class="list">${dataErrors.medications ? dataLoadFailure('داروها') : (medications.length ? medications.map(m => simpleCard(m.name, (m.dose || '') + (m.instructions ? ' · ' + m.instructions : ''),m.created_at)).join('') : '<div class="empty-card">دارویی برای نمایش ثبت نشده است.</div>')}</div>
                         </section>
             <section class="panel">
                           <div class="panel-heading"><h2>پیام‌ها و یادداشت‌های پزشک</h2><small>قابل مشاهده برای شما</small></div>
-                          <div class="row-list">${notes.length ? notes.map(noteCard).join('') : '<div class="empty-card">هنوز یادداشتی برای نمایش وجود ندارد.</div>'}</div>
+                          <div class="row-list">${dataErrors.notes ? dataLoadFailure('یادداشت‌های پزشک') : (notes.length ? notes.map(noteCard).join('') : '<div class="empty-card">هنوز یادداشتی برای نمایش وجود ندارد.</div>')}</div>
                         </section>
             <section class="panel">
-                          <div class="panel-heading"><h2>گزارش‌های قبلی</h2><small>${reports.length} مورد</small></div>
-                          <div class="row-list">${reports.length ? reports.map(r => '<div class="row-item"><div><strong>' + h(statusTitle(r.report_type)) + ' · شدت ' + h(r.severity || '—') + '</strong><p>' + h([...(Array.isArray(r.symptoms) ? r.symptoms : []),r.notes].filter(Boolean).join('، ')) + '</p></div><small class="subline">' + h(fmtDate(r.submitted_at)) + '</small></div>').join('') : '<div class="empty-card">هنوز گزارشی ثبت نشده است.</div>'}</div>
+                          <div class="panel-heading"><h2>گزارش‌های قبلی</h2><small>${dataErrors.reports ? 'دریافت ناموفق' : reports.length + ' مورد'}</small></div>
+                          <div class="row-list">${dataErrors.reports ? dataLoadFailure('گزارش‌های قبلی') : (reports.length ? reports.map(r => '<div class="row-item"><div><strong>' + h(statusTitle(r.report_type)) + ' · شدت ' + h(r.severity || '—') + '</strong><p>' + h([...(Array.isArray(r.symptoms) ? r.symptoms : []),r.notes].filter(Boolean).join('، ')) + '</p></div><small class="subline">' + h(fmtDate(r.submitted_at)) + '</small></div>').join('') : '<div class="empty-card">هنوز گزارشی ثبت نشده است.</div>')}</div>
                         </section>
             <section class="panel">
                           <div class="panel-heading"><h2>گزارش علائم / پیش از ویزیت</h2><small>گزارش برای بررسی پزشک</small></div>
@@ -758,8 +766,8 @@
                           </form>
                         </section>
             <section class="panel">
-                          <div class="panel-heading"><h2>نوبت‌های من</h2><small>${appointments.length} مورد</small></div>
-                          <div class="list">${appointments.length ? appointments.map(appointmentCard).join('') : '<div class="empty-card">هنوز درخواست نوبتی ثبت نشده است.</div>'}</div>
+                          <div class="panel-heading"><h2>نوبت‌های من</h2><small>${dataErrors.appointments ? 'دریافت ناموفق' : appointments.length + ' مورد'}</small></div>
+                          <div class="list">${dataErrors.appointments ? dataLoadFailure('نوبت‌ها') : (appointments.length ? appointments.map(appointmentCard).join('') : '<div class="empty-card">هنوز درخواست نوبتی ثبت نشده است.</div>')}</div>
                         </section>
             <section class="panel study-panel">
                           <div class="panel-heading"><h2>مطالعه بیشتر</h2><small>آرشیو مقالات سایت رسمی</small></div>
@@ -775,6 +783,11 @@
       if (active) arrangePatientDashboard();
       bindCommon();
       if (active) bindPatientForms();
+      root.querySelectorAll('[data-retry-patient-data]').forEach(button => button.addEventListener('click', () => {
+        button.disabled = true;
+        button.textContent = 'در حال تلاش دوباره…';
+        loadDashboard();
+      }));
     } catch (error) {
       root.innerHTML = '<section class="panel"><h2>دریافت اطلاعات ناموفق بود</h2>' + messageBox(errorMessage(error),'error') + '<div class="card-actions"><button class="secondary" id="retryBtn">تلاش دوباره</button><button class="ghost-button" id="logoutBtn">خروج امن</button></div></section>';
       document.getElementById('retryBtn')?.addEventListener('click',loadDashboard);
