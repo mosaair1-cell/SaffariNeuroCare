@@ -94,6 +94,17 @@
   <main id="app" class="app-main" aria-live="polite">
     <section class="loading-card"><div class="spinner"></div><p>در حال آماده‌سازی سامانه…</p></section>
   </main>
+
+  <nav id="mobileAuthDock" class="mobile-auth-dock" aria-label="ورود یا ثبت‌نام بیمار" hidden>
+    <button class="mobile-auth-action mobile-auth-login" type="button" data-open-login>
+      <span class="mobile-auth-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M10 17l5-5-5-5M15 12H3"/><path d="M13 4h5a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3h-5"/></svg></span>
+      <span><strong>ورود به حساب</strong><small>ورود به پرونده</small></span>
+    </button>
+    <button class="mobile-auth-action mobile-auth-register" type="button" data-open-register>
+      <span class="mobile-auth-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/><circle cx="12" cy="12" r="9"/></svg></span>
+      <span><strong>ثبت‌نام بیمار</strong><small>ساخت حساب اختصاصی</small></span>
+    </button>
+  </nav>
   <footer class="site-footer">
     <p>این سامانه برای مشاهده پرونده پزشکی و پیگیری درمان است؛ جایگزین ارزیابی مستقیم پزشک یا خدمات اورژانسی نیست.</p>
     <a href="https://mhsaffari.ir/" target="_blank" rel="noopener">mhsaffari.ir</a>
