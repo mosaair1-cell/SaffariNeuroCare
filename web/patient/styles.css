@@ -917,3 +917,52 @@ html.patient-dashboard-mode .site-footer{
     font-weight:800;
   }
 }
+
+
+/* Final workspace footer fix: shared by Home, Appointments, Medical Record and Education */
+html.patient-dashboard-mode .app-main{
+  min-height:0;
+  padding-bottom:0;
+}
+html.patient-dashboard-mode .site-footer{
+  width:100%;
+  max-width:1180px;
+  margin:0 auto;
+  padding-top:10px;
+  padding-bottom:18px;
+  align-self:auto;
+}
+/* The bottom menu is fixed, so provide scroll runway after the footer on mobile. */
+@media(max-width:550px){
+  html.patient-dashboard-mode body{
+    padding-bottom:0;
+  }
+  html.patient-dashboard-mode .app-main{
+    padding-bottom:12px;
+  }
+  html.patient-dashboard-mode .site-footer{
+    display:flex;
+    position:relative;
+    margin-top:0;
+    padding:12px 14px calc(172px + env(safe-area-inset-bottom));
+    gap:8px;
+    line-height:1.9;
+  }
+  html.patient-dashboard-mode .site-footer p{
+    margin:0;
+    max-width:100%;
+    line-height:1.9;
+  }
+  html.patient-dashboard-mode .site-footer>a{
+    align-self:flex-start;
+    margin-top:2px;
+  }
+}
+@media(min-width:551px){
+  html.patient-dashboard-mode .app-main{
+    padding-bottom:0;
+  }
+  html.patient-dashboard-mode .site-footer{
+    padding-bottom:20px;
+  }
+}
