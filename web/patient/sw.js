@@ -1,4 +1,4 @@
-const CACHE = 'saffari-neurocare-shell-v12';
+const CACHE = 'saffari-neurocare-shell-v13';
 const SHELL = ['./', './index.html', './styles.css', './app.js', './config.js', './manifest.webmanifest'];
 
 self.addEventListener('install', (event) => {
