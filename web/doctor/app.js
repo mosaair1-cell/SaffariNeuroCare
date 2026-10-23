@@ -1163,8 +1163,8 @@
         await api('/doctor/patients/' + encodeURIComponent(id) + '/medications','POST',{
           name:f.get('name'),dose:f.get('dose'),instructions:f.get('instructions')
         });
-        alert('دارو ثبت شد و در پنل بیمار نمایش داده می‌شود.');
-        medForm.reset(); btn.disabled = false;
+        alert('دارو ثبت شد.');
+        await loadDoctorPatient(id);
       } catch (error) { setMessage(medForm,errorMessage(error),'error'); btn.disabled = false; }
     });
     const edssForm = document.getElementById('edssForm');
