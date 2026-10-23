@@ -708,14 +708,34 @@
                           <div class="panel-heading"><h2>درخواست نوبت</h2><small>نوبت پس از تأیید مطب قطعی است</small></div>
                           <form id="appointmentForm">
                             <div class="form-grid">
-                              <div class="field full"><label for="appointmentType">نوع نوبت</label><select id="appointmentType" name="appointmentType"><option value="in_person">نوبت حضوری در مطب</option><option value="text">مشاوره متنی</option></select></div>
+                              <div class="field full booking-type-field">
+                                <span class="booking-type-label">نوع نوبت را انتخاب کنید</span>
+                                <input id="appointmentType" name="appointmentType" type="hidden" value="in_person">
+                                <div class="booking-type-options" role="group" aria-label="انتخاب نوع نوبت">
+                                  <button type="button" class="booking-type-option active" data-appointment-type-choice="in_person" aria-pressed="true">
+                                    <span class="booking-type-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20.5h16M6.5 20V5.5A1.5 1.5 0 0 1 8 4h8a1.5 1.5 0 0 1 1.5 1.5V20M9 8h2M13 8h2M9 11.5h2M13 11.5h2M10 20v-4h4v4"/></svg></span>
+                                    <span class="booking-type-copy"><strong>ویزیت حضوری</strong><small>مراجعه به مطب</small></span>
+                                    <span class="booking-type-check" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12.5 4.3 4.3L19 7.5"/></svg></span>
+                                  </button>
+                                  <button type="button" class="booking-type-option" data-appointment-type-choice="text" aria-pressed="false">
+                                    <span class="booking-type-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5 8 8 0 0 1-3.3-.7L4 20l1.5-4.2A7.5 7.5 0 1 1 20 11.5Z"/><path d="M8.5 11.5h7M12 8v7"/></svg></span>
+                                    <span class="booking-type-copy"><strong>مشاوره متنی</strong><small>پیگیری به‌صورت متنی</small></span>
+                                    <span class="booking-type-check" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12.5 4.3 4.3L19 7.5"/></svg></span>
+                                  </button>
+                                </div>
+                              </div>
                               <div class="field full">
                                 <label for="calendarDays">روز قابل رزرو (تقویم هجری شمسی)</label>
                                 <div class="jalali-calendar" id="jalaliCalendar">
+                                  <div class="calendar-topline">
+                                    <span class="calendar-caption"><span class="calendar-caption-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="16" rx="3"/><path d="M8 3v4M16 3v4M3.5 10h17M8 14h.01M12 14h.01M16 14h.01M8 17.5h.01M12 17.5h.01"/></svg></span>تقویم نوبت‌دهی</span>
+                                    <span class="calendar-legend"><i aria-hidden="true"></i> روز دارای نوبت آزاد</span>
+                                  </div>
+                                  <p class="calendar-instruction">یکی از روزهای مشخص‌شده را انتخاب کنید تا ساعت‌های آزاد همان روز نمایش داده شود.</p>
                                   <div class="jalali-calendar-head">
-                                    <button type="button" class="calendar-nav" id="calendarPrev" aria-label="ماه قبل" disabled>‹</button>
-                                    <strong id="calendarMonthLabel">در حال دریافت زمان‌ها…</strong>
-                                    <button type="button" class="calendar-nav" id="calendarNext" aria-label="ماه بعد" disabled>›</button>
+                                    <button type="button" class="calendar-nav" id="calendarPrev" aria-label="ماه قبل" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 5-7 7 7 7"/></svg></button>
+                                    <span class="calendar-month-title"><small>ماه انتخابی</small><strong id="calendarMonthLabel">در حال دریافت زمان‌ها…</strong></span>
+                                    <button type="button" class="calendar-nav" id="calendarNext" aria-label="ماه بعد" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.5 5 7 7-7 7"/></svg></button>
                                   </div>
                                   <div class="calendar-weekdays" aria-hidden="true"><span>شنبه</span><span>یکشنبه</span><span>دوشنبه</span><span>سه‌شنبه</span><span>چهارشنبه</span><span>پنجشنبه</span><span>جمعه</span></div>
                                   <div class="calendar-grid" id="calendarDays" role="group" aria-label="فقط روزهای دارای نوبت آزاد"><div class="calendar-empty-note">در حال دریافت تقویم…</div></div>
@@ -800,14 +820,16 @@
     for (let day=1;day<=daysCount;day++) {
       const dateIso = isoFromDate(shiftDate(firstDay,day-1));
       const available = bookingCalendar.slotsByDate[dateIso] || [];
+      const dateObject = dateFromISO(dateIso);
+      const selected = bookingCalendar.selectedDate === dateIso;
+      const isToday = dateIso === isoFromDate(new Date());
+      const dateLabel = jalaliFullDateFormatter.format(dateObject);
+      const dayNumber = h(jalaliDayNumberFormatter.format(dateObject));
       if (available.length) {
-        const selected = bookingCalendar.selectedDate === dateIso;
-        const dateLabel = jalaliFullDateFormatter.format(dateFromISO(dateIso));
-        html += '<button type="button" class="calendar-day available' + (selected ? ' selected' : '') + '" data-calendar-date="' + h(dateIso) + '" aria-pressed="' + String(selected) + '" aria-label="' + h(dateLabel) + '">' +
-          '<span>' + h(jalaliDayNumberFormatter.format(dateFromISO(dateIso))) + '</span><small>' + h(available.length) + ' زمان</small></button>';
+        html += '<button type="button" class="calendar-day available' + (selected ? ' selected' : '') + (isToday ? ' today' : '') + '" data-calendar-date="' + h(dateIso) + '" aria-pressed="' + String(selected) + '" aria-label="' + h(dateLabel) + '، ' + h(available.length) + ' زمان آزاد">' +
+          '<span>' + dayNumber + '</span><small>' + h(available.length) + ' زمان</small></button>';
       } else {
-        // Keep the calendar layout aligned, but do not display unavailable dates or make them selectable.
-        html += '<span class="calendar-day-empty" aria-hidden="true"></span>';
+        html += '<button type="button" class="calendar-day unavailable' + (isToday ? ' today' : '') + '" disabled aria-disabled="true" tabindex="-1" aria-label="' + h(dateLabel) + '، زمان آزادی ندارد"><span>' + dayNumber + '</span></button>';
       }
     }
     while ((weekdayOffset+daysCount)%7 !== 0) { html += '<span class="calendar-day-empty" aria-hidden="true"></span>'; daysCount++; }
@@ -889,6 +911,7 @@
   function bindPatientForms() {
     const appointmentForm = document.getElementById('appointmentForm');
     const appointmentType = document.getElementById('appointmentType');
+    const appointmentTypeButtons = Array.from(document.querySelectorAll('[data-appointment-type-choice]'));
     const previousMonth = document.getElementById('calendarPrev');
     const nextMonth = document.getElementById('calendarNext');
     const daysGrid = document.getElementById('calendarDays');
@@ -923,8 +946,25 @@
       if (slotInput) slotInput.value = bookingCalendar.selectedDate && timeSelect.value
         ? bookingCalendar.selectedDate + '|' + timeSelect.value : '';
     });
+    const syncAppointmentTypeButtons = (type) => {
+      appointmentTypeButtons.forEach(button => {
+        const selected = button.dataset.appointmentTypeChoice === type;
+        button.classList.toggle('active',selected);
+        button.setAttribute('aria-pressed',String(selected));
+      });
+    };
+    appointmentTypeButtons.forEach(button => button.addEventListener('click',() => {
+      if (!appointmentType) return;
+      appointmentType.value = button.dataset.appointmentTypeChoice || 'in_person';
+      syncAppointmentTypeButtons(appointmentType.value);
+      appointmentType.dispatchEvent(new Event('change',{bubbles:true}));
+    }));
     if (appointmentType) {
-      appointmentType.addEventListener('change',() => refreshAvailableSlots(appointmentType.value));
+      appointmentType.addEventListener('change',() => {
+        syncAppointmentTypeButtons(appointmentType.value);
+        refreshAvailableSlots(appointmentType.value);
+      });
+      syncAppointmentTypeButtons(appointmentType.value || 'in_person');
       refreshAvailableSlots(appointmentType.value || 'in_person');
     }
     if (appointmentForm) appointmentForm.addEventListener('submit',async (event) => {
